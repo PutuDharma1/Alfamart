@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Alfamart</title>
+    <link rel="stylesheet" href="/login_style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="login-container">
+        <header class="login-header">
+            <img src="/Assets/Alfamart-Emblem.png" alt="Alfamart Logo" class="login-logo">
+            <h1>Login</h1>
+        </header>
+        <form id="login-form" class="login-form">
+            <div class="form-group">
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <button type="submit">Login</button>
+            <p id="login-message" class="login-message"></p>
+        </form>
+    </div>
+    <script src="/login_script.js"></script>
+</body>
+</html>
