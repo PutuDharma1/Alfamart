@@ -165,7 +165,7 @@ def handle_approval():
             if manager_email:
                 row_data[config.COLUMN_NAMES.KOORDINATOR_APPROVER] = approver
                 row_data[config.COLUMN_NAMES.KOORDINATOR_APPROVAL_TIME] = current_time
-                base_url = "https://buildingprocess-fld9.onrender.com"
+                base_url = "https://alfamart.onrender.com"
                 approval_url_manager = f"{base_url}/api/handle_approval?action=approve&row={row}&level=manager&approver={manager_email}"
                 rejection_url_manager = f"{base_url}/api/handle_approval?action=reject&row={row}&level=manager&approver={manager_email}"
                 email_html_manager = render_template('email_template.html', level='Manajer', form_data=row_data, approval_url=approval_url_manager, rejection_url=rejection_url_manager, additional_info=f"Telah disetujui oleh Koordinator: {approver}")
