@@ -61,7 +61,7 @@ async function fetchAndPopulatePrices() {
 
     try {
         // Ganti URL ini jika server Flask Anda berjalan di alamat yang berbeda
-        const response = await fetch(`http://127.0.0.1:5000/get-data?cabang=${selectedCabang}&lingkup=${selectedScope}`);
+        const response = await fetch(`https://alfamart.onrender.com/get-data?cabang=${selectedCabang}&lingkup=${selectedScope}`);
         
         if (!response.ok) {
             const errorData = await response.json();
@@ -297,7 +297,7 @@ async function initializePage() {
     sipilCategories.forEach(category => sipilTablesWrapper.appendChild(createTableStructure(category, "Sipil")));
     meCategories.forEach(category => meTablesWrapper.appendChild(createTableStructure(category, "ME")));
     
-    const PYTHON_API_BASE_URL = "https://buildingprocess-fld9.onrender.com";
+    const PYTHON_API_BASE_URL = "https://alfamart.onrender.com";
     const userEmail = sessionStorage.getItem('loggedInUserEmail');
 
     // Hanya ambil data status pengajuan saat halaman dimuat
