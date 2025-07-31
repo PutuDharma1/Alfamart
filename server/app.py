@@ -10,17 +10,23 @@ import config
 from google_services import GoogleServiceProvider
 from pdf_generator import create_pdf_from_data
 
+# Import blueprint dari file data_api.py
+from data_api import data_bp
+
 # Inisialisasi Aplikasi
 load_dotenv()
 app = Flask(__name__)
 
-# Konfigurasi CORS
+# Daftarkan Blueprint agar endpoint /get-data aktif
+app.register_blueprint(data_bp)
+
+# Konfigurasi CORS dengan URL Vercel Anda yang benar
 cors = CORS(app, resources={
-    r"/*": {
+  r"/*": {
     "origins": [
       "http://127.0.0.1:5500",
       "http://localhost:5500",
-      "https://alfamart-one.vercel.app" 
+      "https://alfamart-one.vercel.app"
     ]
   }
 })
@@ -41,9 +47,7 @@ def check_status():
         return jsonify(status_data), 200
     except Exception as e:
         traceback.print_exc()
-        # --- ROBUST ERROR HANDLING ---
         try:
-            # Try to get a simple error message.
             error_message = str(e)
             if "RecursionError" in traceback.format_exc():
                  error_message = "A critical communication error occurred with Google APIs."
@@ -94,7 +98,6 @@ def submit_form():
         if new_row_index:
             google_provider.delete_row(config.DATA_ENTRY_SHEET_NAME, new_row_index)
         traceback.print_exc()
-        # --- ROBUST ERROR HANDLING ---
         try:
             error_message = str(e)
             if "RecursionError" in traceback.format_exc():
@@ -138,15 +141,12 @@ def handle_approval():
 
         if action == 'reject':
             new_status = ""
-            rejected_by_level = ""
             if level == 'coordinator':
                 new_status = config.STATUS.REJECTED_BY_COORDINATOR
-                rejected_by_level = "Koordinator"
                 google_provider.update_cell(row, config.COLUMN_NAMES.KOORDINATOR_APPROVER, approver)
                 google_provider.update_cell(row, config.COLUMN_NAMES.KOORDINATOR_APPROVAL_TIME, current_time)
             elif level == 'manager':
                 new_status = config.STATUS.REJECTED_BY_MANAGER
-                rejected_by_level = "Manajer"
                 google_provider.update_cell(row, config.COLUMN_NAMES.MANAGER_APPROVER, approver)
                 google_provider.update_cell(row, config.COLUMN_NAMES.MANAGER_APPROVAL_TIME, current_time)
             
@@ -195,9 +195,7 @@ def handle_approval():
                 support_emails = google_provider.get_emails_by_jabatan(cabang, config.JABATAN.SUPPORT)
                 manager_email = approver
                 coordinator_email = row_data.get(config.COLUMN_NAMES.KOORDINATOR_APPROVER)
-
                 cc_list = list(filter(None, set(support_emails + [manager_email, coordinator_email])))
-                
                 if creator_email in cc_list:
                     cc_list.remove(creator_email)
                 
@@ -212,7 +210,6 @@ def handle_approval():
                     pdf_attachment_bytes=final_pdf_bytes,
                     pdf_filename=final_pdf_filename
                 )
-
             return render_template('response_page.html', title='Persetujuan Berhasil', message='Tindakan Anda telah berhasil diproses.', theme_color='#28a745', icon='✔', logo_url=logo_url)
 
     except Exception as e:
