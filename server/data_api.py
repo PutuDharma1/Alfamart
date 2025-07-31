@@ -3,7 +3,7 @@ import gspread
 from google.oauth2.credentials import Credentials
 import re
 
-# Buat sebuah Blueprint
+# 1. Membuat Blueprint
 data_bp = Blueprint('data_api', __name__)
 
 # --- Struktur ID Spreadsheet untuk Setiap Cabang ---
@@ -53,16 +53,15 @@ SPREADSHEET_IDS = {
     "SORONG": {"ME": "1BfAWqaN-7fk5kZMWhK0SOKousSYM6pis6jVEplQLnYs", "SIPIL": "1NbG4HOt_Zl1auzR_kw-e8mG0ajrP9P-FFLfjNCD6Oyg"},
     "SUMBAWA": {"ME": "1WB6KA2sFD11Ol81IYbM3ugH34Sg1JU1Aw6Ny8zUgCpg", "SIPIL": "1Y3AqDtyXUyJhyrvT0slbQRlW14VUd9zA8P_1vPqqI8A"},
     "TEGAL": {"ME": "13qXfMnPrOYB-fJEf_7FGgL-UENA3KWBj5uTiY4PLoAQ", "SIPIL": "1i_2TLKswkCUoNm1Z6hDmc3j9k0qNcF38MZoC-z2-PNM"},
+    "HEAD OFFICE": {"ME": "1oQfZkWSP-TWQmQMY-gM1qVcLP_i47REBmJj1IfDNzkg", "SIPIL": "1Jf_qTHOMpmyLWp9zR_5CiwjyzWWtD8cH99qt4kJvLOw"}
 }
-
 
 # --- Fungsi Bantuan ---
 def is_roman_numeral(s):
     return bool(re.match(r'^(?=[MDCLXVI])M*(C[MD]|D?C*)(X[CL]|L?X*)(I[XV]|V?I*)$', s.strip()))
 
 def get_google_creds():
-    # Menggunakan path relatif dari root proyek
-    creds = Credentials.from_authorized_user_file('server/token.json', [
+    creds = Credentials.from_authorized_user_file('token.json', [
         'https://www.googleapis.com/auth/spreadsheets.readonly'
     ])
     return creds
@@ -119,7 +118,6 @@ def process_sheet(sheet):
             categorized_prices[current_category].append(item_data)
     return categorized_prices
 
-
 # --- Endpoint API ---
 @data_bp.route('/get-data', methods=['GET'])
 def get_data():
@@ -147,5 +145,4 @@ def get_data():
     except gspread.exceptions.SpreadsheetNotFound:
         return jsonify({"error": f"Spreadsheet with ID {spreadsheet_id} not found or permission denied."}), 404
     except Exception as e:
-        print(f"An error occurred: {e}")
         return jsonify({"error": f"An internal server error occurred: {str(e)}"}), 500
