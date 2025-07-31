@@ -20,7 +20,7 @@ cors = CORS(app, resources={
     "origins": [
       "http://127.0.0.1:5500",
       "http://localhost:5500",
-      "https://building-process-two.vercel.app"
+      "alfamart-one.vercel.app"
     ]
   }
 })
@@ -80,7 +80,7 @@ def submit_form():
         if not coordinator_email:
             raise Exception(f"Coordinator email for branch '{cabang}' not found. Please check the 'Cabang' sheet.")
 
-        base_url = "https://buildingprocess-fld9.onrender.com"
+        base_url = "https://alfamart.onrender.com"
         approval_url = f"{base_url}/api/handle_approval?action=approve&row={new_row_index}&level=coordinator&approver={coordinator_email}"
         rejection_url = f"{base_url}/api/handle_approval?action=reject&row={new_row_index}&level=coordinator&approver={coordinator_email}"
         
@@ -110,7 +110,7 @@ def handle_approval():
     level = request.args.get('level')
     approver = request.args.get('approver')
     
-    base_render_url = "https://buildingprocess-fld9.onrender.com"
+    base_render_url = "https://alfamart.onrender.com"
     logo_url = f"{base_render_url}{url_for('static', filename='Alfamart-Emblem.png')}"
 
     if not all([action, row_str, level, approver]):
