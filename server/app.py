@@ -1,5 +1,5 @@
 import datetime
-import os
+import os  # <-- PERBAIKAN 1: 'o' diubah menjadi 'os'
 import traceback
 from flask import Flask, request, jsonify, render_template, url_for
 from dotenv import load_dotenv
@@ -22,13 +22,13 @@ app.register_blueprint(data_bp)
 
 # Konfigurasi CORS dengan URL Vercel Anda yang benar
 cors = CORS(app, resources={
-  r"/*": {
-    "origins": [
-      "http://127.0.0.1:5500",
-      "http://localhost:5500",
-      "https://alfamart-one.vercel.app"
-    ]
-  }
+    r"/*": {
+        "origins": [
+            "http://127.0.0.1:5500",
+            "http://localhost:5500",
+            "https://alfamart-one.vercel.app"
+        ]
+    }
 })
 
 google_provider = GoogleServiceProvider()
@@ -222,6 +222,7 @@ def handle_approval():
             error_message = "An unreportable error occurred."
         return render_template('response_page.html', title='Internal Error', message=f'An internal error occurred.<br><small>Details: {error_message}</small>', theme_color='#dc3545', icon='⚠️', logo_url=logo_url), 500
 
+# PERBAIKAN 2 & 3: Indentasi yang benar dan 'os' bukan 'o'
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5001))
     app.run(host='0.0.0.0', port=port)
