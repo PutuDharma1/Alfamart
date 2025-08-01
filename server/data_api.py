@@ -61,8 +61,6 @@ SPREADSHEET_IDS = {
 # --- Fungsi Bantuan ---
 def get_google_creds():
     creds = None
-    # --- PERBAIKAN UTAMA DI SINI ---
-    # Scope harus cocok dengan yang digunakan untuk membuat token.json
     scopes = [
         'https://www.googleapis.com/auth/spreadsheets',
         'https://www.googleapis.com/auth/gmail.send',
@@ -80,8 +78,10 @@ def get_google_creds():
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
-            with open(token_path, 'w') as token:
-                token.write(creds.to_json())
+            # --- PERBAIKAN UTAMA DI SINI ---
+            # Baris di bawah ini dihapus karena menyebabkan error di sistem read-only
+            # with open(token_path, 'w') as token:
+            #     token.write(creds.to_json())
         else:
             raise Exception("Critical: token.json is missing, invalid, or expired and cannot be refreshed.")
     return creds
