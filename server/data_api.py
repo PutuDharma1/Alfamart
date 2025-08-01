@@ -74,7 +74,6 @@ def get_google_creds():
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
-            # Simpan kredensial yang diperbarui kembali ke file
             with open(token_path, 'w') as token:
                 token.write(creds.to_json())
         else:
@@ -87,50 +86,48 @@ def is_roman_numeral(s):
 
 def process_sheet(sheet):
     """
-    [MODIFIED] Memproses data dari sheet dengan membaca rentang A13:H secara spesifik
-    sesuai dengan struktur header pada gambar.
+    [MODIFIED] Memproses data dari sheet dengan membaca rentang A13:H dan menggunakan logika
+    yang lebih baik untuk membedakan baris kategori dan item.
     """
     try:
-        # Mengambil semua data dari rentang A13 hingga kolom H sampai baris terakhir
         all_values = sheet.get('A13:H')
     except Exception as e:
         raise ValueError(f"Gagal mengambil data dari rentang A13:H. Error: {str(e)}")
 
-    # Data pekerjaan dimulai dari baris ke-3 dari data yang kita ambil (row 15 di sheet)
-    data_rows = all_values[2:]
+    data_rows = all_values[2:] if len(all_values) > 2 else []
 
     categorized_prices = {}
     current_category = "Uncategorized"
 
-    # Definisikan indeks kolom berdasarkan gambar (A=0, B=1, C=2, dst.)
-    kode_col_index = 2       # Kolom C berisi KODE (e.g., XIV.01)
-    jenis_pekerjaan_col_index = 3 # Kolom D berisi Jenis Pekerjaan
-    sat_col_index = 4        # Kolom E berisi Satuan
-    material_col_index = 6   # Kolom G berisi Harga Material
-    upah_col_index = 7       # Kolom H berisi Harga Upah
+    kode_col_index = 2
+    jenis_pekerjaan_col_index = 3
+    sat_col_index = 4
+    material_col_index = 6
+    upah_col_index = 7
 
     for row in data_rows:
-        # Lewati baris kosong atau yang tidak memiliki data pekerjaan
         if len(row) <= jenis_pekerjaan_col_index or not row[jenis_pekerjaan_col_index].strip():
             continue
 
         kode_val = row[kode_col_index].strip()
         jenis_pekerjaan = row[jenis_pekerjaan_col_index].strip()
         
-        # Cek apakah ini baris kategori (misal: "XIV. INSTALASI")
-        # Kategori biasanya tidak punya kode item seperti 'XIV.01'
-        if '.' not in kode_val and is_roman_numeral(kode_val.split('.')[0]):
-            current_category = f"{kode_val}. {jenis_pekerjaan}"
-            categorized_prices[current_category] = []
+        # --- LOGIKA BARU YANG DIPERBAIKI ---
+        # Memisahkan kode (e.g., "XIV." atau "XIV.01") menjadi beberapa bagian
+        kode_parts = kode_val.strip('.').split('.')
+        
+        # Jika hanya ada satu bagian dan itu adalah angka Romawi, maka itu adalah KATEGORI
+        if len(kode_parts) == 1 and is_roman_numeral(kode_parts[0]):
+            current_category = f"{kode_val} {jenis_pekerjaan}"
+            if current_category not in categorized_prices:
+                categorized_prices[current_category] = []
             continue
         
-        # Jika bukan kategori, proses sebagai item pekerjaan
-        # Pastikan ada cukup data di baris untuk menghindari error
+        # Selain itu, proses sebagai ITEM pekerjaan
         if len(row) > upah_col_index:
-            harga_material_raw = row[material_col_index]
-            harga_upah_raw = row[upah_col_index]
+            harga_material_raw = row[material_col_index] if len(row) > material_col_index else "0"
+            harga_upah_raw = row[upah_col_index] if len(row) > upah_col_index else "0"
 
-            # Mengubah format harga dari string (e.g., "225.000") menjadi angka
             harga_material = "Kondisional" if str(harga_material_raw).lower().strip() == 'kondisional' else float(str(harga_material_raw).replace('.', '').replace(',', '.') or 0)
             harga_upah = "Kondisional" if str(harga_upah_raw).lower().strip() == 'kondisional' else float(str(harga_upah_raw).replace('.', '').replace(',', '.') or 0)
             
@@ -146,7 +143,6 @@ def process_sheet(sheet):
             categorized_prices[current_category].append(item_data)
 
     return categorized_prices
-
 
 # --- Endpoint API ---
 @data_bp.route('/get-data', methods=['GET'])
@@ -169,11 +165,10 @@ def get_data():
         creds = get_google_creds()
         client = gspread.authorize(creds)
         spreadsheet = client.open_by_key(spreadsheet_id)
-        sheet = spreadsheet.get_worksheet(0) # Asumsi data ada di sheet pertama
+        sheet = spreadsheet.get_worksheet(0)
         processed_data = process_sheet(sheet)
         return jsonify(processed_data)
     except Exception as e:
-        # Mengembalikan traceback error untuk debugging yang lebih mudah
         import traceback
         traceback.print_exc()
         return jsonify({"error": f"An internal server error occurred: {str(e)}"}), 500
