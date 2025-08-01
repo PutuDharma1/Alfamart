@@ -42,7 +42,7 @@ SPREADSHEET_IDS = {
     "MANOKWARI": {"ME": "1O9tKmAojv42gRsNn6lryZ6Npo_kSt_J1LDOT9ZCNVMs", "SIPIL": "1DXvR6m9gZ4K_1m0hJwyJnSRAXtzy8y8uEyk68_yqziE"},
     "MEDAN": {"ME": "1TaEaBMTAXxXRS73VB8Ijnp53pZI6F6odweCBQV4vaFo", "SIPIL": "1ty-YLmkZqGAmVu7UGxjdtyBkmoYRhGibTk7ZkUt2dPs"},
     "NTT": {"ME": "1anZZF1ptwE-j_DroCLep6yfRC0A8jrFXp8v9cZ5gh7k", "SIPIL": "1dCfRyTOgMayV-m7y647X0Gqm_FPbBVl4rwJ8SPrav9o"},
-    "PALEMBANG": {"ME": "1nhjwDMrG8fWUXu-4tTdcfgbLpEfOfEh90SSqOVhaaPc", "SIPIL": "1xfqITP8OOBTS7JdxBbc49U4H1IlA0qbBsXZjuEuh_g4"},
+    "PALEMBANG": {"ME": "1nhjwDMrG8fWUXu-4tTdcfgbLpEfOfEh90SSqOVhaaPc", "SIPIL": "1xfqITP8OOBTS7JdxBbc49U4HIlA0qbBsXZjuEuh_g4"},
     "PARUNG": {"ME": "1BTkXU0aVovA2p4zYUok3dPq57aqTiHwj_RboQUh6-54", "SIPIL": "1w7aBoRFAvt2kkuezHoPeKYxUx2FPgHCJ8eNWA7AvvCw"},
     "PEKANBARU": {"ME": "18x4TJ751pGnSeCtGXBWbbuKTJ68oK8MHYMQaCF-nQ_8", "SIPIL": "14vFw1rx4wDCCw2pKDIWKvnNqA4aAvnwrD0eRjNtguzo"},
     "PLUMBON": {"ME": "1mHnA9lQE5ymjUL4bc51MmdwTOkCO_okXhqdg3-XmuMY", "SIPIL": "1CPQcKkJrlvvyt4SSRbcu5_ee4tjFpS7upwxcVYRIZAQ"},
@@ -78,48 +78,42 @@ def get_google_creds():
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
-            # --- PERBAIKAN UTAMA DI SINI ---
-            # Baris di bawah ini dihapus karena menyebabkan error di sistem read-only
-            # with open(token_path, 'w') as token:
-            #     token.write(creds.to_json())
         else:
             raise Exception("Critical: token.json is missing, invalid, or expired and cannot be refreshed.")
     return creds
 
-def is_roman_numeral(s):
-    """Mengecek apakah sebuah string adalah angka romawi."""
-    return bool(re.match(r'^(?=[MDCLXVI])M*(C[MD]|D?C*)(X[CL]|L?X*)(I[XV]|V?I*)$', s.strip()))
-
 def safe_to_float(value):
-    """Mengonversi string ke float dengan aman, menangani string kosong, '-', dan error lainnya."""
     if isinstance(value, (int, float)):
         return float(value)
-    
     s_value = str(value).strip()
     if not s_value or s_value == '-':
         return 0.0
-        
     try:
         return float(s_value.replace('.', '').replace(',', '.'))
     except (ValueError, TypeError):
         return 0.0
 
-def process_sheet(sheet):
-    """
-    Memproses data dari sheet dengan membaca rentang A13:H dan menggunakan logika
-    yang lebih baik untuk membedakan baris kategori dan item.
-    """
+# --- PERUBAHAN UTAMA DI SINI ---
+def process_sheet(sheet, lingkup):
+    # Tentukan rentang data berdasarkan lingkup pekerjaan
+    if lingkup == "SIPIL":
+        data_range = 'A16:H'
+        header_offset = 2 # Data item dimulai 2 baris setelah header (16 + 2 = baris 18)
+    else: # Default untuk ME dan lainnya
+        data_range = 'A13:H'
+        header_offset = 2 # Data item dimulai 2 baris setelah header (13 + 2 = baris 15)
+
     try:
-        all_values = sheet.get('A13:H')
+        all_values = sheet.get(data_range)
     except Exception as e:
-        raise ValueError(f"Gagal mengambil data dari rentang A13:H. Error: {str(e)}")
+        raise ValueError(f"Gagal mengambil data dari rentang {data_range}. Error: {str(e)}")
 
-    data_rows = all_values[2:] if len(all_values) > 2 else []
-
+    data_rows = all_values[header_offset:] if len(all_values) > header_offset else []
+    
     categorized_prices = {}
     current_category = "Uncategorized"
 
-    kode_col_index = 2
+    no_col_index = 1 
     jenis_pekerjaan_col_index = 3
     sat_col_index = 4
     material_col_index = 6
@@ -129,30 +123,27 @@ def process_sheet(sheet):
         if len(row) <= jenis_pekerjaan_col_index or not row[jenis_pekerjaan_col_index].strip():
             continue
 
-        kode_val = row[kode_col_index].strip()
+        no_val = row[no_col_index].strip()
         jenis_pekerjaan = row[jenis_pekerjaan_col_index].strip()
         
-        kode_parts = kode_val.strip('.').split('.')
-        
-        if len(kode_parts) == 1 and is_roman_numeral(kode_parts[0]):
-            current_category = f"{kode_val} {jenis_pekerjaan}"
+        is_category = False
+        try:
+            int(no_val)
+        except (ValueError, TypeError):
+            is_category = True
+            
+        if is_category:
+            current_category = jenis_pekerjaan
             if current_category not in categorized_prices:
                 categorized_prices[current_category] = []
             continue
-        
+
         if len(row) > upah_col_index:
             harga_material_raw = row[material_col_index] if len(row) > material_col_index else "0"
             harga_upah_raw = row[upah_col_index] if len(row) > upah_col_index else "0"
 
-            if str(harga_material_raw).lower().strip() == 'kondisional':
-                harga_material = 'Kondisional'
-            else:
-                harga_material = safe_to_float(harga_material_raw)
-            
-            if str(harga_upah_raw).lower().strip() == 'kondisional':
-                harga_upah = 'Kondisional'
-            else:
-                harga_upah = safe_to_float(harga_upah_raw)
+            harga_material = 'Kondisional' if str(harga_material_raw).lower().strip() == 'kondisional' else safe_to_float(harga_material_raw)
+            harga_upah = 'Kondisional' if str(harga_upah_raw).lower().strip() == 'kondisional' else safe_to_float(harga_upah_raw)
             
             item_data = {
                 "Jenis Pekerjaan": jenis_pekerjaan,
@@ -177,19 +168,20 @@ def get_data():
         return jsonify({"error": "Missing 'cabang' or 'lingkup' parameter"}), 400
 
     cabang = cabang.upper()
-    lingkup = lingkup.upper()
+    lingkup_param = lingkup.upper() # Gunakan nama variabel yang berbeda
 
-    if cabang not in SPREADSHEET_IDS or lingkup not in SPREADSHEET_IDS[cabang]:
-        return jsonify({"error": f"Invalid 'cabang' or 'lingkup'. Provided: {cabang}, {lingkup}"}), 404
+    if cabang not in SPREADSHEET_IDS or lingkup_param not in SPREADSHEET_IDS[cabang]:
+        return jsonify({"error": f"Invalid 'cabang' or 'lingkup' parameter"}), 404
 
-    spreadsheet_id = SPREADSHEET_IDS[cabang][lingkup]
+    spreadsheet_id = SPREADSHEET_IDS[cabang][lingkup_param]
 
     try:
         creds = get_google_creds()
         client = gspread.authorize(creds)
         spreadsheet = client.open_by_key(spreadsheet_id)
         sheet = spreadsheet.get_worksheet(0)
-        processed_data = process_sheet(sheet)
+        # Kirim lingkup ke process_sheet
+        processed_data = process_sheet(sheet, lingkup_param)
         return jsonify(processed_data)
     except Exception as e:
         import traceback
