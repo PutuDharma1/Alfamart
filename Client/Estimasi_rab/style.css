@@ -1,299 +1,227 @@
-/* --- GENERAL BODY & HEADER --- */
+/* General Body and Header Styles */
 body {
-  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
-  background: linear-gradient(120deg, #f4f4f4 60%, #fce4e4 100%);
+  font-family: 'Inter', sans-serif;
+  background-color: #f4f4f4;
   margin: 0;
   padding: 0;
-  color: #222;
-  min-height: 100vh;
+  color: #333;
 }
 
 header {
-  background: linear-gradient(90deg, #d61027 80%, #efcf00 100%);
-  color: #fff;
+  background-color: #d61027; /* Alfamart Fire Engine Red */
+  color: white;
   text-align: center;
-  padding: 18px 24px;
-  border-bottom-left-radius: 16px;
-  border-bottom-right-radius: 16px;
+  padding: 15px 20px; /* Adjusted padding */
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
-  box-shadow: 0 4px 16px rgba(214,16,39,0.08);
+  position: relative; /* For logo positioning */
 }
 
 .header-logo {
-  width: 70px;
+  width: 70px; /* Adjusted logo size */
   height: auto;
-  margin-right: 24px;
+  margin-right: 20px;
   position: absolute;
-  left: 24px;
+  left: 20px;
   top: 50%;
   transform: translateY(-50%);
 }
 
 header h1 {
   margin: 0;
-  font-size: 2.3rem;
+  font-size: 2.2rem; /* Slightly smaller for balance with logo */
   text-transform: uppercase;
-  letter-spacing: 1.5px;
-  font-weight: 800;
-  text-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  letter-spacing: 1px;
 }
 
-/* --- MAIN CONTAINER --- */
+/* Main Container Styles */
 .container {
-  max-width: 1200px;
-  margin: 32px auto;
-  background: #fff;
-  padding: 36px 32px;
-  box-shadow: 0 6px 32px rgba(0,0,0,0.10);
-  border-radius: 16px;
-  transition: box-shadow 0.3s;
+  max-width: 1200px; /* Diperbesar dari 950px ke 1200px */
+  margin: 20px auto;
+  background-color: white;
+  padding: 30px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); /* Softer, deeper shadow */
+  border-radius: 12px; /* Slightly more rounded corners */
 }
 
-.container:hover {
-  box-shadow: 0 10px 40px rgba(214,16,39,0.10);
-}
-
-/* --- FORM ELEMENTS --- */
+/* Form Element Styles */
 .form-container {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
 }
 
 .form-container label {
-  font-weight: 700;
-  margin-bottom: 6px;
-  margin-top: 22px;
-  color: #1756c2;
-  font-size: 1rem;
-  letter-spacing: 0.2px;
+  font-weight: 600; /* Slightly bolder labels */
+  margin-bottom: 5px;
+  margin-top: 18px; /* More space above labels */
+  color: #1756c2; /* Alfamart Sapphire for labels */
+  font-size: 0.95rem;
 }
 
 .form-container input,
 .form-container select {
-  padding: 13px 14px;
-  margin-bottom: 20px;
-  border: 1.5px solid #c2c2c2;
-  border-radius: 8px;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  font-size: 1.05rem;
-  background: #fafbfc;
-  font-family: inherit;
+  padding: 12px; /* Increased padding */
+  margin-bottom: 18px; /* More space below inputs */
+  border: 1px solid #c2c2c2; /* Softer border color */
+  border-radius: 6px; /* Slightly more rounded inputs */
+  transition: border-color 0.3s, box-shadow 0.3s;
+  font-size: 1rem;
 }
 
 .form-container input:focus,
 .form-container select:focus {
-  border-color: #d61027;
-  box-shadow: 0 0 0 3px rgba(214, 16, 39, 0.13);
+  border-color: #d61027; /* Alfamart Red on focus */
+  box-shadow: 0 0 0 3px rgba(214, 16, 39, 0.2); /* Red glow on focus */
   outline: none;
-  background: #fff;
 }
 
-/* --- SECTION TITLES --- */
+/* Section Titles within the form */
 .section-title {
-  color: #d61027;
-  border-bottom: 2.5px solid #efcf00;
-  padding-bottom: 7px;
-  margin-bottom: 18px;
-  font-size: 1.35rem;
-  font-weight: 800;
-  letter-spacing: 0.5px;
-  background: linear-gradient(90deg, #fff 70%, #fce4e4 100%);
-  border-radius: 4px 4px 0 0;
+  color: #d61027; /* Alfamart Red for section titles */
+  border-bottom: 2px solid #efcf00; /* Alfamart Yellow underline */
+  padding-bottom: 5px;
+  margin-bottom: 15px;
+  font-size: 1.3rem; /* Larger section titles */
+  font-weight: 700;
 }
 
-/* --- TABLES --- */
+/* Table Specific Styles */
 .table-container {
-  overflow-x: auto;
-  margin-top: 28px;
-  border-radius: 10px;
-  border: 1.5px solid #e0e0e0;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.06);
-  background: #fcfcfc;
+  overflow-x: visible; /* Ubah dari auto ke visible untuk menghilangkan scrollbar */
+  margin-top: 25px;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 900px;
+  min-width: auto; /* Hilangkan min-width yang memaksa */
   margin-bottom: 0;
-  table-layout: fixed;
 }
 
 table th,
 table td {
   border: 1px solid #e0e0e0;
-  padding: 11px 7px;
+  padding: 10px 6px; /* Kurangi padding */
   text-align: center;
-  font-size: 0.97rem;
-  background: #fff;
+  font-size: 0.9rem; /* Kurangi font size */
+  word-wrap: break-word;
 }
 
 table thead th {
-  background: linear-gradient(90deg, #fce4e4 80%, #fff 100%);
-  font-weight: 800;
+  background-color: #fce4e4;
+  font-weight: 700;
   color: #d61027;
   text-transform: uppercase;
-  white-space: nowrap;
-  font-size: 0.85rem;
-  letter-spacing: 0.5px;
+  white-space: nowrap; /* Mencegah text wrapping */
+  font-size: 0.8rem; /* Lebih kecil untuk header */
   line-height: 1.2;
-  border-bottom: 2.5px solid #efcf00;
 }
 
-table tbody tr:nth-child(even) td {
-  background: #f9fafb;
+/* Aturan khusus untuk header yang mengandung sub-kolom */
+table thead th[colspan] {
+  min-width: 100px; /* Kurangi dari 120px */
 }
 
 table tbody td input[type="number"],
 table tbody td input[type="text"],
 table tbody td select {
   width: 100%;
-  padding: 7px 5px;
+  padding: 6px 4px; /* Kurangi padding */
   border: 1px solid #ddd;
-  border-radius: 5px;
+  border-radius: 4px;
   box-sizing: border-box;
-  font-size: 0.92rem;
-  background: #f7f7fa;
-  text-align: center;
+  font-size: 0.85rem;
 }
 
-table tbody td input:focus {
-  border-color: #1756c2;
-  background: #fff;
+/* ======================================= */
+/* ▼▼▼ ATURAN LEBAR KOLOM TABEL ▼▼▼ */
+/* ======================================= */
+table {
+  table-layout: fixed !important; /* Memaksa tabel mematuhi lebar yang ditentukan */
+  width: 100% !important; /* Pastikan tabel menggunakan 100% lebar container */
 }
 
-/* --- COLUMN WIDTHS --- */
-.col-no { width: 40px; }
-.col-satuan { width: 60px; }
-.col-aksi { width: 80px; }
-.col-jenis-pekerjaan { width: 20%; text-align: left !important; padding-left: 10px !important;}
+.col-no { width: 40px; } /* Kurangi dari 50px */
+.col-satuan { width: 60px; } /* Kurangi dari 80px ke 60px */
+.col-aksi { width: 80px; } /* Kurangi dari 100px */
+
+/* Sisa kolom diatur dengan persentase */
+.col-jenis-pekerjaan { width: 20%; } /* Kurangi dari 25% ke 20% */
 .col-volume { width: 8%; }
-.col-harga { width: 16%; }
-.col-total { width: 16%; }
-.col-total-harga { width: 12%; }
+.col-harga { width: 16%; } /* Sedikit diperbesar */
+.col-total { width: 16%; } /* Sedikit diperbesar */
+.col-total-harga { width: 12%; } /* Kolom total harga akhir */
+/* ======================================= */
+/* ▲▲▲ BATAS ATURAN LEBAR KOLOM ▲▲▲ */
+/* ======================================= */
 
-/* --- BUTTONS --- */
-.button-group {
-  display: flex;
-  gap: 18px;
-  margin-top: 36px;
-}
-
-.form-container button,
-.add-row-btn,
-.delete-row-btn {
-  background: linear-gradient(90deg, #d61027 80%, #efcf00 100%);
-  color: #fff;
-  padding: 14px 28px;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
+/* Aturan khusus untuk sub-kolom dalam header */
+table thead th {
+  background-color: #fce4e4;
   font-weight: 700;
-  font-size: 1.08rem;
-  letter-spacing: 0.5px;
-  box-shadow: 0 2px 8px rgba(214,16,39,0.07);
-  transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
-}
-
-.form-container button:hover,
-.add-row-btn:hover,
-.delete-row-btn:hover {
-  background: linear-gradient(90deg, #1756c2 80%, #efcf00 100%);
-  color: #fff;
-  transform: translateY(-2px) scale(1.03);
-  box-shadow: 0 6px 18px rgba(23,86,194,0.13);
-}
-
-.form-container button:disabled {
-  background: #ccc;
-  color: #888;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-.delete-row-btn {
-  padding: 8px 16px !important;
-  font-size: 0.92rem !important;
-  background: #d61027 !important;
-  border-radius: 6px !important;
-  margin: 0 !important;
-}
-
-.delete-row-btn:hover {
-  background: #a80c1e !important;
-}
-
-.add-row-btn {
-  background: #1756c2 !important;
-  margin-top: 18px !important;
-  padding: 12px 22px !important;
-  font-size: 1.02rem !important;
-  align-self: flex-end;
-}
-
-.add-row-btn:hover {
-  background: #0c439e !important;
-}
-
-/* --- BACK BUTTON --- */
-.back-btn {
-  color: #1756c2;
-  text-decoration: none;
-  font-size: 1.05rem;
-  display: inline-block;
-  margin-top: 38px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: color 0.2s, transform 0.2s;
-}
-
-.back-btn:hover {
   color: #d61027;
-  transform: translateX(-6px) scale(1.04);
+  text-transform: uppercase;
+  white-space: nowrap;
+  font-size: 0.75rem; /* Lebih kecil lagi */
+  line-height: 1.2;
+  padding: 8px 3px; /* Padding lebih kecil */
 }
 
-/* --- GRAND TOTAL BOX --- */
-.grand-total-box {
-  background: linear-gradient(90deg, #efcf00 80%, #fff 100%);
-  color: #1756c2;
-  border: 2px solid #e0b200;
-  padding: 22px 28px;
-  border-radius: 10px;
-  box-shadow: 0 4px 16px rgba(239,207,0,0.10);
-  text-align: right;
-  margin-top: 36px;
-  font-size: 1.2rem;
-  font-weight: 700;
-}
-
-.grand-total-box span {
-  font-size: 2rem;
-  font-weight: 900;
-  color: #d61027;
-  letter-spacing: 1px;
-}
-
-/* --- MESSAGE AREA --- */
-#message {
-  margin: 28px auto;
-  max-width: 900px;
-  padding: 18px;
-  border-radius: 10px;
-  font-weight: 700;
+/* Aturan untuk input dalam sel tabel */
+table tbody td input[type="number"],
+table tbody td input[type="text"],
+table tbody td select {
+  width: 100%;
+  padding: 5px 3px; /* Padding lebih kecil */
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  box-sizing: border-box;
+  font-size: 0.8rem; /* Font lebih kecil */
   text-align: center;
-  display: none;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.10);
-  background: #fce4e4;
-  color: #d61027;
-  border: 1.5px solid #efcf00;
 }
 
-/* --- SEARCHABLE DROPDOWN --- */
+/* Aturan khusus untuk kolom angka */
+table tbody td {
+  padding: 6px 3px; /* Padding lebih kecil */
+  font-size: 0.8rem; /* Font lebih kecil */
+}
+
+/* Aturan untuk kolom yang berisi angka */
+.col-harga input,
+.col-total input,
+.col-total-harga input {
+  text-align: right;
+  font-family: 'Courier New', monospace; /* Font monospace untuk angka */
+}
+
+/* Perbaikan untuk teks panjang dalam sel tabel */
+table tbody td {
+  word-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
+  line-height: 1.3; /* Kurangi line height */
+}
+
+/* Khusus untuk kolom Jenis Pekerjaan */
+.col-jenis-pekerjaan {
+  text-align: left !important;
+  padding: 10px 8px !important; /* Kurangi padding */
+}
+
+/* Perbaikan untuk input dalam sel */
+table tbody td input[type="text"],
+table tbody td select {
+  min-height: 32px; /* Kurangi dari 36px */
+  line-height: 1.2;
+}
+
+/* Custom styles for searchable dropdown (Jenis Pekerjaan) */
 .jenis-pekerjaan-wrapper {
   position: relative;
   width: 100%;
@@ -310,67 +238,259 @@ table tbody td input:focus {
   max-height: 200px;
   overflow-y: auto;
   border: 1px solid #ddd;
-  background: #fff;
+  background-color: white;
   position: absolute;
-  width: auto;
-  min-width: 350px;
-  white-space: nowrap;
+  width: auto; 
+  min-width: 350px; 
+  white-space: nowrap; 
   z-index: 100;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.13);
-  border-radius: 6px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
   top: 100%;
   left: 0;
 }
 
 .jenis-pekerjaan-suggestions li {
-  padding: 11px 14px;
+  padding: 10px 12px;
   cursor: pointer;
   text-align: left;
-  font-size: 0.97rem;
-  transition: background 0.2s, color 0.2s;
+  font-size: 0.9rem;
 }
 
 .jenis-pekerjaan-suggestions li:hover,
 .jenis-pekerjaan-suggestions li.selected {
-  background: #ffe0b2;
+  background-color: #ffe0b2;
   color: #1756c2;
 }
 
-/* --- RESPONSIVE --- */
-@media (max-width: 900px) {
-  .container {
-    margin: 12px;
-    padding: 16px;
-    max-width: 100%;
-    border-radius: 10px;
-  }
-  .section-title { font-size: 1.1rem; }
-  .grand-total-box { padding: 13px 10px; font-size: 1rem; }
-  .grand-total-box span { font-size: 1.3rem; }
+/* Button Group Styles */
+.button-group {
+  display: flex;
+  gap: 15px;
+  margin-top: 30px;
 }
 
-@media (max-width: 600px) {
+.form-container button {
+  background-color: #d61027;
+  color: white;
+  padding: 14px 25px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.2s, box-shadow 0.3s;
+  flex: 1;
+  font-weight: 600;
+  font-size: 1.1rem;
+  letter-spacing: 0.5px;
+}
+
+.form-container button:hover {
+  background-color: #1756c2;
+  transform: translateY(-3px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.form-container button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+/* Back Button Style */
+.back-btn {
+  color: #1756c2;
+  text-decoration: none;
+  font-size: 1rem;
+  display: inline-block;
+  margin-top: 35px;
+  cursor: pointer;
+  transition: color 0.3s, transform 0.2s;
+  font-weight: 500;
+}
+
+.back-btn:hover {
+  color: #d61027;
+  transform: translateX(-5px);
+}
+
+/* Message Display Area */
+#message {
+  margin: 25px auto;
+  max-width: 850px;
+  padding: 15px;
+  border-radius: 8px;
+  font-weight: 600;
+  text-align: center;
+  display: none;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+/* Specific Button Styles */
+.delete-row-btn {
+  background-color: #d61027 !important;
+  padding: 8px 12px !important; /* Kurangi padding */
+  border-radius: 5px !important;
+  font-weight: 500 !important;
+  margin: 0 !important;
+  width: auto !important;
+  flex: none !important;
+  font-size: 0.8rem !important; /* Kurangi font size */
+}
+
+.delete-row-btn:hover {
+  background-color: #a80c1e !important;
+}
+
+.add-row-btn {
+  background-color: #1756c2 !important;
+  margin-top: 15px !important;
+  padding: 12px 18px !important;
+  flex: none !important;
+  align-self: flex-end;
+  font-size: 1rem !important;
+}
+
+.add-row-btn:hover {
+  background-color: #0c439e !important;
+}
+
+/* Grand Total Box */
+.grand-total-box {
+  background-color: #efcf00;
+  color: #1756c2;
+  border: 1px solid #e0b200;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  text-align: right;
+  margin-top: 30px;
+}
+
+.grand-total-box span {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #d61027;
+}
+
+/* ▼▼▼ UPDATED RESPONSIVE STYLES ▼▼▼ */
+@media (max-width: 768px) {
+  .container {
+    margin: 10px;
+    padding: 15px;
+    max-width: 100%;
+  }
+
   header {
-    flex-direction: column;
-    padding: 18px 8px;
-    height: auto;
-    border-radius: 0 0 12px 12px;
+    flex-direction: column; 
+    padding: 20px;         
+    height: auto;          
   }
+
+  header h1 {
+    font-size: 1.8rem;
+    text-align: center;
+  }
+
   .header-logo {
-    position: static;
-    transform: none;
-    margin-right: 0;
-    margin-bottom: 10px;
-    width: 54px;
-    left: auto;
+    position: static;      
+    transform: none;       
+    margin-right: 0;       
+    margin-bottom: 10px;   
+    width: 60px;           
+    left: auto;            
   }
-  header h1 { font-size: 1.2rem; }
-  .container { padding: 8px; }
-  .form-container input, .form-container select { font-size: 0.95rem; }
-  .button-group { flex-direction: column; gap: 10px; }
-  .back-btn { margin-top: 18px; font-size: 0.92rem; }
-  .table-container { margin-top: 12px; border-radius: 6px; }
-  table { min-width: 700px; font-size: 0.8rem; }
-  table th, table td { padding: 6px 2px; font-size: 0.75rem; }
-  .jenis-pekerjaan-suggestions { min-width: 150px; }
+
+  /* Revised styles for the table on mobile */
+  .table-container {
+    overflow-x: auto; /* Ensures horizontal scrolling for the table */
+    margin-top: 20px;
+    border-radius: 6px;
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+  }
+
+  table {
+    /* Increased min-width to prevent content cramping and ensure scrolling */
+    min-width: 880px; 
+    width: auto; /* Allows the table to size itself based on content */
+  }
+
+  /* Revised column widths for better mobile layout */
+  .col-no { width: 35px; }
+  .col-satuan { width: 45px; } /* Made narrower */
+  .col-aksi { width: 75px; } /* Made wider */
+  .col-jenis-pekerjaan { width: 160px; } /* Made narrower */
+  .col-volume { width: 65px; } /* Made wider */
+  .col-harga { width: 100px; } /* Made wider for better number visibility */
+  .col-total { width: 100px; } /* Made wider */
+  .col-total-harga { width: 110px; } /* Made wider */
+
+  /* Dropdown suggestions for mobile */
+  .jenis-pekerjaan-suggestions {
+    width: 100%;
+    max-width: 250px;
+    min-width: 150px;
+  }
+
+  .jenis-pekerjaan-suggestions li {
+    padding: 6px 8px;
+    font-size: 0.8rem;
+  }
+
+  .button-group {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  table th,
+  table td {
+    padding: 6px 3px;
+    font-size: 0.7rem;
+  }
+
+  table thead th {
+    font-size: 0.65rem;
+    padding: 6px 2px;
+  }
+
+  table tbody td input[type="number"],
+  table tbody td input[type="text"],
+  table tbody td select {
+    padding: 4px 2px;
+    font-size: 0.7rem;
+    min-height: 28px;
+  }
+
+  .form-container button {
+    padding: 10px 15px;
+    font-size: 1rem;
+  }
+
+  .back-btn {
+    margin-top: 20px;
+    font-size: 0.9rem;
+  }
+
+  .section-title {
+    font-size: 1.1rem;
+  }
+  
+  .grand-total-box {
+    padding: 15px;
+  }
+  
+  .grand-total-box span {
+    font-size: 1.5rem;
+  }
+
+  table tbody td input[readonly] {
+    background-color: #eee;
+    cursor: not-allowed;
+    color: #555;
+  }
+
+  .delete-row-btn {
+    padding: 6px 8px !important;
+    font-size: 0.7rem !important;
+  }
 }
