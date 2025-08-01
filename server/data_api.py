@@ -61,7 +61,13 @@ SPREADSHEET_IDS = {
 # --- Fungsi Bantuan ---
 def get_google_creds():
     creds = None
-    scopes = ['https://www.googleapis.com/auth/spreadsheets.readonly']
+    # --- PERBAIKAN UTAMA DI SINI ---
+    # Scope harus cocok dengan yang digunakan untuk membuat token.json
+    scopes = [
+        'https://www.googleapis.com/auth/spreadsheets',
+        'https://www.googleapis.com/auth/gmail.send',
+        'https://www.googleapis.com/auth/drive.file'
+    ]
     secret_dir = '/etc/secrets/'
     token_path = os.path.join(secret_dir, 'token.json')
 
@@ -94,14 +100,13 @@ def safe_to_float(value):
         return 0.0
         
     try:
-        # Menghapus titik sebagai pemisah ribuan dan mengganti koma desimal dengan titik
         return float(s_value.replace('.', '').replace(',', '.'))
     except (ValueError, TypeError):
         return 0.0
 
 def process_sheet(sheet):
     """
-    [MODIFIED] Memproses data dari sheet dengan membaca rentang A13:H dan menggunakan logika
+    Memproses data dari sheet dengan membaca rentang A13:H dan menggunakan logika
     yang lebih baik untuk membedakan baris kategori dan item.
     """
     try:
