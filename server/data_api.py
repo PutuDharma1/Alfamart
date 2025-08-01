@@ -59,9 +59,6 @@ SPREADSHEET_IDS = {
 }
 
 # --- Fungsi Bantuan ---
-def is_roman_numeral(s):
-    return bool(re.match(r'^(?=[MDCLXVI])M*(C[MD]|D?C*)(X[CL]|L?X*)(I[XV]|V?I*)$', s.strip()))
-
 def get_google_creds():
     creds = None
     scopes = ['https://www.googleapis.com/auth/spreadsheets.readonly']
@@ -77,78 +74,79 @@ def get_google_creds():
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
+            # Simpan kredensial yang diperbarui kembali ke file
             with open(token_path, 'w') as token:
                 token.write(creds.to_json())
         else:
             raise Exception("Critical: token.json is missing, invalid, or expired and cannot be refreshed.")
     return creds
 
+def is_roman_numeral(s):
+    """Mengecek apakah sebuah string adalah angka romawi."""
+    return bool(re.match(r'^(?=[MDCLXVI])M*(C[MD]|D?C*)(X[CL]|L?X*)(I[XV]|V?I*)$', s.strip()))
+
 def process_sheet(sheet):
     """
-    [MODIFIED] Memproses data dari satu sheet dan mengembalikannya dalam format terstruktur.
-    Fungsi ini sekarang secara dinamis mencari baris header.
+    [MODIFIED] Memproses data dari sheet dengan membaca rentang A13:H secara spesifik
+    sesuai dengan struktur header pada gambar.
     """
-    all_values = sheet.get_all_values()
-    
-    header_row_index = -1
-    header = []
-    # [LOGIKA BARU] Loop melalui semua baris untuk menemukan baris header
-    for i, row in enumerate(all_values):
-        # Periksa apakah sel pertama (atau kedua, seperti di screenshot) adalah "NO."
-        if row and (row[0].strip() == 'NO.' or (len(row) > 1 and row[1].strip() == 'NO.')):
-            header_row_index = i
-            # Ambil header dari baris yang ditemukan
-            header = [h.strip() for h in row]
-            break
-
-    if header_row_index == -1:
-        raise ValueError("Header row starting with 'NO.' not found in any row.")
-
-    # [LOGIKA BARU] Cari kolom berdasarkan nama, bukan posisi tetap
-    # Ini membuat kode lebih tahan terhadap perubahan urutan kolom
     try:
-        no_col_index = header.index("NO.")
-        jenis_pekerjaan_col_index = header.index("Jenis Pekerjaan")
-        sat_col_index = header.index("Sat")
-        material_col_index = header.index("Material")
-        upah_col_index = header.index("Upah")
-    except ValueError as e:
-        raise ValueError(f"A required column is missing from the header: {e}")
+        # Mengambil semua data dari rentang A13 hingga kolom H sampai baris terakhir
+        all_values = sheet.get('A13:H')
+    except Exception as e:
+        raise ValueError(f"Gagal mengambil data dari rentang A13:H. Error: {str(e)}")
 
-    # Data dimulai dari baris setelah header
-    data_rows = all_values[header_row_index + 1:]
-    
+    # Data pekerjaan dimulai dari baris ke-3 dari data yang kita ambil (row 15 di sheet)
+    data_rows = all_values[2:]
+
     categorized_prices = {}
     current_category = "Uncategorized"
 
-    for row in data_rows:
-        # Pastikan baris memiliki cukup kolom untuk menghindari error
-        if len(row) <= jenis_pekerjaan_col_index:
-            continue
-            
-        no_val = row[no_col_index].strip()
-        jenis_pekerjaan = row[jenis_pekerjaan_col_index].strip()
+    # Definisikan indeks kolom berdasarkan gambar (A=0, B=1, C=2, dst.)
+    kode_col_index = 2       # Kolom C berisi KODE (e.g., XIV.01)
+    jenis_pekerjaan_col_index = 3 # Kolom D berisi Jenis Pekerjaan
+    sat_col_index = 4        # Kolom E berisi Satuan
+    material_col_index = 6   # Kolom G berisi Harga Material
+    upah_col_index = 7       # Kolom H berisi Harga Upah
 
-        if is_roman_numeral(no_val) and jenis_pekerjaan:
-            current_category = f"{no_val}. {jenis_pekerjaan}"
+    for row in data_rows:
+        # Lewati baris kosong atau yang tidak memiliki data pekerjaan
+        if len(row) <= jenis_pekerjaan_col_index or not row[jenis_pekerjaan_col_index].strip():
+            continue
+
+        kode_val = row[kode_col_index].strip()
+        jenis_pekerjaan = row[jenis_pekerjaan_col_index].strip()
+        
+        # Cek apakah ini baris kategori (misal: "XIV. INSTALASI")
+        # Kategori biasanya tidak punya kode item seperti 'XIV.01'
+        if '.' not in kode_val and is_roman_numeral(kode_val.split('.')[0]):
+            current_category = f"{kode_val}. {jenis_pekerjaan}"
             categorized_prices[current_category] = []
             continue
-
-        if jenis_pekerjaan:
+        
+        # Jika bukan kategori, proses sebagai item pekerjaan
+        # Pastikan ada cukup data di baris untuk menghindari error
+        if len(row) > upah_col_index:
             harga_material_raw = row[material_col_index]
             harga_upah_raw = row[upah_col_index]
+
+            # Mengubah format harga dari string (e.g., "225.000") menjadi angka
             harga_material = "Kondisional" if str(harga_material_raw).lower().strip() == 'kondisional' else float(str(harga_material_raw).replace('.', '').replace(',', '.') or 0)
             harga_upah = "Kondisional" if str(harga_upah_raw).lower().strip() == 'kondisional' else float(str(harga_upah_raw).replace('.', '').replace(',', '.') or 0)
+            
             item_data = {
                 "Jenis Pekerjaan": jenis_pekerjaan,
                 "Satuan": row[sat_col_index],
                 "Harga Material": harga_material,
                 "Harga Upah": harga_upah
             }
+
             if current_category not in categorized_prices:
                 categorized_prices[current_category] = []
             categorized_prices[current_category].append(item_data)
+
     return categorized_prices
+
 
 # --- Endpoint API ---
 @data_bp.route('/get-data', methods=['GET'])
@@ -171,8 +169,11 @@ def get_data():
         creds = get_google_creds()
         client = gspread.authorize(creds)
         spreadsheet = client.open_by_key(spreadsheet_id)
-        sheet = spreadsheet.get_worksheet(0)
+        sheet = spreadsheet.get_worksheet(0) # Asumsi data ada di sheet pertama
         processed_data = process_sheet(sheet)
         return jsonify(processed_data)
     except Exception as e:
+        # Mengembalikan traceback error untuk debugging yang lebih mudah
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": f"An internal server error occurred: {str(e)}"}), 500
