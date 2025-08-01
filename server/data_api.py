@@ -84,6 +84,21 @@ def is_roman_numeral(s):
     """Mengecek apakah sebuah string adalah angka romawi."""
     return bool(re.match(r'^(?=[MDCLXVI])M*(C[MD]|D?C*)(X[CL]|L?X*)(I[XV]|V?I*)$', s.strip()))
 
+def safe_to_float(value):
+    """Mengonversi string ke float dengan aman, menangani string kosong, '-', dan error lainnya."""
+    if isinstance(value, (int, float)):
+        return float(value)
+    
+    s_value = str(value).strip()
+    if not s_value or s_value == '-':
+        return 0.0
+        
+    try:
+        # Menghapus titik sebagai pemisah ribuan dan mengganti koma desimal dengan titik
+        return float(s_value.replace('.', '').replace(',', '.'))
+    except (ValueError, TypeError):
+        return 0.0
+
 def process_sheet(sheet):
     """
     [MODIFIED] Memproses data dari sheet dengan membaca rentang A13:H dan menggunakan logika
@@ -112,24 +127,27 @@ def process_sheet(sheet):
         kode_val = row[kode_col_index].strip()
         jenis_pekerjaan = row[jenis_pekerjaan_col_index].strip()
         
-        # --- LOGIKA BARU YANG DIPERBAIKI ---
-        # Memisahkan kode (e.g., "XIV." atau "XIV.01") menjadi beberapa bagian
         kode_parts = kode_val.strip('.').split('.')
         
-        # Jika hanya ada satu bagian dan itu adalah angka Romawi, maka itu adalah KATEGORI
         if len(kode_parts) == 1 and is_roman_numeral(kode_parts[0]):
             current_category = f"{kode_val} {jenis_pekerjaan}"
             if current_category not in categorized_prices:
                 categorized_prices[current_category] = []
             continue
         
-        # Selain itu, proses sebagai ITEM pekerjaan
         if len(row) > upah_col_index:
             harga_material_raw = row[material_col_index] if len(row) > material_col_index else "0"
             harga_upah_raw = row[upah_col_index] if len(row) > upah_col_index else "0"
 
-            harga_material = "Kondisional" if str(harga_material_raw).lower().strip() == 'kondisional' else float(str(harga_material_raw).replace('.', '').replace(',', '.') or 0)
-            harga_upah = "Kondisional" if str(harga_upah_raw).lower().strip() == 'kondisional' else float(str(harga_upah_raw).replace('.', '').replace(',', '.') or 0)
+            if str(harga_material_raw).lower().strip() == 'kondisional':
+                harga_material = 'Kondisional'
+            else:
+                harga_material = safe_to_float(harga_material_raw)
+            
+            if str(harga_upah_raw).lower().strip() == 'kondisional':
+                harga_upah = 'Kondisional'
+            else:
+                harga_upah = safe_to_float(harga_upah_raw)
             
             item_data = {
                 "Jenis Pekerjaan": jenis_pekerjaan,
