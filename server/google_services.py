@@ -198,3 +198,13 @@ class GoogleServiceProvider:
         except Exception as e:
             print(f"Failed to delete row {row_index} from {worksheet_name}: {e}")
             return False
+    def get_sheet_data_by_id(self, spreadsheet_id):
+        """Membuka spreadsheet berdasarkan ID dan mengembalikan isinya."""
+        try:
+            spreadsheet = self.gspread_client.open_by_key(spreadsheet_id)
+            worksheet = spreadsheet.get_worksheet(0) # Asumsi data ada di sheet pertama
+            return worksheet.get_all_values()
+        except gspread.exceptions.SpreadsheetNotFound:
+            raise Exception(f"Spreadsheet with ID {spreadsheet_id} not found or permission denied.")
+        except Exception as e:
+            raise e 
