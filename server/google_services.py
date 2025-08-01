@@ -51,7 +51,12 @@ class GoogleServiceProvider:
         file_metadata = {'name': filename, 'parents': [config.PDF_STORAGE_FOLDER_ID]}
         media = MediaIoBaseUpload(io.BytesIO(pdf_bytes), mimetype='application/pdf')
         file = self.drive_service.files().create(body=file_metadata, media_body=media, fields='id, webViewLink').execute()
-        self.drive_service.permissions().create(fileId=file.get('id'), body={'type': 'anyone', 'role': 'reader'}).execute()
+        
+        # --- PERBAIKAN UTAMA DI SINI ---
+        # Baris di bawah ini dihapus karena menyebabkan error 403 akibat konflik izin antar akun.
+        # File akan tetap terunggah dengan baik, namun akan bersifat private untuk akun organisasi.
+        # self.drive_service.permissions().create(fileId=file.get('id'), body={'type': 'anyone', 'role': 'reader'}).execute()
+        
         return file.get('webViewLink')
 
     def check_user_submissions(self, email):
@@ -136,7 +141,6 @@ class GoogleServiceProvider:
         return None
 
     def get_emails_by_jabatan(self, branch_name, jabatan):
-        """Mengambil semua email yang cocok dengan cabang dan jabatan."""
         emails = []
         try:
             cabang_sheet = self.sheet.worksheet(config.CABANG_SHEET_NAME)
@@ -198,13 +202,13 @@ class GoogleServiceProvider:
         except Exception as e:
             print(f"Failed to delete row {row_index} from {worksheet_name}: {e}")
             return False
+            
     def get_sheet_data_by_id(self, spreadsheet_id):
-        """Membuka spreadsheet berdasarkan ID dan mengembalikan isinya."""
         try:
             spreadsheet = self.gspread_client.open_by_key(spreadsheet_id)
-            worksheet = spreadsheet.get_worksheet(0) # Asumsi data ada di sheet pertama
+            worksheet = spreadsheet.get_worksheet(0)
             return worksheet.get_all_values()
         except gspread.exceptions.SpreadsheetNotFound:
             raise Exception(f"Spreadsheet with ID {spreadsheet_id} not found or permission denied.")
         except Exception as e:
-            raise e 
+            raise e
