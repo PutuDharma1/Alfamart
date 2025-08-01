@@ -1,12 +1,14 @@
 from flask import Blueprint, jsonify, request
 import gspread
 from google.oauth2.credentials import Credentials
+from google.auth.transport.requests import Request # <-- Tambahkan import ini
 import re
+import os # <-- Tambahkan import ini
 
 # 1. Membuat Blueprint
 data_bp = Blueprint('data_api', __name__)
 
-# --- Struktur ID Spreadsheet untuk Setiap Cabang ---
+# --- Struktur ID Spreadsheet ---
 SPREADSHEET_IDS = {
     "ACEH": {"ME": "1KZyh0VVn7dZRyvEm6q7RV4iA5jzg7u2oRTIvSHxeFu0", "SIPIL": "11b_oUEmsjqFkB8CX8uOg8SUjlUpfgjZQq6qN1BtVBm4"},
     "BALARAJA": {"ME": "1FVRlRK1Qop1Q7OlHKsIc14BhRSHn9XH2gLWarxWMON4", "SIPIL": "1nBPJjM17vwO1tTsC2m8VRnnhQQKC_bUEpfFebfib_g0"},
@@ -61,9 +63,19 @@ def is_roman_numeral(s):
     return bool(re.match(r'^(?=[MDCLXVI])M*(C[MD]|D?C*)(X[CL]|L?X*)(I[XV]|V?I*)$', s.strip()))
 
 def get_google_creds():
-    creds = Credentials.from_authorized_user_file('token.json', [
-        'https://www.googleapis.com/auth/spreadsheets.readonly'
-    ])
+    creds = None
+    scopes = ['https://www.googleapis.com/auth/spreadsheets.readonly']
+    token_path = 'token.json' # Disesuaikan karena Root Directory adalah 'server'
+    
+    if os.path.exists(token_path):
+        creds = Credentials.from_authorized_user_file(token_path, scopes)
+    
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            # Ini tidak seharusnya terjadi di server, tapi sebagai fallback
+            raise Exception("Critical: token.json is missing or invalid.")
     return creds
 
 def process_sheet(sheet):
