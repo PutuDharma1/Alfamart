@@ -1,15 +1,16 @@
 from flask import Blueprint, jsonify, request
+import gspread
+from google.oauth2.credentials import Credentials
+from google.auth.transport.requests import Request
 import re
-
-# [PENTING] Import objek google_provider dari app.py
-from app import google_provider 
+import os
 
 # 1. Membuat Blueprint
 data_bp = Blueprint('data_api', __name__)
 
 # --- Struktur ID Spreadsheet ---
 SPREADSHEET_IDS = {
-   "ACEH": {"ME": "1KZyh0VVn7dZRyvEm6q7RV4iA5jzg7u2oRTIvSHxeFu0", "SIPIL": "11b_oUEmsjqFkB8CX8uOg8SUjlUpfgjZQq6qN1BtVBm4"},
+    "ACEH": {"ME": "1KZyh0VVn7dZRyvEm6q7RV4iA5jzg7u2oRTIvSHxeFu0", "SIPIL": "11b_oUEmsjqFkB8CX8uOg8SUjlUpfgjZQq6qN1BtVBm4"},
     "BALARAJA": {"ME": "1FVRlRK1Qop1Q7OlHKsIc14BhRSHn9XH2gLWarxWMON4", "SIPIL": "1nBPJjM17vwO1tTsC2m8VRnnhQQKC_bUEpfFebfib_g0"},
     "BALI": {"ME": "1ih2kuwqcCa7EiMTbJX6qiNsrv7vpmPE825a_9qAz2Ng", "SIPIL": "1gD_z66c4zPBXMXcKGxIFs8C2h2uiDXwO3J7r_e1BxJc"},
     "BANDUNG 1": {"ME": "13xo-gjJnXlCWXKNfW3ZugEYxK6qz1jvUq2ScSBJF1cw", "SIPIL": "11Weq3EIPCo-_bOPvTrSBQPcpXNPu5VTIoWHPA4ZJfHw"},
@@ -61,36 +62,72 @@ SPREADSHEET_IDS = {
 def is_roman_numeral(s):
     return bool(re.match(r'^(?=[MDCLXVI])M*(C[MD]|D?C*)(X[CL]|L?X*)(I[XV]|V?I*)$', s.strip()))
 
-def process_sheet_values(all_values):
-    # ... (Fungsi ini tidak perlu diubah) ...
+def get_google_creds():
+    creds = None
+    scopes = ['https://www.googleapis.com/auth/spreadsheets.readonly']
+    secret_dir = '/etc/secrets/'
+    token_path = os.path.join(secret_dir, 'token.json')
+
+    if not os.path.exists(secret_dir):
+        token_path = 'token.json'
+
+    if os.path.exists(token_path):
+        creds = Credentials.from_authorized_user_file(token_path, scopes)
+    
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+            with open(token_path, 'w') as token:
+                token.write(creds.to_json())
+        else:
+            raise Exception("Critical: token.json is missing, invalid, or expired and cannot be refreshed.")
+    return creds
+
+def process_sheet(sheet):
+    """
+    [MODIFIED] Memproses data dari satu sheet dan mengembalikannya dalam format terstruktur.
+    Fungsi ini sekarang secara dinamis mencari baris header.
+    """
+    all_values = sheet.get_all_values()
+    
     header_row_index = -1
     header = []
+    # [LOGIKA BARU] Loop melalui semua baris untuk menemukan baris header
     for i, row in enumerate(all_values):
-        if row and row[0].strip() == 'NO.':
+        # Periksa apakah sel pertama (atau kedua, seperti di screenshot) adalah "NO."
+        if row and (row[0].strip() == 'NO.' or (len(row) > 1 and row[1].strip() == 'NO.')):
             header_row_index = i
+            # Ambil header dari baris yang ditemukan
             header = [h.strip() for h in row]
             break
 
     if header_row_index == -1:
-        raise ValueError("Header row starting with 'NO.' not found.")
+        raise ValueError("Header row starting with 'NO.' not found in any row.")
 
-    col_indices = {h: i for i, h in enumerate(header)}
+    # [LOGIKA BARU] Cari kolom berdasarkan nama, bukan posisi tetap
+    # Ini membuat kode lebih tahan terhadap perubahan urutan kolom
     try:
-        harga_col_start = header.index("Material")
-        col_indices["Material"] = harga_col_start
-        col_indices["Upah"] = header.index("Upah", harga_col_start)
-    except ValueError:
-         raise ValueError("Columns 'Material' or 'Upah' not found in header.")
+        no_col_index = header.index("NO.")
+        jenis_pekerjaan_col_index = header.index("Jenis Pekerjaan")
+        sat_col_index = header.index("Sat")
+        material_col_index = header.index("Material")
+        upah_col_index = header.index("Upah")
+    except ValueError as e:
+        raise ValueError(f"A required column is missing from the header: {e}")
 
-    data_rows = all_values[header_row_index + 2:]
+    # Data dimulai dari baris setelah header
+    data_rows = all_values[header_row_index + 1:]
+    
     categorized_prices = {}
     current_category = "Uncategorized"
 
     for row in data_rows:
-        if len(row) <= col_indices.get('Jenis Pekerjaan', len(row)):
+        # Pastikan baris memiliki cukup kolom untuk menghindari error
+        if len(row) <= jenis_pekerjaan_col_index:
             continue
-        no_val = row[col_indices['NO.']].strip()
-        jenis_pekerjaan = row[col_indices['Jenis Pekerjaan']].strip()
+            
+        no_val = row[no_col_index].strip()
+        jenis_pekerjaan = row[jenis_pekerjaan_col_index].strip()
 
         if is_roman_numeral(no_val) and jenis_pekerjaan:
             current_category = f"{no_val}. {jenis_pekerjaan}"
@@ -98,13 +135,13 @@ def process_sheet_values(all_values):
             continue
 
         if jenis_pekerjaan:
-            harga_material_raw = row[col_indices['Material']]
-            harga_upah_raw = row[col_indices['Upah']]
+            harga_material_raw = row[material_col_index]
+            harga_upah_raw = row[upah_col_index]
             harga_material = "Kondisional" if str(harga_material_raw).lower().strip() == 'kondisional' else float(str(harga_material_raw).replace('.', '').replace(',', '.') or 0)
             harga_upah = "Kondisional" if str(harga_upah_raw).lower().strip() == 'kondisional' else float(str(harga_upah_raw).replace('.', '').replace(',', '.') or 0)
             item_data = {
                 "Jenis Pekerjaan": jenis_pekerjaan,
-                "Satuan": row[col_indices['Sat']],
+                "Satuan": row[sat_col_index],
                 "Harga Material": harga_material,
                 "Harga Upah": harga_upah
             }
@@ -131,9 +168,11 @@ def get_data():
     spreadsheet_id = SPREADSHEET_IDS[cabang][lingkup]
 
     try:
-        # [PERUBAHAN UTAMA] Gunakan google_provider yang sudah ada
-        all_values = google_provider.get_sheet_data_by_id(spreadsheet_id)
-        processed_data = process_sheet_values(all_values)
+        creds = get_google_creds()
+        client = gspread.authorize(creds)
+        spreadsheet = client.open_by_key(spreadsheet_id)
+        sheet = spreadsheet.get_worksheet(0)
+        processed_data = process_sheet(sheet)
         return jsonify(processed_data)
     except Exception as e:
         return jsonify({"error": f"An internal server error occurred: {str(e)}"}), 500
