@@ -47,16 +47,25 @@ class GoogleServiceProvider:
         self.gmail_service = build('gmail', 'v1', credentials=self.creds)
         self.drive_service = build('drive', 'v3', credentials=self.creds)
 
+    def validate_user(self, email, cabang):
+        """Memvalidasi kredensial pengguna terhadap sheet 'Cabang'."""
+        try:
+            cabang_sheet = self.sheet.worksheet(config.CABANG_SHEET_NAME)
+            for record in cabang_sheet.get_all_records():
+                sheet_email = str(record.get('EMAIL_SAT', '')).strip()
+                sheet_cabang = str(record.get('CABANG', '')).strip()
+                if sheet_email.lower() == email.lower() and sheet_cabang.lower() == cabang.lower():
+                    return True
+        except gspread.exceptions.WorksheetNotFound:
+            print(f"Error: Worksheet '{config.CABANG_SHEET_NAME}' not found.")
+        except Exception as e:
+            print(f"An error occurred during user validation: {e}")
+        return False
+
     def upload_pdf_to_drive(self, pdf_bytes, filename):
         file_metadata = {'name': filename, 'parents': [config.PDF_STORAGE_FOLDER_ID]}
         media = MediaIoBaseUpload(io.BytesIO(pdf_bytes), mimetype='application/pdf')
         file = self.drive_service.files().create(body=file_metadata, media_body=media, fields='id, webViewLink').execute()
-        
-        # --- PERBAIKAN UTAMA DI SINI ---
-        # Baris di bawah ini dihapus karena menyebabkan error 403 akibat konflik izin antar akun.
-        # File akan tetap terunggah dengan baik, namun akan bersifat private untuk akun organisasi.
-        # self.drive_service.permissions().create(fileId=file.get('id'), body={'type': 'anyone', 'role': 'reader'}).execute()
-        
         return file.get('webViewLink')
 
     def check_user_submissions(self, email):
