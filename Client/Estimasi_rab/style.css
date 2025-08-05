@@ -1,50 +1,51 @@
 /* General Body and Header Styles */
 body {
   font-family: 'Inter', sans-serif;
-  background-color: #f4f4f4;
+  background-color: #f4f7f6; /* Softer background color */
   margin: 0;
   padding: 0;
-  color: #333;
+  color: #2d3748; /* Darker text for better readability */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 header {
-  background-color: #d61027; /* Alfamart Fire Engine Red */
-  color: white;
+  background-color: #ffffff;
+  color: #1a202c;
   text-align: center;
-  padding: 15px 20px; /* Adjusted padding */
-  border-bottom-left-radius: 10px;
-  border-bottom-right-radius: 10px;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative; /* For logo positioning */
+  position: relative;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .header-logo {
-  width: 70px; /* Adjusted logo size */
+  width: 140px; /* Increased logo size for better presence */
   height: auto;
-  margin-right: 20px;
   position: absolute;
-  left: 20px;
+  left: 25px;
   top: 50%;
   transform: translateY(-50%);
 }
 
 header h1 {
   margin: 0;
-  font-size: 2.2rem; /* Slightly smaller for balance with logo */
-  text-transform: uppercase;
-  letter-spacing: 1px;
+  font-size: 1.75rem; /* Adjusted font size */
+  font-weight: 600;
+  letter-spacing: -0.5px;
 }
 
 /* Main Container Styles */
 .container {
-  max-width: 1200px; /* Diperbesar dari 950px ke 1200px */
-  margin: 20px auto;
-  background-color: white;
-  padding: 30px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); /* Softer, deeper shadow */
-  border-radius: 12px; /* Slightly more rounded corners */
+  max-width: 1200px;
+  margin: 2.5rem auto;
+  background-color: #ffffff;
+  padding: 2.5rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08); /* Softer, more modern shadow */
+  border-radius: 12px;
 }
 
 /* Form Element Styles */
@@ -54,443 +55,240 @@ header h1 {
 }
 
 .form-container label {
-  font-weight: 600; /* Slightly bolder labels */
-  margin-bottom: 5px;
-  margin-top: 18px; /* More space above labels */
-  color: #1756c2; /* Alfamart Sapphire for labels */
-  font-size: 0.95rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  margin-top: 1.25rem;
+  color: #4a5568; /* Softer label color */
+  font-size: 0.9rem;
 }
 
 .form-container input,
 .form-container select {
-  padding: 12px; /* Increased padding */
-  margin-bottom: 18px; /* More space below inputs */
-  border: 1px solid #c2c2c2; /* Softer border color */
-  border-radius: 6px; /* Slightly more rounded inputs */
+  padding: 0.8rem 1rem;
+  border: 1px solid #cbd5e0;
+  border-radius: 8px; /* More rounded inputs */
   transition: border-color 0.3s, box-shadow 0.3s;
   font-size: 1rem;
+  background-color: #fdfdff;
 }
 
 .form-container input:focus,
 .form-container select:focus {
-  border-color: #d61027; /* Alfamart Red on focus */
-  box-shadow: 0 0 0 3px rgba(214, 16, 39, 0.2); /* Red glow on focus */
+  border-color: #005a9e; /* Alfamart Blue on focus */
+  box-shadow: 0 0 0 3px rgba(0, 90, 158, 0.2);
   outline: none;
 }
 
-/* Section Titles within the form */
+/* Section Titles */
 .section-title {
-  color: #d61027; /* Alfamart Red for section titles */
-  border-bottom: 2px solid #efcf00; /* Alfamart Yellow underline */
-  padding-bottom: 5px;
-  margin-bottom: 15px;
-  font-size: 1.3rem; /* Larger section titles */
+  color: #e53e3e; /* Alfamart Red */
+  border-bottom: 2px solid #ffc107; /* Alfamart Yellow */
+  padding-bottom: 8px;
+  margin-top: 2.5rem;
+  margin-bottom: 1.5rem;
+  font-size: 1.4rem;
   font-weight: 700;
 }
 
-/* Table Specific Styles */
+/* Table Styles */
 .table-container {
-  overflow-x: visible; /* Ubah dari auto ke visible untuk menghilangkan scrollbar */
-  margin-top: 25px;
+  overflow-x: auto;
+  margin-top: 1rem;
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
-  border: 1px solid #e0e0e0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
-  min-width: auto; /* Hilangkan min-width yang memaksa */
-  margin-bottom: 0;
+  min-width: 900px; /* Ensures columns don't get too cramped */
 }
 
 table th,
 table td {
-  border: 1px solid #e0e0e0;
-  padding: 10px 6px; /* Kurangi padding */
+  border: 1px solid #e2e8f0;
+  padding: 10px 12px;
   text-align: center;
-  font-size: 0.9rem; /* Kurangi font size */
-  word-wrap: break-word;
+  font-size: 0.875rem;
+  vertical-align: middle;
 }
 
 table thead th {
-  background-color: #fce4e4;
-  font-weight: 700;
-  color: #d61027;
+  background-color: #f8f9fa;
+  font-weight: 600;
+  color: #495057;
   text-transform: uppercase;
-  white-space: nowrap; /* Mencegah text wrapping */
-  font-size: 0.8rem; /* Lebih kecil untuk header */
-  line-height: 1.2;
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
 }
 
-/* Aturan khusus untuk header yang mengandung sub-kolom */
-table thead th[colspan] {
-  min-width: 100px; /* Kurangi dari 120px */
+table tbody tr:nth-child(even) {
+  background-color: #fcfdff;
 }
 
-table tbody td input[type="number"],
-table tbody td input[type="text"],
+table tbody td input,
 table tbody td select {
   width: 100%;
-  padding: 6px 4px; /* Kurangi padding */
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  padding: 8px 6px;
+  border: 1px solid #d1d9e6;
+  border-radius: 6px;
   box-sizing: border-box;
   font-size: 0.85rem;
-}
-
-/* ======================================= */
-/* ▼▼▼ ATURAN LEBAR KOLOM TABEL ▼▼▼ */
-/* ======================================= */
-table {
-  table-layout: fixed !important; /* Memaksa tabel mematuhi lebar yang ditentukan */
-  width: 100% !important; /* Pastikan tabel menggunakan 100% lebar container */
-}
-
-.col-no { width: 40px; } /* Kurangi dari 50px */
-.col-satuan { width: 60px; } /* Kurangi dari 80px ke 60px */
-.col-aksi { width: 80px; } /* Kurangi dari 100px */
-
-/* Sisa kolom diatur dengan persentase */
-.col-jenis-pekerjaan { width: 20%; } /* Kurangi dari 25% ke 20% */
-.col-volume { width: 8%; }
-.col-harga { width: 16%; } /* Sedikit diperbesar */
-.col-total { width: 16%; } /* Sedikit diperbesar */
-.col-total-harga { width: 12%; } /* Kolom total harga akhir */
-/* ======================================= */
-/* ▲▲▲ BATAS ATURAN LEBAR KOLOM ▲▲▲ */
-/* ======================================= */
-
-/* Aturan khusus untuk sub-kolom dalam header */
-table thead th {
-  background-color: #fce4e4;
-  font-weight: 700;
-  color: #d61027;
-  text-transform: uppercase;
-  white-space: nowrap;
-  font-size: 0.75rem; /* Lebih kecil lagi */
-  line-height: 1.2;
-  padding: 8px 3px; /* Padding lebih kecil */
-}
-
-/* Aturan untuk input dalam sel tabel */
-table tbody td input[type="number"],
-table tbody td input[type="text"],
-table tbody td select {
-  width: 100%;
-  padding: 5px 3px; /* Padding lebih kecil */
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  box-sizing: border-box;
-  font-size: 0.8rem; /* Font lebih kecil */
   text-align: center;
+  transition: all 0.2s ease;
 }
 
-/* Aturan khusus untuk kolom angka */
-table tbody td {
-  padding: 6px 3px; /* Padding lebih kecil */
-  font-size: 0.8rem; /* Font lebih kecil */
+table tbody td input:focus,
+table tbody td select:focus {
+    border-color: #005a9e;
+    background-color: #fff;
+    box-shadow: 0 0 0 2px rgba(0, 90, 158, 0.2);
+    outline: none;
 }
 
-/* Aturan untuk kolom yang berisi angka */
-.col-harga input,
-.col-total input,
-.col-total-harga input {
-  text-align: right;
-  font-family: 'Courier New', monospace; /* Font monospace untuk angka */
+table tbody td input[readonly] {
+    background-color: #e9ecef;
+    cursor: not-allowed;
+    color: #6c757d;
 }
 
-/* Perbaikan untuk teks panjang dalam sel tabel */
-table tbody td {
-  word-wrap: break-word;
-  word-break: break-word;
-  hyphens: auto;
-  line-height: 1.3; /* Kurangi line height */
-}
-
-/* Khusus untuk kolom Jenis Pekerjaan */
 .col-jenis-pekerjaan {
   text-align: left !important;
-  padding: 10px 8px !important; /* Kurangi padding */
+  width: 25%;
 }
 
-/* Perbaikan untuk input dalam sel */
-table tbody td input[type="text"],
-table tbody td select {
-  min-height: 32px; /* Kurangi dari 36px */
-  line-height: 1.2;
-}
-
-/* Custom styles for searchable dropdown (Jenis Pekerjaan) */
-.jenis-pekerjaan-wrapper {
-  position: relative;
-  width: 100%;
-}
-
-.jenis-pekerjaan-search-input {
-  padding-right: 30px;
-}
-
-.jenis-pekerjaan-suggestions {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  max-height: 200px;
-  overflow-y: auto;
-  border: 1px solid #ddd;
-  background-color: white;
-  position: absolute;
-  width: auto; 
-  min-width: 350px; 
-  white-space: nowrap; 
-  z-index: 100;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  border-radius: 4px;
-  top: 100%;
-  left: 0;
-}
-
-.jenis-pekerjaan-suggestions li {
-  padding: 10px 12px;
-  cursor: pointer;
-  text-align: left;
-  font-size: 0.9rem;
-}
-
-.jenis-pekerjaan-suggestions li:hover,
-.jenis-pekerjaan-suggestions li.selected {
-  background-color: #ffe0b2;
-  color: #1756c2;
-}
-
-/* Button Group Styles */
+/* Button Styles */
 .button-group {
   display: flex;
-  gap: 15px;
-  margin-top: 30px;
+  gap: 1rem;
+  margin-top: 2.5rem;
 }
 
 .form-container button {
-  background-color: #d61027;
+  background-color: #e53e3e; /* Alfamart Red */
   color: white;
-  padding: 14px 25px;
+  padding: 0.85rem 1.5rem;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
   transition: background-color 0.3s, transform 0.2s, box-shadow 0.3s;
   flex: 1;
   font-weight: 600;
-  font-size: 1.1rem;
-  letter-spacing: 0.5px;
+  font-size: 1rem;
 }
 
 .form-container button:hover {
-  background-color: #1756c2;
-  transform: translateY(-3px);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  background-color: #c53030; /* Darker Red */
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .form-container button:disabled {
   background-color: #ccc;
   cursor: not-allowed;
-  transform: translateY(0);
+  transform: none;
   box-shadow: none;
 }
 
-/* Back Button Style */
-.back-btn {
-  color: #1756c2;
-  text-decoration: none;
-  font-size: 1rem;
-  display: inline-block;
-  margin-top: 35px;
-  cursor: pointer;
-  transition: color 0.3s, transform 0.2s;
-  font-weight: 500;
+.form-container button[type="reset"] {
+    background-color: #6c757d;
 }
 
-.back-btn:hover {
-  color: #d61027;
-  transform: translateX(-5px);
-}
-
-/* Message Display Area */
-#message {
-  margin: 25px auto;
-  max-width: 850px;
-  padding: 15px;
-  border-radius: 8px;
-  font-weight: 600;
-  text-align: center;
-  display: none;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-}
-
-/* Specific Button Styles */
-.delete-row-btn {
-  background-color: #d61027 !important;
-  padding: 8px 12px !important; /* Kurangi padding */
-  border-radius: 5px !important;
-  font-weight: 500 !important;
-  margin: 0 !important;
-  width: auto !important;
-  flex: none !important;
-  font-size: 0.8rem !important; /* Kurangi font size */
-}
-
-.delete-row-btn:hover {
-  background-color: #a80c1e !important;
+.form-container button[type="reset"]:hover {
+    background-color: #5a6268;
 }
 
 .add-row-btn {
-  background-color: #1756c2 !important;
-  margin-top: 15px !important;
-  padding: 12px 18px !important;
+  background-color: #005a9e !important; /* Alfamart Blue */
+  margin-top: 1rem !important;
+  padding: 0.6rem 1rem !important;
   flex: none !important;
-  align-self: flex-end;
-  font-size: 1rem !important;
+  align-self: flex-start; /* Aligns button to the left */
+  font-size: 0.9rem !important;
+  font-weight: 500 !important;
 }
 
 .add-row-btn:hover {
-  background-color: #0c439e !important;
+  background-color: #004a80 !important; /* Darker Blue */
+}
+
+.delete-row-btn {
+    background-color: #f1f3f5 !important;
+    color: #e53e3e !important;
+    padding: 6px 10px !important;
+    border-radius: 6px !important;
+    font-weight: 500 !important;
+    font-size: 0.8rem !important;
+}
+
+.delete-row-btn:hover {
+    background-color: #e53e3e !important;
+    color: white !important;
 }
 
 /* Grand Total Box */
 .grand-total-box {
-  background-color: #efcf00;
-  color: #1756c2;
-  border: 1px solid #e0b200;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  background-color: #fff9e6;
+  color: #1a202c;
+  border: 1px solid #ffc107;
+  padding: 1.5rem;
+  border-radius: 10px;
   text-align: right;
-  margin-top: 30px;
+  margin-top: 2.5rem;
 }
 
 .grand-total-box span {
-  font-size: 1.8rem;
-  font-weight: 800;
-  color: #d61027;
+  font-size: 1.5rem;
+  font-weight: 700;
 }
 
-/* ▼▼▼ UPDATED RESPONSIVE STYLES ▼▼▼ */
+#grand-total-amount {
+    color: #e53e3e;
+    margin-left: 1rem;
+}
+
+/* Back Button */
+.back-btn {
+  color: #005a9e;
+  text-decoration: none;
+  font-size: 1rem;
+  display: inline-block;
+  margin-top: 2rem;
+  cursor: pointer;
+  transition: color 0.3s;
+  font-weight: 500;
+}
+
+.back-btn:hover {
+  color: #e53e3e;
+}
+
+/* Responsive Styles */
 @media (max-width: 768px) {
   .container {
-    margin: 10px;
-    padding: 15px;
-    max-width: 100%;
+    margin: 1rem;
+    padding: 1.5rem;
   }
 
   header {
-    flex-direction: column; 
-    padding: 20px;         
-    height: auto;          
+    flex-direction: column;
+    padding: 1.5rem;
   }
 
   header h1 {
-    font-size: 1.8rem;
-    text-align: center;
+    font-size: 1.5rem;
+    margin-top: 1rem;
   }
 
   .header-logo {
-    position: static;      
-    transform: none;       
-    margin-right: 0;       
-    margin-bottom: 10px;   
-    width: 60px;           
-    left: auto;            
-  }
-
-  /* Revised styles for the table on mobile */
-  .table-container {
-    overflow-x: auto; /* Ensures horizontal scrolling for the table */
-    margin-top: 20px;
-    border-radius: 6px;
-    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
-  }
-
-  table {
-    /* Increased min-width to prevent content cramping and ensure scrolling */
-    min-width: 880px; 
-    width: auto; /* Allows the table to size itself based on content */
-  }
-
-  /* Revised column widths for better mobile layout */
-  .col-no { width: 35px; }
-  .col-satuan { width: 45px; } /* Made narrower */
-  .col-aksi { width: 75px; } /* Made wider */
-  .col-jenis-pekerjaan { width: 160px; } /* Made narrower */
-  .col-volume { width: 65px; } /* Made wider */
-  .col-harga { width: 100px; } /* Made wider for better number visibility */
-  .col-total { width: 100px; } /* Made wider */
-  .col-total-harga { width: 110px; } /* Made wider */
-
-  /* Dropdown suggestions for mobile */
-  .jenis-pekerjaan-suggestions {
-    width: 100%;
-    max-width: 250px;
-    min-width: 150px;
-  }
-
-  .jenis-pekerjaan-suggestions li {
-    padding: 6px 8px;
-    font-size: 0.8rem;
+    position: static;
+    transform: none;
+    margin: 0 auto;
+    width: 120px;
   }
 
   .button-group {
     flex-direction: column;
-    gap: 10px;
-  }
-
-  table th,
-  table td {
-    padding: 6px 3px;
-    font-size: 0.7rem;
-  }
-
-  table thead th {
-    font-size: 0.65rem;
-    padding: 6px 2px;
-  }
-
-  table tbody td input[type="number"],
-  table tbody td input[type="text"],
-  table tbody td select {
-    padding: 4px 2px;
-    font-size: 0.7rem;
-    min-height: 28px;
-  }
-
-  .form-container button {
-    padding: 10px 15px;
-    font-size: 1rem;
-  }
-
-  .back-btn {
-    margin-top: 20px;
-    font-size: 0.9rem;
-  }
-
-  .section-title {
-    font-size: 1.1rem;
-  }
-  
-  .grand-total-box {
-    padding: 15px;
-  }
-  
-  .grand-total-box span {
-    font-size: 1.5rem;
-  }
-
-  table tbody td input[readonly] {
-    background-color: #eee;
-    cursor: not-allowed;
-    color: #555;
-  }
-
-  .delete-row-btn {
-    padding: 6px 8px !important;
-    font-size: 0.7rem !important;
   }
 }
