@@ -158,25 +158,18 @@ table tbody td input[readonly] {
 /* ======================================================= */
 /* ▼▼▼ PENGATURAN FINAL LEBAR KOLOM (DESKTOP) ▼▼▼ */
 /* ======================================================= */
-/* Kolom Dasar dan Sempit */
 table th:nth-child(1), table td:nth-child(1) { width: 3%; }  /* No */
 table th:nth-child(2), table td:nth-child(2) { width: 15%; text-align: left; } /* Jenis Pekerjaan */
 table th:nth-child(3), table td:nth-child(3) { width: 5%; }  /* Satuan */
 table th:nth-child(4), table td:nth-child(4) { width: 6%; }  /* Volume */
 table th:nth-child(10), table td:nth-child(10) { width: 4%; } /* Aksi (Sangat Sempit) */
 
-/* Kolom Harga Satuan (Sempit) */
 table th:nth-child(5), table td:nth-child(5),
-table th:nth-child(6), table td:nth-child(6) {
-  width: 8%;
-}
+table th:nth-child(6), table td:nth-child(6) { width: 8%; } /* Harga Satuan */
 
-/* Kolom Total Harga (Sangat Lebar) */
 table th:nth-child(7), table td:nth-child(7),
 table th:nth-child(8), table td:nth-child(8),
-table th:nth-child(9), table td:nth-child(9) {
-  width: 17%;
-}
+table th:nth-child(9), table td:nth-child(9) { width: 17%; } /* Semua Total Harga (Sangat Lebar) */
 /* ======================================================= */
 /* ▲▲▲ BATAS PENGATURAN FINAL LEBAR KOLOM ▲▲▲ */
 /* ======================================================= */
@@ -237,13 +230,15 @@ table th:nth-child(9), table td:nth-child(9) {
   background-color: #004a80 !important;
 }
 
+/* PERUBAHAN PADA TOMBOL HAPUS AGAR LEBIH KECIL */
 .delete-row-btn {
     background-color: #f1f3f5 !important;
     color: #e53e3e !important;
-    padding: 6px 10px !important;
+    padding: 5px 8px !important; /* Padding diperkecil */
     border-radius: 6px !important;
     font-weight: 500 !important;
     font-size: 0.8rem !important;
+    min-width: 50px; /* Lebar minimum tombol */
 }
 
 .delete-row-btn:hover {
@@ -321,22 +316,16 @@ table th:nth-child(9), table td:nth-child(9) {
   }
   
   /* Pengaturan lebar kolom untuk mobile */
-  table th:nth-child(1), table td:nth-child(1) { width: 35px; }  /* No */
-  table th:nth-child(2), table td:nth-child(2) { width: 150px; } /* Jenis Pekerjaan */
-  table th:nth-child(3), table td:nth-child(3) { width: 50px; }  /* Satuan */
-  table th:nth-child(4), table td:nth-child(4) { width: 65px; }  /* Volume */
-  table th:nth-child(10), table td:nth-child(10) { width: 50px; } /* Aksi */
+  table th:nth-child(1), table td:nth-child(1) { width: 35px; }
+  table th:nth-child(2), table td:nth-child(2) { width: 150px; }
+  table th:nth-child(3), table td:nth-child(3) { width: 50px; }
+  table th:nth-child(4), table td:nth-child(4) { width: 65px; }
+  table th:nth-child(10), table td:nth-child(10) { width: 50px; } /* Aksi (Sangat Sempit) */
 
-  /* Kolom Harga Satuan (Mobile) */
   table th:nth-child(5), table td:nth-child(5),
-  table th:nth-child(6), table td:nth-child(6) {
-    width: 110px;
-  }
+  table th:nth-child(6), table td:nth-child(6) { width: 110px; }
 
-  /* Kolom Total Harga (Mobile) */
   table th:nth-child(7), table td:nth-child(7),
   table th:nth-child(8), table td:nth-child(8),
-  table th:nth-child(9), table td:nth-child(9) {
-    width: 180px;
-  }
+  table th:nth-child(9), table td:nth-child(9) { width: 180px; }
 }
