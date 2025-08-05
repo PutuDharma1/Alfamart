@@ -111,8 +111,8 @@ table {
   width: 35px; /* Mengecilkan kolom No */
   text-align: center; /* Memastikan nomor selalu di tengah */
 }
-.col-jenis-pekerjaan { width: 20%; }
-.col-satuan { width: 60px; }
+.col-jenis-pekerjaan { width: 10%; }
+.col-satuan { width: 35px; }
 .col-volume { width: 8%; }
 .col-harga { width: 16%; }
 .col-total { width: 16%; } /* Placeholder, bisa disesuaikan jika ada */
