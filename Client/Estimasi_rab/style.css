@@ -1,10 +1,10 @@
 /* General Body and Header Styles */
 body {
   font-family: 'Inter', sans-serif;
-  background-color: #f4f7f6; /* Softer background color */
+  background-color: #f4f7f6;
   margin: 0;
   padding: 0;
-  color: #2d3748; /* Darker text for better readability */
+  color: #2d3748;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -23,7 +23,7 @@ header {
 }
 
 .header-logo {
-  width: 140px; /* Increased logo size for better presence */
+  width: 140px;
   height: auto;
   position: absolute;
   left: 25px;
@@ -33,7 +33,7 @@ header {
 
 header h1 {
   margin: 0;
-  font-size: 1.75rem; /* Adjusted font size */
+  font-size: 1.75rem;
   font-weight: 600;
   letter-spacing: -0.5px;
 }
@@ -44,7 +44,7 @@ header h1 {
   margin: 2.5rem auto;
   background-color: #ffffff;
   padding: 2.5rem;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08); /* Softer, more modern shadow */
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
   border-radius: 12px;
 }
 
@@ -58,7 +58,7 @@ header h1 {
   font-weight: 500;
   margin-bottom: 0.5rem;
   margin-top: 1.25rem;
-  color: #4a5568; /* Softer label color */
+  color: #4a5568;
   font-size: 0.9rem;
 }
 
@@ -66,7 +66,7 @@ header h1 {
 .form-container select {
   padding: 0.8rem 1rem;
   border: 1px solid #cbd5e0;
-  border-radius: 8px; /* More rounded inputs */
+  border-radius: 8px;
   transition: border-color 0.3s, box-shadow 0.3s;
   font-size: 1rem;
   background-color: #fdfdff;
@@ -74,15 +74,15 @@ header h1 {
 
 .form-container input:focus,
 .form-container select:focus {
-  border-color: #005a9e; /* Alfamart Blue on focus */
+  border-color: #005a9e;
   box-shadow: 0 0 0 3px rgba(0, 90, 158, 0.2);
   outline: none;
 }
 
 /* Section Titles */
 .section-title {
-  color: #e53e3e; /* Alfamart Red */
-  border-bottom: 2px solid #ffc107; /* Alfamart Yellow */
+  color: #e53e3e;
+  border-bottom: 2px solid #ffc107;
   padding-bottom: 8px;
   margin-top: 2.5rem;
   margin-bottom: 1.5rem;
@@ -101,7 +101,9 @@ header h1 {
 table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 900px; /* Ensures columns don't get too cramped */
+  min-width: 900px;
+  /* UPDATED: Menggunakan table-layout fixed untuk kontrol lebar yang presisi */
+  table-layout: fixed;
 }
 
 table th,
@@ -111,6 +113,7 @@ table td {
   text-align: center;
   font-size: 0.875rem;
   vertical-align: middle;
+  word-wrap: break-word; /* Memastikan teks panjang bisa pindah baris */
 }
 
 table thead th {
@@ -153,10 +156,19 @@ table tbody td input[readonly] {
     color: #6c757d;
 }
 
-.col-jenis-pekerjaan {
-  text-align: left !important;
-  width: 25%;
-}
+/* ======================================= */
+/* ▼▼▼ PERUBAHAN LEBAR KOLOM (DESKTOP) ▼▼▼ */
+/* ======================================= */
+.col-no { width: 3%; }
+.col-jenis-pekerjaan { width: 22%; text-align: left !important; }
+.col-satuan { width: 5%; }
+.col-volume { width: 10%; } /* Diperlebar */
+.col-harga { width: 12%; }  /* Diperlebar (berlaku untuk 5 kolom harga) */
+.col-aksi { width: 4%; }
+/* ======================================= */
+/* ▲▲▲ BATAS PERUBAHAN LEBAR KOLOM ▲▲▲ */
+/* ======================================= */
+
 
 /* Button Styles */
 .button-group {
@@ -166,7 +178,7 @@ table tbody td input[readonly] {
 }
 
 .form-container button {
-  background-color: #e53e3e; /* Alfamart Red */
+  background-color: #e53e3e;
   color: white;
   padding: 0.85rem 1.5rem;
   border: none;
@@ -179,7 +191,7 @@ table tbody td input[readonly] {
 }
 
 .form-container button:hover {
-  background-color: #c53030; /* Darker Red */
+  background-color: #c53030;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
@@ -200,17 +212,17 @@ table tbody td input[readonly] {
 }
 
 .add-row-btn {
-  background-color: #005a9e !important; /* Alfamart Blue */
+  background-color: #005a9e !important;
   margin-top: 1rem !important;
   padding: 0.6rem 1rem !important;
   flex: none !important;
-  align-self: flex-start; /* Aligns button to the left */
+  align-self: flex-start;
   font-size: 0.9rem !important;
   font-weight: 500 !important;
 }
 
 .add-row-btn:hover {
-  background-color: #004a80 !important; /* Darker Blue */
+  background-color: #004a80 !important;
 }
 
 .delete-row-btn {
@@ -264,7 +276,9 @@ table tbody td input[readonly] {
   color: #e53e3e;
 }
 
-/* Responsive Styles */
+/* ======================================= */
+/* ▼▼▼ PERUBAHAN LEBAR KOLOM (MOBILE) ▼▼▼ */
+/* ======================================= */
 @media (max-width: 768px) {
   .container {
     margin: 1rem;
@@ -291,4 +305,17 @@ table tbody td input[readonly] {
   .button-group {
     flex-direction: column;
   }
+
+  /* Lebar minimum tabel diperbesar agar kolom tidak terlalu sempit */
+  table {
+      min-width: 980px; 
+  }
+  
+  /* Lebar kolom-kolom untuk mobile telah disesuaikan */
+  .col-no { width: 35px; }
+  .col-jenis-pekerjaan { width: 180px; }
+  .col-satuan { width: 50px; }
+  .col-volume { width: 80px; } /* Diperlebar */
+  .col-harga { width: 115px; } /* Diperlebar */
+  .col-aksi { width: 65px; }
 }
