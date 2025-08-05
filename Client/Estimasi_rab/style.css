@@ -102,7 +102,6 @@ table {
   width: 100%;
   border-collapse: collapse;
   min-width: 900px;
-  /* UPDATED: Menggunakan table-layout fixed untuk kontrol lebar yang presisi */
   table-layout: fixed;
 }
 
@@ -113,7 +112,7 @@ table td {
   text-align: center;
   font-size: 0.875rem;
   vertical-align: middle;
-  word-wrap: break-word; /* Memastikan teks panjang bisa pindah baris */
+  word-wrap: break-word;
 }
 
 table thead th {
@@ -156,19 +155,31 @@ table tbody td input[readonly] {
     color: #6c757d;
 }
 
-/* ======================================= */
-/* ▼▼▼ PERUBAHAN LEBAR KOLOM (DESKTOP) ▼▼▼ */
-/* ======================================= */
-.col-no { width: 3%; }
-.col-jenis-pekerjaan { width: 22%; text-align: left !important; }
-.col-satuan { width: 5%; }
-.col-volume { width: 10%; } /* Diperlebar */
-.col-harga { width: 12%; }  /* Diperlebar (berlaku untuk 5 kolom harga) */
-.col-aksi { width: 4%; }
-/* ======================================= */
-/* ▲▲▲ BATAS PERUBAHAN LEBAR KOLOM ▲▲▲ */
-/* ======================================= */
+/* ======================================================= */
+/* ▼▼▼ PENGATURAN ULANG LEBAR KOLOM (DESKTOP) SESUAI PERMINTAAN ▼▼▼ */
+/* ======================================================= */
+/* Kolom Dasar */
+table th:nth-child(1), table td:nth-child(1) { width: 4%; } /* No */
+table th:nth-child(2), table td:nth-child(2) { width: 24%; text-align: left; } /* Jenis Pekerjaan */
+table th:nth-child(3), table td:nth-child(3) { width: 6%; } /* Satuan */
+table th:nth-child(4), table td:nth-child(4) { width: 8%; } /* Volume */
+table th:nth-child(10), table td:nth-child(10) { width: 5%; } /* Aksi */
 
+/* Kolom Harga Satuan (Dipersempit) */
+table th:nth-child(5), table td:nth-child(5), /* Harga Material */
+table th:nth-child(6), table td:nth-child(6) { /* Harga Upah */
+  width: 10%;
+}
+
+/* Kolom Total Harga (Diperlebar) */
+table th:nth-child(7), table td:nth-child(7), /* Total Material */
+table th:nth-child(8), table td:nth-child(8), /* Total Upah */
+table th:nth-child(9), table td:nth-child(9) { /* Total Harga */
+  width: 11%;
+}
+/* ======================================================= */
+/* ▲▲▲ BATAS PENGATURAN ULANG LEBAR KOLOM ▲▲▲ */
+/* ======================================================= */
 
 /* Button Styles */
 .button-group {
@@ -276,9 +287,7 @@ table tbody td input[readonly] {
   color: #e53e3e;
 }
 
-/* ======================================= */
-/* ▼▼▼ PERUBAHAN LEBAR KOLOM (MOBILE) ▼▼▼ */
-/* ======================================= */
+/* Responsive Styles */
 @media (max-width: 768px) {
   .container {
     margin: 1rem;
@@ -308,14 +317,26 @@ table tbody td input[readonly] {
 
   /* Lebar minimum tabel diperbesar agar kolom tidak terlalu sempit */
   table {
-      min-width: 980px; 
+      min-width: 1050px; /* Diperlebar agar sesuai dengan total lebar kolom baru */
   }
   
-  /* Lebar kolom-kolom untuk mobile telah disesuaikan */
-  .col-no { width: 35px; }
-  .col-jenis-pekerjaan { width: 180px; }
-  .col-satuan { width: 50px; }
-  .col-volume { width: 80px; } /* Diperlebar */
-  .col-harga { width: 115px; } /* Diperlebar */
-  .col-aksi { width: 65px; }
+  /* Pengaturan lebar kolom untuk mobile */
+  table th:nth-child(1), table td:nth-child(1) { width: 35px; } /* No */
+  table th:nth-child(2), table td:nth-child(2) { width: 180px; } /* Jenis Pekerjaan */
+  table th:nth-child(3), table td:nth-child(3) { width: 55px; } /* Satuan */
+  table th:nth-child(4), table td:nth-child(4) { width: 70px; } /* Volume */
+  table th:nth-child(10), table td:nth-child(10) { width: 60px; } /* Aksi */
+
+  /* Kolom Harga Satuan (Mobile - Dipersempit) */
+  table th:nth-child(5), table td:nth-child(5),
+  table th:nth-child(6), table td:nth-child(6) {
+    width: 110px;
+  }
+
+  /* Kolom Total Harga (Mobile - Diperlebar) */
+  table th:nth-child(7), table td:nth-child(7),
+  table th:nth-child(8), table td:nth-child(8),
+  table th:nth-child(9), table td:nth-child(9) {
+    width: 140px;
+  }
 }
