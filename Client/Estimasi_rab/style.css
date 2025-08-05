@@ -107,7 +107,10 @@ table {
   border-collapse: collapse;
 }
 
-.col-no { width: 40px; }
+.col-no { 
+  width: 35px; /* Mengecilkan kolom No */
+  text-align: center; /* Memastikan nomor selalu di tengah */
+}
 .col-jenis-pekerjaan { width: 20%; }
 .col-satuan { width: 60px; }
 .col-volume { width: 8%; }
