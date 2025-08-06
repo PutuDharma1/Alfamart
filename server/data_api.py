@@ -103,7 +103,7 @@ def process_price_value(raw_value):
         return 0.0
     return safe_to_float(raw_value)
 
-# --- FUNGSI UTAMA YANG DIPERBAIKI ---
+# --- FUNGSI UTAMA YANG DIPERBARUI ---
 def process_sheet(sheet, lingkup):
     if lingkup == "SIPIL":
         data_range = 'A16:H'
@@ -130,38 +130,38 @@ def process_sheet(sheet, lingkup):
     upah_col_index = 7
 
     for row in data_rows:
-        # Pastikan ada nama pekerjaan di kolom D (indeks 3)
+        # Lewati baris jika tidak ada isi di kolom "Jenis Pekerjaan"
         if len(row) <= jenis_pekerjaan_col_index or not row[jenis_pekerjaan_col_index].strip():
             continue
 
         no_val = row[no_col_index].strip()
         jenis_pekerjaan = row[jenis_pekerjaan_col_index].strip()
         
-        # Cek apakah ini baris kategori (misal: "I", "II", "A", "B")
-        is_category = False
-        try:
-            int(no_val)
-        except (ValueError, TypeError):
-            is_category = True
-            
-        if is_category:
+        # --- LOGIKA BARU UNTUK MENGENALI KATEGORI UTAMA ---
+        # Kategori utama adalah baris yang kolom "NO" nya HANYA berisi huruf Romawi.
+        if re.fullmatch(r'^[IVXLCDM]+$', no_val):
             current_category = jenis_pekerjaan
             if current_category not in categorized_prices:
                 categorized_prices[current_category] = []
-            continue
+            continue # Lanjut ke baris berikutnya setelah menemukan kategori
 
-        # Proses sebagai item pekerjaan biasa
-        # Ambil nilai dengan aman, berikan default "0" jika kolom tidak ada
+        # --- LOGIKA BARU UNTUK MENGENALI & MELEWATI SUB-JUDUL ---
+        # Diasumsikan sub-judul (seperti IX.a) tidak memiliki "Satuan".
+        satuan_val = row[sat_col_index].strip() if len(row) > sat_col_index else ""
+        if not satuan_val:
+            # Ini kemungkinan adalah sub-judul, jadi kita lewati.
+            continue
+        
+        # Jika sampai di sini, berarti ini adalah item pekerjaan yang valid
         harga_material_raw = row[material_col_index] if len(row) > material_col_index else "0"
         harga_upah_raw = row[upah_col_index] if len(row) > upah_col_index else "0"
-        satuan = row[sat_col_index] if len(row) > sat_col_index else ""
 
         harga_material = process_price_value(harga_material_raw)
         harga_upah = process_price_value(harga_upah_raw)
         
         item_data = {
             "Jenis Pekerjaan": jenis_pekerjaan,
-            "Satuan": satuan,
+            "Satuan": satuan_val,
             "Harga Material": harga_material,
             "Harga Upah": harga_upah
         }
