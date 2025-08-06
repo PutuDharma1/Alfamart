@@ -36,143 +36,21 @@ const handleCurrencyInput = (event) => {
     calculateTotalPrice(input);
 };
 
-// --- FUNGSI YANG DIPERBARUI UNTUK DROPDOWN RAPI ---
-const populateJenisPekerjaanOptionsForNewRow = (rowElement) => {
-    const scope = rowElement.dataset.scope;
-    const selectEl = rowElement.querySelector(".jenis-pekerjaan");
-
-    if (!selectEl) return;
-    if (!cabangSelect.value || !lingkupPekerjaanSelect.value) {
-        selectEl.innerHTML = '<option value="">-- Pilih Cabang & Lingkup Pekerjaan Dulu --</option>';
-        return;
-    }
-    
-    const dataSource = (scope === "Sipil") ? categorizedPrices.categorizedSipilPrices : (scope === "ME") ? categorizedPrices.categorizedMePrices : {};
-    
-    selectEl.innerHTML = '<option value="">-- Pilih Jenis Pekerjaan --</option>';
-
-    if (dataSource) {
-        // Loop melalui setiap kategori dari data master
-        for (const category in dataSource) {
-            const itemsInCategory = dataSource[category];
-            if (itemsInCategory.length > 0) {
-                // Buat grup untuk kategori
-                const optgroup = document.createElement('optgroup');
-                optgroup.label = `--- ${category} ---`;
-                
-                // Tambahkan setiap item pekerjaan sebagai opsi di dalam grup
-                itemsInCategory.forEach(item => {
-                    const option = document.createElement("option");
-                    option.value = item["Jenis Pekerjaan"];
-                    option.textContent = item["Jenis Pekerjaan"];
-                    // Kaitkan kategori ke opsi untuk autofill nanti
-                    option.dataset.category = category;
-                    optgroup.appendChild(option);
-                });
-                
-                selectEl.appendChild(optgroup);
-            }
+const refreshAllDropdowns = () => {
+    document.querySelectorAll(".boq-table-body:not(.hidden) .boq-item-row").forEach(row => {
+        const jenisPekerjaanSelect = row.querySelector('.jenis-pekerjaan');
+        const currentValue = jenisPekerjaanSelect.value;
+        populateJenisPekerjaanOptionsForNewRow(row);
+        if (Array.from(jenisPekerjaanSelect.options).some(opt => opt.value === currentValue)) {
+            jenisPekerjaanSelect.value = currentValue;
         }
-    } else {
-        selectEl.innerHTML = '<option value="">-- Tidak ada data harga --</option>';
-    }
-};
-
-
-const autoFillPrices = (selectElement) => {
-    const row = selectElement.closest("tr");
-    if (!row) return;
-
-    // Dapatkan opsi yang dipilih, bukan hanya nilainya
-    const selectedOption = selectElement.options[selectElement.selectedIndex];
-    const selectedJenisPekerjaan = selectedOption.value;
-    
-    // Gunakan data-category dari opsi yang dipilih
-    const currentCategory = selectedOption.dataset.category;
-    const currentLingkupPekerjaan = lingkupPekerjaanSelect.value;
-    
-    // Jika tidak ada kategori (misal: memilih "--Pilih--"), reset dan keluar
-    if (!currentCategory) {
-        // Reset fields
-        const inputs = row.querySelectorAll('input');
-        inputs.forEach(input => {
-            if (input.classList.contains('volume')) input.value = "0.00";
-            else if(input.type === 'text') input.value = "0";
-            if (input.classList.contains('harga-material') || input.classList.contains('harga-upah')) {
-                input.readOnly = true;
-                input.style.backgroundColor = "";
-            }
-        });
-        calculateTotalPrice(row.querySelector(".volume"));
-        return;
-    }
-
-    const volumeInput = row.querySelector(".volume");
-    const materialPriceInput = row.querySelector(".harga-material");
-    const upahPriceInput = row.querySelector(".harga-upah");
-    const satuanInput = row.querySelector(".satuan");
-
-    materialPriceInput.removeEventListener('input', handleCurrencyInput);
-    upahPriceInput.removeEventListener('input', handleCurrencyInput);
-
-    let selectedItem = null;
-    let dataSource = (currentLingkupPekerjaan === "Sipil") ? categorizedPrices.categorizedSipilPrices : categorizedPrices.categorizedMePrices;
-    if (dataSource && dataSource[currentCategory]) {
-        selectedItem = dataSource[currentCategory].find(item => item["Jenis Pekerjaan"] === selectedJenisPekerjaan);
-    }
-
-    if (selectedItem) {
-        volumeInput.value = selectedItem["Satuan"] === "Ls" ? "1.00" : "0.00";
-        satuanInput.value = selectedItem["Satuan"];
-
-        const setupPriceInput = (input, price) => {
-            input.readOnly = price !== "Kondisional";
-            input.value = price === "Kondisional" ? "0" : formatNumberWithSeparators(price);
-            input.style.backgroundColor = price === "Kondisional" ? "#fffde7" : "";
-            if (price === "Kondisional") {
-                input.addEventListener('input', handleCurrencyInput);
-            }
-        };
-        setupPriceInput(materialPriceInput, selectedItem["Harga Material"]);
-        setupPriceInput(upahPriceInput, selectedItem["Harga Upah"]);
-    } else {
-        volumeInput.value = "0.00"; volumeInput.readOnly = false;
-        materialPriceInput.value = "0"; materialPriceInput.readOnly = true; materialPriceInput.style.backgroundColor = "";
-        upahPriceInput.value = "0"; upahPriceInput.readOnly = true; upahPriceInput.style.backgroundColor = "";
-        satuanInput.value = "";
-    }
-    calculateTotalPrice(volumeInput);
-};
-
-
-const createBoQRow = (category, scope) => {
-    const row = document.createElement("tr");
-    row.classList.add("boq-item-row");
-    // Kategori sekarang hanya digunakan untuk data-scope, karena autofill akan mengambil dari opsi dropdown
-    row.dataset.scope = scope; 
-    row.innerHTML = `<td class="col-no"><span class="row-number"></span></td><td class="col-jenis-pekerjaan"><select class="jenis-pekerjaan form-control" name="Jenis_Pekerjaan_Item" required><option value="">-- Pilih --</option></select></td><td class="col-satuan"><input type="text" class="satuan form-control" name="Satuan_Item" required readonly /></td><td class="col-volume"><input type="text" class="volume form-control" name="Volume_Item" value="0.00" inputmode="decimal" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\\..*?)\\..*/g, '$1').replace(/(\\.\\d{2})\\d+/, '$1')" /></td><td class="col-harga"><input type="text" class="harga-material form-control" name="Harga_Material_Item" inputmode="numeric" required readonly /></td><td class="col-harga"><input type="text" class="harga-upah form-control" name="Harga_Upah_Item" inputmode="numeric" required readonly /></td><td class="col-harga"><input type="text" class="total-material form-control" disabled /></td><td class="col-harga"><input type="text" class="total-upah form-control" disabled /></td><td class="col-harga"><input type="text" class="total-harga form-control" disabled /></td><td class="col-aksi"><button type="button" class="delete-row-btn">Hapus</button></td>`;
-    row.querySelector(".volume").addEventListener("input", (e) => calculateTotalPrice(e.target));
-    row.querySelector(".delete-row-btn").addEventListener("click", () => { row.remove(); updateAllRowNumbersAndTotals(); });
-    // Event listener autofill diubah sedikit
-    row.querySelector('.jenis-pekerjaan').addEventListener('change', (e) => {
-        // Ambil elemen select yang berubah
-        const selectElement = e.target;
-        // Dapatkan elemen baris (tr) terdekat
-        const tableRow = selectElement.closest('tr');
-        if (tableRow) {
-            // Isi kategori baris berdasarkan data dari opsi yang dipilih
-            const selectedOption = selectElement.options[selectElement.selectedIndex];
-            tableRow.dataset.category = selectedOption.dataset.category || '';
+        if (!jenisPekerjaanSelect.value) {
+           autoFillPrices(jenisPekerjaanSelect);
         }
-        // Panggil fungsi autofill seperti biasa
-        autoFillPrices(selectElement);
     });
-    return row;
 };
 
-
-// Fungsi-fungsi lain di bawah ini tidak perlu diubah
-// ... (salin sisa fungsi seperti updateAllRowNumbersAndTotals, calculateSubTotal, dll.)
+// --- Core Functions ---
 async function fetchAndPopulatePrices() {
     const selectedCabang = cabangSelect.value;
     const selectedScope = lingkupPekerjaanSelect.value;
@@ -204,7 +82,7 @@ async function fetchAndPopulatePrices() {
         }
         console.log(`Data harga untuk ${selectedScope} berhasil dimuat:`, data);
         messageDiv.style.display = 'none';
-        
+        refreshAllDropdowns();
     } catch (error) {
         console.error("Error fetching price data:", error);
         messageDiv.textContent = `Error: ${error.message}`;
@@ -212,8 +90,93 @@ async function fetchAndPopulatePrices() {
     }
 }
 
+const populateJenisPekerjaanOptionsForNewRow = (rowElement) => {
+    const category = rowElement.dataset.category;
+    const scope = rowElement.dataset.scope;
+    const selectEl = rowElement.querySelector(".jenis-pekerjaan");
+
+    if (!selectEl) return;
+    if (!cabangSelect.value || !lingkupPekerjaanSelect.value) {
+        selectEl.innerHTML = '<option value="">-- Pilih Cabang & Lingkup Pekerjaan Dulu --</option>';
+        return;
+    }
+    
+    let dataSource = (scope === "Sipil") ? categorizedPrices.categorizedSipilPrices : (scope === "ME") ? categorizedPrices.categorizedMePrices : {};
+    const itemsInCategory = dataSource ? (dataSource[category] || []) : [];
+
+    selectEl.innerHTML = '<option value="">-- Pilih Jenis Pekerjaan --</option>';
+    if (itemsInCategory.length > 0) {
+        itemsInCategory.forEach(item => {
+            const option = document.createElement("option");
+            option.value = item["Jenis Pekerjaan"];
+            option.textContent = item["Jenis Pekerjaan"];
+            selectEl.appendChild(option);
+        });
+    } else {
+        selectEl.innerHTML = '<option value="">-- Tidak ada item pekerjaan --</option>';
+    }
+};
+
+const autoFillPrices = (selectElement) => {
+    const row = selectElement.closest("tr");
+    if (!row) return;
+
+    const selectedJenisPekerjaan = selectElement.value;
+    const currentLingkupPekerjaan = lingkupPekerjaanSelect.value;
+    const currentCategory = row.dataset.category;
+
+    const volumeInput = row.querySelector(".volume");
+    const materialPriceInput = row.querySelector(".harga-material");
+    const upahPriceInput = row.querySelector(".harga-upah");
+    const satuanInput = row.querySelector(".satuan");
+
+    materialPriceInput.removeEventListener('input', handleCurrencyInput);
+    upahPriceInput.removeEventListener('input', handleCurrencyInput);
+
+    let selectedItem = null;
+    let dataSource = (currentLingkupPekerjaan === "Sipil") ? categorizedPrices.categorizedSipilPrices : categorizedPrices.categorizedMePrices;
+    if (dataSource && dataSource[currentCategory]) {
+        selectedItem = dataSource[currentCategory].find(item => item["Jenis Pekerjaan"] === selectedJenisPekerjaan);
+    }
+
+    if (selectedItem) {
+        volumeInput.readOnly = selectedItem["Satuan"] === "Ls";
+        volumeInput.value = selectedItem["Satuan"] === "Ls" ? 1 : "0.00";
+
+        const setupPriceInput = (input, price) => {
+            input.readOnly = price !== "Kondisional";
+            input.value = price === "Kondisional" ? "0" : formatNumberWithSeparators(price);
+            input.style.backgroundColor = price === "Kondisional" ? "#fffde7" : "";
+            if (price === "Kondisional") {
+                input.addEventListener('input', handleCurrencyInput);
+            }
+        };
+        setupPriceInput(materialPriceInput, selectedItem["Harga Material"]);
+        setupPriceInput(upahPriceInput, selectedItem["Harga Upah"]);
+        satuanInput.value = selectedItem["Satuan"];
+    } else {
+        volumeInput.value = 0; volumeInput.readOnly = false;
+        materialPriceInput.value = "0"; materialPriceInput.readOnly = true; materialPriceInput.style.backgroundColor = "";
+        upahPriceInput.value = "0"; upahPriceInput.readOnly = true; upahPriceInput.style.backgroundColor = "";
+        satuanInput.value = "";
+    }
+    calculateTotalPrice(volumeInput);
+};
+
+const createBoQRow = (category, scope) => {
+    const row = document.createElement("tr");
+    row.classList.add("boq-item-row");
+    row.dataset.category = category;
+    row.dataset.scope = scope;
+    row.innerHTML = `<td class="col-no"><span class="row-number"></span></td><td class="col-jenis-pekerjaan"><select class="jenis-pekerjaan form-control" name="Jenis_Pekerjaan_Item" required><option value="">-- Pilih --</option></select></td><td class="col-satuan"><input type="text" class="satuan form-control" name="Satuan_Item" required readonly /></td><td class="col-volume"><input type="text" class="volume form-control" name="Volume_Item" value="0.00" inputmode="decimal" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\\..*?)\\..*/g, '$1').replace(/(\\.\\d{2})\\d+/, '$1')" /></td><td class="col-harga"><input type="text" class="harga-material form-control" name="Harga_Material_Item" inputmode="numeric" required readonly /></td><td class="col-harga"><input type="text" class="harga-upah form-control" name="Harga_Upah_Item" inputmode="numeric" required readonly /></td><td class="col-harga"><input type="text" class="total-material form-control" disabled /></td><td class="col-harga"><input type="text" class="total-upah form-control" disabled /></td><td class="col-harga"><input type="text" class="total-harga form-control" disabled /></td><td class="col-aksi"><button type="button" class="delete-row-btn">Hapus</button></td>`;
+    row.querySelector(".volume").addEventListener("input", (e) => calculateTotalPrice(e.target));
+    row.querySelector(".delete-row-btn").addEventListener("click", () => { row.remove(); updateAllRowNumbersAndTotals(); });
+    row.querySelector('.jenis-pekerjaan').addEventListener('change', (e) => autoFillPrices(e.target));
+    return row;
+};
+
 const updateAllRowNumbersAndTotals = () => {
-    document.querySelectorAll(".boq-table-body").forEach(tbody => {
+    document.querySelectorAll(".boq-table-body:not(.hidden)").forEach(tbody => {
         tbody.querySelectorAll(".boq-item-row").forEach((row, index) => {
             row.querySelector(".row-number").textContent = index + 1;
             calculateTotalPrice(row.querySelector(".volume"));
@@ -251,11 +214,13 @@ const calculateGrandTotal = () => {
     if (grandTotalAmount) grandTotalAmount.textContent = formatRupiah(total);
 };
 
+// --- Fungsi yang Dilengkapi ---
 async function populateFormWithHistory(data) {
     console.log("Populating form with rejected data:", data);
     form.reset();
     document.querySelectorAll(".boq-table-body").forEach(tbody => tbody.innerHTML = "");
 
+    // Isi field header
     for (const key in data) {
         const input = form.querySelector(`[name="${key.replace(/ /g, '_')}"]`);
         if (input) {
@@ -263,13 +228,14 @@ async function populateFormWithHistory(data) {
         }
     }
     
-    lingkupPekerjaanSelect.dispatchEvent(new Event('change'));
+    // Trigger perubahan untuk cabang dan lingkup pekerjaan agar memuat data harga
     cabangSelect.dispatchEvent(new Event('change'));
+    lingkupPekerjaanSelect.dispatchEvent(new Event('change'));
     
+    // Beri waktu agar data harga selesai dimuat
     await new Promise(resolve => setTimeout(resolve, 1500)); 
 
-    document.querySelectorAll(".boq-table-body").forEach(tbody => tbody.innerHTML = "");
-
+    // Isi baris-baris item pekerjaan
     for (let i = 1; i <= 100; i++) {
         if (data[`Jenis_Pekerjaan_${i}`]) {
             const category = data[`Kategori_Pekerjaan_${i}`];
@@ -281,6 +247,7 @@ async function populateFormWithHistory(data) {
                 targetTbody.appendChild(newRow);
                 populateJenisPekerjaanOptionsForNewRow(newRow);
                 
+                // Isi nilai untuk setiap input di baris baru
                 newRow.querySelector('.jenis-pekerjaan').value = data[`Jenis_Pekerjaan_${i}`];
                 newRow.querySelector('.satuan').value = data[`Satuan_Item_${i}`];
                 newRow.querySelector('.volume').value = data[`Volume_Item_${i}`];
@@ -291,6 +258,7 @@ async function populateFormWithHistory(data) {
                 materialInput.value = formatNumberWithSeparators(data[`Harga_Material_Item_${i}`]);
                 upahInput.value = formatNumberWithSeparators(data[`Harga_Upah_Item_${i}`]);
                 
+                // Cek apakah harga kondisional dan buat dapat di-edit
                 const jenisPekerjaanData = categorizedPrices.categorizedSipilPrices[category]?.find(item => item["Jenis Pekerjaan"] === data[`Jenis_Pekerjaan_${i}`]) || categorizedPrices.categorizedMePrices[category]?.find(item => item["Jenis Pekerjaan"] === data[`Jenis_Pekerjaan_${i}`]);
                 if(jenisPekerjaanData) {
                     if (jenisPekerjaanData["Harga Material"] === "Kondisional") {
@@ -310,6 +278,7 @@ async function populateFormWithHistory(data) {
     updateAllRowNumbersAndTotals();
 }
 
+// --- Fungsi yang Dilengkapi ---
 async function handleFormSubmit() {
     if (!form.checkValidity()) {
         form.reportValidity();
@@ -324,8 +293,10 @@ async function handleFormSubmit() {
     const formData = new FormData(form);
     const data = Object.fromEntries(formData.entries());
     
+    // Tambahkan email pembuat
     data['Email_Pembuat'] = sessionStorage.getItem('loggedInUserEmail');
 
+    // Kumpulkan semua data dari baris tabel
     let itemIndex = 1;
     document.querySelectorAll(".boq-table-body:not(.hidden) .boq-item-row").forEach(row => {
         data[`Kategori_Pekerjaan_${itemIndex}`] = row.dataset.category;
@@ -466,7 +437,7 @@ async function initializePage() {
         button.addEventListener("click", () => {
             const category = button.dataset.category;
             const scope = button.dataset.scope;
-            const targetTbody = document.querySelector(`.boq-table-body[data-category="${category}"]`);
+            const targetTbody = document.querySelector(`.boq-table-body[data-category="${category}"][data-scope="${scope}"]`);
             if (targetTbody) {
                 const newRow = createBoQRow(category, scope);
                 targetTbody.appendChild(newRow);
@@ -480,9 +451,7 @@ async function initializePage() {
         const selectedScope = lingkupPekerjaanSelect.value;
         sipilTablesWrapper.classList.toggle("hidden", selectedScope !== 'Sipil');
         meTablesWrapper.classList.toggle("hidden", selectedScope !== 'ME');
-        if (cabangSelect.value) {
-            fetchAndPopulatePrices();
-        }
+        fetchAndPopulatePrices();
     });
     
     cabangSelect.addEventListener('change', fetchAndPopulatePrices);
