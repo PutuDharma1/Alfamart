@@ -36,41 +36,19 @@ const handleCurrencyInput = (event) => {
     calculateTotalPrice(input);
 };
 
-// --- Fungsi BARU untuk menampilkan semua item master ---
-function populateTablesWithMasterData(scope) {
-    const dataSource = scope === 'Sipil' ? categorizedPrices.categorizedSipilPrices : categorizedPrices.categorizedMePrices;
-    if (!dataSource) return;
-
-    // Bersihkan tabel sebelum mengisi
-    document.querySelectorAll(`.boq-table-body[data-scope="${scope}"]`).forEach(tbody => {
-        tbody.innerHTML = '';
-    });
-
-    for (const category in dataSource) {
-        const items = dataSource[category];
-        const targetTbody = document.querySelector(`.boq-table-body[data-category="${category}"][data-scope="${scope}"]`);
-        
-        if (targetTbody && items.length > 0) {
-            items.forEach(item => {
-                const newRow = createBoQRow(category, scope);
-                targetTbody.appendChild(newRow);
-
-                const jenisPekerjaanSelect = newRow.querySelector('.jenis-pekerjaan');
-                
-                // Isi opsi dropdown untuk baris ini
-                populateJenisPekerjaanOptionsForNewRow(newRow);
-
-                // Atur nilainya ke item saat ini
-                jenisPekerjaanSelect.value = item["Jenis Pekerjaan"];
-
-                // Panggil autofill untuk mengisi harga dan satuan
-                autoFillPrices(jenisPekerjaanSelect);
-            });
+const refreshAllDropdowns = () => {
+    document.querySelectorAll(".boq-table-body:not(.hidden) .boq-item-row").forEach(row => {
+        const jenisPekerjaanSelect = row.querySelector('.jenis-pekerjaan');
+        const currentValue = jenisPekerjaanSelect.value;
+        populateJenisPekerjaanOptionsForNewRow(row);
+        if (Array.from(jenisPekerjaanSelect.options).some(opt => opt.value === currentValue)) {
+            jenisPekerjaanSelect.value = currentValue;
         }
-    }
-    // Perbarui nomor dan total setelah semua ditambahkan
-    updateAllRowNumbersAndTotals();
-}
+        if (!jenisPekerjaanSelect.value) {
+           autoFillPrices(jenisPekerjaanSelect);
+        }
+    });
+};
 
 // --- Core Functions ---
 async function fetchAndPopulatePrices() {
@@ -104,10 +82,7 @@ async function fetchAndPopulatePrices() {
         }
         console.log(`Data harga untuk ${selectedScope} berhasil dimuat:`, data);
         messageDiv.style.display = 'none';
-
-        // PANGGIL FUNGSI BARU DI SINI
-        populateTablesWithMasterData(selectedScope);
-
+        refreshAllDropdowns();
     } catch (error) {
         console.error("Error fetching price data:", error);
         messageDiv.textContent = `Error: ${error.message}`;
@@ -155,7 +130,6 @@ const autoFillPrices = (selectElement) => {
     const upahPriceInput = row.querySelector(".harga-upah");
     const satuanInput = row.querySelector(".satuan");
 
-    // Selalu hapus event listener lama sebelum menambahkan yang baru
     materialPriceInput.removeEventListener('input', handleCurrencyInput);
     upahPriceInput.removeEventListener('input', handleCurrencyInput);
 
@@ -166,9 +140,8 @@ const autoFillPrices = (selectElement) => {
     }
 
     if (selectedItem) {
-        // Logika untuk mengisi volume dan satuan
-        volumeInput.value = selectedItem["Satuan"] === "Ls" ? "1.00" : "0.00";
-        satuanInput.value = selectedItem["Satuan"];
+        volumeInput.readOnly = selectedItem["Satuan"] === "Ls";
+        volumeInput.value = selectedItem["Satuan"] === "Ls" ? 1 : "0.00";
 
         const setupPriceInput = (input, price) => {
             input.readOnly = price !== "Kondisional";
@@ -180,16 +153,11 @@ const autoFillPrices = (selectElement) => {
         };
         setupPriceInput(materialPriceInput, selectedItem["Harga Material"]);
         setupPriceInput(upahPriceInput, selectedItem["Harga Upah"]);
-        
+        satuanInput.value = selectedItem["Satuan"];
     } else {
-        volumeInput.value = "0.00"; 
-        volumeInput.readOnly = false;
-        materialPriceInput.value = "0"; 
-        materialPriceInput.readOnly = true; 
-        materialPriceInput.style.backgroundColor = "";
-        upahPriceInput.value = "0"; 
-        upahPriceInput.readOnly = true; 
-        upahPriceInput.style.backgroundColor = "";
+        volumeInput.value = 0; volumeInput.readOnly = false;
+        materialPriceInput.value = "0"; materialPriceInput.readOnly = true; materialPriceInput.style.backgroundColor = "";
+        upahPriceInput.value = "0"; upahPriceInput.readOnly = true; upahPriceInput.style.backgroundColor = "";
         satuanInput.value = "";
     }
     calculateTotalPrice(volumeInput);
@@ -208,9 +176,10 @@ const createBoQRow = (category, scope) => {
 };
 
 const updateAllRowNumbersAndTotals = () => {
-    document.querySelectorAll(".boq-table-body").forEach(tbody => {
+    document.querySelectorAll(".boq-table-body:not(.hidden)").forEach(tbody => {
         tbody.querySelectorAll(".boq-item-row").forEach((row, index) => {
             row.querySelector(".row-number").textContent = index + 1;
+            calculateTotalPrice(row.querySelector(".volume"));
         });
         calculateSubTotal(tbody);
     });
@@ -248,80 +217,68 @@ const calculateGrandTotal = () => {
 // --- Fungsi yang Dilengkapi ---
 async function populateFormWithHistory(data) {
     console.log("Populating form with rejected data:", data);
-    // Tidak perlu reset form, karena kita akan menimpanya
+    form.reset();
     document.querySelectorAll(".boq-table-body").forEach(tbody => tbody.innerHTML = "");
 
     // Isi field header
     for (const key in data) {
-        // Konversi spasi ke underscore untuk mencocokkan nama input
-        const inputName = key.replace(/ /g, '_');
-        const input = form.querySelector(`[name="${inputName}"]`);
+        const input = form.querySelector(`[name="${key.replace(/ /g, '_')}"]`);
         if (input) {
             input.value = data[key];
         }
     }
     
-    // Trigger perubahan untuk cabang dan lingkup pekerjaan agar memuat data harga master
-    // dan menampilkan tabel yang benar (Sipil/ME)
-    lingkupPekerjaanSelect.value = data['Lingkup_Pekerjaan'];
-    lingkupPekerjaanSelect.dispatchEvent(new Event('change', { 'bubbles': true }));
-    cabangSelect.value = data['Cabang'];
-    cabangSelect.dispatchEvent(new Event('change', { 'bubbles': true }));
+    // Trigger perubahan untuk cabang dan lingkup pekerjaan agar memuat data harga
+    cabangSelect.dispatchEvent(new Event('change'));
+    lingkupPekerjaanSelect.dispatchEvent(new Event('change'));
     
-    // Beri waktu agar data harga selesai dimuat sebelum mengisi nilai
-    await new Promise(resolve => setTimeout(resolve, 2000)); 
+    // Beri waktu agar data harga selesai dimuat
+    await new Promise(resolve => setTimeout(resolve, 1500)); 
 
-    // Kosongkan tabel lagi sebelum mengisi dengan data history
-    document.querySelectorAll(".boq-table-body").forEach(tbody => tbody.innerHTML = "");
-
-    // Isi baris-baris item pekerjaan dari data history
-    const itemKeys = Object.keys(data).filter(k => k.startsWith('Jenis_Pekerjaan_'));
-    
-    for (const key of itemKeys) {
-        const i = key.split('_')[2]; // Ambil nomor indeks dari key
-        const category = data[`Kategori_Pekerjaan_${i}`];
-        const scope = data['Lingkup_Pekerjaan'];
-        const targetTbody = document.querySelector(`.boq-table-body[data-category="${category}"][data-scope="${scope}"]`);
-        
-        if (targetTbody) {
-            const newRow = createBoQRow(category, scope);
-            targetTbody.appendChild(newRow);
-            populateJenisPekerjaanOptionsForNewRow(newRow);
+    // Isi baris-baris item pekerjaan
+    for (let i = 1; i <= 100; i++) {
+        if (data[`Jenis_Pekerjaan_${i}`]) {
+            const category = data[`Kategori_Pekerjaan_${i}`];
+            const scope = lingkupPekerjaanSelect.value;
+            const targetTbody = document.querySelector(`.boq-table-body[data-category="${category}"][data-scope="${scope}"]`);
             
-            // Isi nilai untuk setiap input di baris baru
-            newRow.querySelector('.jenis-pekerjaan').value = data[`Jenis_Pekerjaan_${i}`];
-            newRow.querySelector('.satuan').value = data[`Satuan_Item_${i}`];
-            newRow.querySelector('.volume').value = parseFloat(data[`Volume_Item_${i}`] || 0).toFixed(2);
-            
-            const materialInput = newRow.querySelector('.harga-material');
-            const upahInput = newRow.querySelector('.harga-upah');
-            
-            // Cek apakah harga kondisional dari data master
-            const masterDataSource = scope === 'Sipil' ? categorizedPrices.categorizedSipilPrices : categorizedPrices.categorizedMePrices;
-            const jenisPekerjaanData = masterDataSource[category]?.find(item => item["Jenis Pekerjaan"] === data[`Jenis_Pekerjaan_${i}`]);
-
-            materialInput.value = formatNumberWithSeparators(data[`Harga_Material_Item_${i}`]);
-            upahInput.value = formatNumberWithSeparators(data[`Harga_Upah_Item_${i}`]);
-
-            if(jenisPekerjaanData) {
-                if (jenisPekerjaanData["Harga Material"] === "Kondisional") {
-                    materialInput.readOnly = false;
-                    materialInput.style.backgroundColor = "#fffde7";
-                    materialInput.addEventListener('input', handleCurrencyInput);
-                }
-                 if (jenisPekerjaanData["Harga Upah"] === "Kondisional") {
-                    upahInput.readOnly = false;
-                    upahInput.style.backgroundColor = "#fffde7";
-                    upahInput.addEventListener('input', handleCurrencyInput);
+            if (targetTbody) {
+                const newRow = createBoQRow(category, scope);
+                targetTbody.appendChild(newRow);
+                populateJenisPekerjaanOptionsForNewRow(newRow);
+                
+                // Isi nilai untuk setiap input di baris baru
+                newRow.querySelector('.jenis-pekerjaan').value = data[`Jenis_Pekerjaan_${i}`];
+                newRow.querySelector('.satuan').value = data[`Satuan_Item_${i}`];
+                newRow.querySelector('.volume').value = data[`Volume_Item_${i}`];
+                
+                const materialInput = newRow.querySelector('.harga-material');
+                const upahInput = newRow.querySelector('.harga-upah');
+                
+                materialInput.value = formatNumberWithSeparators(data[`Harga_Material_Item_${i}`]);
+                upahInput.value = formatNumberWithSeparators(data[`Harga_Upah_Item_${i}`]);
+                
+                // Cek apakah harga kondisional dan buat dapat di-edit
+                const jenisPekerjaanData = categorizedPrices.categorizedSipilPrices[category]?.find(item => item["Jenis Pekerjaan"] === data[`Jenis_Pekerjaan_${i}`]) || categorizedPrices.categorizedMePrices[category]?.find(item => item["Jenis Pekerjaan"] === data[`Jenis_Pekerjaan_${i}`]);
+                if(jenisPekerjaanData) {
+                    if (jenisPekerjaanData["Harga Material"] === "Kondisional") {
+                        materialInput.readOnly = false;
+                        materialInput.style.backgroundColor = "#fffde7";
+                        materialInput.addEventListener('input', handleCurrencyInput);
+                    }
+                     if (jenisPekerjaanData["Harga Upah"] === "Kondisional") {
+                        upahInput.readOnly = false;
+                        upahInput.style.backgroundColor = "#fffde7";
+                        upahInput.addEventListener('input', handleCurrencyInput);
+                    }
                 }
             }
-            // Hitung total untuk baris ini
-            calculateTotalPrice(materialInput);
         }
     }
     updateAllRowNumbersAndTotals();
 }
 
+// --- Fungsi yang Dilengkapi ---
 async function handleFormSubmit() {
     if (!form.checkValidity()) {
         form.reportValidity();
@@ -336,24 +293,22 @@ async function handleFormSubmit() {
     const formData = new FormData(form);
     const data = Object.fromEntries(formData.entries());
     
+    // Tambahkan email pembuat
     data['Email_Pembuat'] = sessionStorage.getItem('loggedInUserEmail');
 
+    // Kumpulkan semua data dari baris tabel
     let itemIndex = 1;
     document.querySelectorAll(".boq-table-body:not(.hidden) .boq-item-row").forEach(row => {
-        // Hanya kirim data jika ada volume
-        const volume = parseFloat(row.querySelector('.volume').value) || 0;
-        if (volume > 0) {
-            data[`Kategori_Pekerjaan_${itemIndex}`] = row.dataset.category;
-            data[`Jenis_Pekerjaan_${itemIndex}`] = row.querySelector('.jenis-pekerjaan').value;
-            data[`Satuan_Item_${itemIndex}`] = row.querySelector('.satuan').value;
-            data[`Volume_Item_${itemIndex}`] = volume;
-            data[`Harga_Material_Item_${itemIndex}`] = parseFormattedNumber(row.querySelector('.harga-material').value);
-            data[`Harga_Upah_Item_${itemIndex}`] = parseFormattedNumber(row.querySelector('.harga-upah').value);
-            data[`Total_Material_Item_${itemIndex}`] = parseRupiah(row.querySelector('.total-material').value);
-            data[`Total_Upah_Item_${itemIndex}`] = parseRupiah(row.querySelector('.total-upah').value);
-            data[`Total_Harga_Item_${itemIndex}`] = parseRupiah(row.querySelector('.total-harga').value);
-            itemIndex++;
-        }
+        data[`Kategori_Pekerjaan_${itemIndex}`] = row.dataset.category;
+        data[`Jenis_Pekerjaan_${itemIndex}`] = row.querySelector('.jenis-pekerjaan').value;
+        data[`Satuan_Item_${itemIndex}`] = row.querySelector('.satuan').value;
+        data[`Volume_Item_${itemIndex}`] = parseFloat(row.querySelector('.volume').value) || 0;
+        data[`Harga_Material_Item_${itemIndex}`] = parseFormattedNumber(row.querySelector('.harga-material').value);
+        data[`Harga_Upah_Item_${itemIndex}`] = parseFormattedNumber(row.querySelector('.harga-upah').value);
+        data[`Total_Material_Item_${itemIndex}`] = parseRupiah(row.querySelector('.total-material').value);
+        data[`Total_Upah_Item_${itemIndex}`] = parseRupiah(row.querySelector('.total-upah').value);
+        data[`Total_Harga_Item_${itemIndex}`] = parseRupiah(row.querySelector('.total-harga').value);
+        itemIndex++;
     });
 
     try {
@@ -496,16 +451,12 @@ async function initializePage() {
         const selectedScope = lingkupPekerjaanSelect.value;
         sipilTablesWrapper.classList.toggle("hidden", selectedScope !== 'Sipil');
         meTablesWrapper.classList.toggle("hidden", selectedScope !== 'ME');
-        // Hanya panggil fetch jika cabang sudah dipilih
-        if (cabangSelect.value) {
-            fetchAndPopulatePrices();
-        }
+        fetchAndPopulatePrices();
     });
     
     cabangSelect.addEventListener('change', fetchAndPopulatePrices);
 
-    currentResetButton.addEventListener("click", (e) => {
-        e.preventDefault();
+    currentResetButton.addEventListener("click", () => {
         if (confirm("Apakah Anda yakin ingin mengulang dan mengosongkan semua isian form?")) {
             window.location.reload();
         }
