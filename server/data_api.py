@@ -89,6 +89,7 @@ def safe_to_float(value):
     if not s_value or s_value == '-':
         return 0.0
     try:
+        # Menghapus pemisah ribuan (titik) dan mengganti koma desimal dengan titik
         return float(s_value.replace('.', '').replace(',', '.'))
     except (ValueError, TypeError):
         return 0.0
@@ -98,19 +99,18 @@ def process_price_value(raw_value):
     value_str = str(raw_value).strip().lower()
     if value_str == 'kondisional':
         return 'Kondisional'
-    if 'kontraktor' in value_str: # Mencakup "Beban Kontraktor" atau variasi lain
+    if 'kontraktor' in value_str:  # Mencakup "Beban Kontraktor" atau variasi
         return 0.0
     return safe_to_float(raw_value)
 
-# --- PERUBAHAN UTAMA DI SINI ---
+# --- FUNGSI UTAMA YANG DIPERBAIKI ---
 def process_sheet(sheet, lingkup):
-    # Tentukan rentang data berdasarkan lingkup pekerjaan
     if lingkup == "SIPIL":
         data_range = 'A16:H'
-        header_offset = 2 # Data item dimulai 2 baris setelah header (16 + 2 = baris 18)
-    else: # Default untuk ME dan lainnya
+        header_offset = 2
+    else: # Default untuk ME
         data_range = 'A13:H'
-        header_offset = 2 # Data item dimulai 2 baris setelah header (13 + 2 = baris 15)
+        header_offset = 2
 
     try:
         all_values = sheet.get(data_range)
@@ -122,19 +122,22 @@ def process_sheet(sheet, lingkup):
     categorized_prices = {}
     current_category = "Uncategorized"
 
-    no_col_index = 1 
+    # Indeks Kolom berdasarkan struktur sheet (A=0, B=1, dst.)
+    no_col_index = 1
     jenis_pekerjaan_col_index = 3
     sat_col_index = 4
     material_col_index = 6
     upah_col_index = 7
 
     for row in data_rows:
+        # Pastikan ada nama pekerjaan di kolom D (indeks 3)
         if len(row) <= jenis_pekerjaan_col_index or not row[jenis_pekerjaan_col_index].strip():
             continue
 
         no_val = row[no_col_index].strip()
         jenis_pekerjaan = row[jenis_pekerjaan_col_index].strip()
         
+        # Cek apakah ini baris kategori (misal: "I", "II", "A", "B")
         is_category = False
         try:
             int(no_val)
@@ -147,24 +150,25 @@ def process_sheet(sheet, lingkup):
                 categorized_prices[current_category] = []
             continue
 
-        if len(row) > upah_col_index:
-            harga_material_raw = row[material_col_index] if len(row) > material_col_index else "0"
-            harga_upah_raw = row[upah_col_index] if len(row) > upah_col_index else "0"
+        # Proses sebagai item pekerjaan biasa
+        # Ambil nilai dengan aman, berikan default "0" jika kolom tidak ada
+        harga_material_raw = row[material_col_index] if len(row) > material_col_index else "0"
+        harga_upah_raw = row[upah_col_index] if len(row) > upah_col_index else "0"
+        satuan = row[sat_col_index] if len(row) > sat_col_index else ""
 
-            # Menggunakan fungsi baru untuk memproses harga
-            harga_material = process_price_value(harga_material_raw)
-            harga_upah = process_price_value(harga_upah_raw)
-            
-            item_data = {
-                "Jenis Pekerjaan": jenis_pekerjaan,
-                "Satuan": row[sat_col_index],
-                "Harga Material": harga_material,
-                "Harga Upah": harga_upah
-            }
+        harga_material = process_price_value(harga_material_raw)
+        harga_upah = process_price_value(harga_upah_raw)
+        
+        item_data = {
+            "Jenis Pekerjaan": jenis_pekerjaan,
+            "Satuan": satuan,
+            "Harga Material": harga_material,
+            "Harga Upah": harga_upah
+        }
 
-            if current_category not in categorized_prices:
-                categorized_prices[current_category] = []
-            categorized_prices[current_category].append(item_data)
+        if current_category not in categorized_prices:
+            categorized_prices[current_category] = []
+        categorized_prices[current_category].append(item_data)
 
     return categorized_prices
 
@@ -178,7 +182,7 @@ def get_data():
         return jsonify({"error": "Missing 'cabang' or 'lingkup' parameter"}), 400
 
     cabang = cabang.upper()
-    lingkup_param = lingkup.upper() # Gunakan nama variabel yang berbeda
+    lingkup_param = lingkup.upper()
 
     if cabang not in SPREADSHEET_IDS or lingkup_param not in SPREADSHEET_IDS[cabang]:
         return jsonify({"error": f"Invalid 'cabang' or 'lingkup' parameter"}), 404
@@ -190,7 +194,7 @@ def get_data():
         client = gspread.authorize(creds)
         spreadsheet = client.open_by_key(spreadsheet_id)
         sheet = spreadsheet.get_worksheet(0)
-        # Kirim lingkup ke process_sheet
+        
         processed_data = process_sheet(sheet, lingkup_param)
         return jsonify(processed_data)
     except Exception as e:
