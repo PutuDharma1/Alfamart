@@ -93,6 +93,15 @@ def safe_to_float(value):
     except (ValueError, TypeError):
         return 0.0
 
+def process_price_value(raw_value):
+    """Memproses nilai harga dari sheet menjadi format yang benar."""
+    value_str = str(raw_value).strip().lower()
+    if value_str == 'kondisional':
+        return 'Kondisional'
+    if 'kontraktor' in value_str: # Mencakup "Beban Kontraktor" atau variasi lain
+        return 0.0
+    return safe_to_float(raw_value)
+
 # --- PERUBAHAN UTAMA DI SINI ---
 def process_sheet(sheet, lingkup):
     # Tentukan rentang data berdasarkan lingkup pekerjaan
@@ -142,8 +151,9 @@ def process_sheet(sheet, lingkup):
             harga_material_raw = row[material_col_index] if len(row) > material_col_index else "0"
             harga_upah_raw = row[upah_col_index] if len(row) > upah_col_index else "0"
 
-            harga_material = 'Kondisional' if str(harga_material_raw).lower().strip() == 'kondisional' else safe_to_float(harga_material_raw)
-            harga_upah = 'Kondisional' if str(harga_upah_raw).lower().strip() == 'kondisional' else safe_to_float(harga_upah_raw)
+            # Menggunakan fungsi baru untuk memproses harga
+            harga_material = process_price_value(harga_material_raw)
+            harga_upah = process_price_value(harga_upah_raw)
             
             item_data = {
                 "Jenis Pekerjaan": jenis_pekerjaan,
