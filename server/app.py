@@ -1,3 +1,7 @@
+# Tambahkan dua baris ini di paling atas, sebelum import lainnya
+from gevent import monkey
+monkey.patch_all()
+
 import datetime
 import os
 import traceback
@@ -54,7 +58,6 @@ def login():
         traceback.print_exc()
         return jsonify({"status": "error", "message": "An internal server error occurred"}), 500
 
-# --- FUNGSI YANG DIPERBARUI ---
 @app.route('/api/check_status', methods=['GET'])
 def check_status():
     email = request.args.get('email')
