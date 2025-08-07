@@ -68,7 +68,8 @@ class GoogleServiceProvider:
         file = self.drive_service.files().create(body=file_metadata, media_body=media, fields='id, webViewLink').execute()
         return file.get('webViewLink')
 
-    def check_user_submissions(self, email):
+    # --- FUNGSI YANG DIPERBARUI ---
+    def check_user_submissions(self, email, cabang):
         try:
             all_values = self.data_entry_sheet.get_all_values()
             if len(all_values) <= 1:
@@ -83,18 +84,23 @@ class GoogleServiceProvider:
             
             processed_locations = set()
             
+            # Filter berdasarkan cabang pengguna yang login (case-insensitive)
+            user_cabang = str(cabang).strip().lower()
+
             for record in reversed(records):
                 lokasi = str(record.get(config.COLUMN_NAMES.LOKASI, "")).strip().upper()
                 if not lokasi or lokasi in processed_locations:
                     continue
                 
                 status = str(record.get(config.COLUMN_NAMES.STATUS, "")).strip()
+                record_cabang = str(record.get(config.COLUMN_NAMES.CABANG, "")).strip().lower()
                 
                 if status in [config.STATUS.WAITING_FOR_COORDINATOR, config.STATUS.WAITING_FOR_MANAGER]:
                     pending_codes.append(lokasi)
                 elif status == config.STATUS.APPROVED:
                     approved_codes.append(lokasi)
-                elif status in [config.STATUS.REJECTED_BY_COORDINATOR, config.STATUS.REJECTED_BY_MANAGER]:
+                # HANYA tambahkan ke daftar jika cabangnya cocok
+                elif status in [config.STATUS.REJECTED_BY_COORDINATOR, config.STATUS.REJECTED_BY_MANAGER] and record_cabang == user_cabang:
                     submission_data = {key.replace(' ', '_'): val for key, val in record.items()}
                     rejected_submissions.append(submission_data)
 

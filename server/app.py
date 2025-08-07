@@ -1,7 +1,3 @@
-# Tambahkan dua baris ini di paling atas, sebelum import lainnya
-from gevent import monkey
-monkey.patch_all()
-
 import datetime
 import os
 import traceback
@@ -58,13 +54,16 @@ def login():
         traceback.print_exc()
         return jsonify({"status": "error", "message": "An internal server error occurred"}), 500
 
+# --- FUNGSI YANG DIPERBARUI ---
 @app.route('/api/check_status', methods=['GET'])
 def check_status():
     email = request.args.get('email')
-    if not email:
-        return jsonify({"error": "Email parameter is missing"}), 400
+    cabang = request.args.get('cabang') # Mengambil parameter cabang
+    if not email or not cabang:
+        return jsonify({"error": "Email and cabang parameters are missing"}), 400
     try:
-        status_data = google_provider.check_user_submissions(email)
+        # Meneruskan parameter cabang ke fungsi provider
+        status_data = google_provider.check_user_submissions(email, cabang)
         return jsonify(status_data), 200
     except Exception as e:
         traceback.print_exc()
