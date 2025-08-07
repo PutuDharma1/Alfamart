@@ -89,63 +89,70 @@ def safe_to_float(value):
     if not s_value or s_value == '-':
         return 0.0
     try:
+        # Menghapus pemisah ribuan (titik) dan mengganti koma desimal dengan titik
         return float(s_value.replace('.', '').replace(',', '.'))
     except (ValueError, TypeError):
         return 0.0
 
 def process_price_value(raw_value):
+    """Memproses nilai harga dari sheet menjadi format yang benar."""
     value_str = str(raw_value).strip().lower()
     if value_str == 'kondisional':
         return 'Kondisional'
-    if 'kontraktor' in value_str:
+    if 'kontraktor' in value_str:  # Mencakup "Beban Kontraktor" atau variasi
         return 0.0
     return safe_to_float(raw_value)
 
-# --- FUNGSI UTAMA DENGAN LOGIKA YANG DIPERBAIKI ---
+# --- FUNGSI UTAMA YANG DIPERBARUI ---
 def process_sheet(sheet, lingkup):
-    # Mengambil seluruh data dari sheet pertama agar lebih fleksibel
-    try:
-        worksheet = sheet.get_worksheet(0)
-        all_values = worksheet.get_all_values()
-    except Exception as e:
-        raise ValueError(f"Gagal mengambil data dari sheet. Error: {str(e)}")
+    if lingkup == "SIPIL":
+        data_range = 'A16:H'
+        header_offset = 2
+    else: # Default untuk ME
+        data_range = 'A13:H'
+        header_offset = 2
 
+    try:
+        all_values = sheet.get(data_range)
+    except Exception as e:
+        raise ValueError(f"Gagal mengambil data dari rentang {data_range}. Error: {str(e)}")
+
+    data_rows = all_values[header_offset:] if len(all_values) > header_offset else []
+    
     categorized_prices = {}
     current_category = "Uncategorized"
-    
-    # Indeks kolom (A=0, B=1, dst.)
+
+    # Indeks Kolom berdasarkan struktur sheet (A=0, B=1, dst.)
     no_col_index = 1
     jenis_pekerjaan_col_index = 3
     sat_col_index = 4
-    material_col_index = 6  # Kolom G
-    upah_col_index = 7      # Kolom H
+    material_col_index = 6
+    upah_col_index = 7
 
-    # Loop dimulai dari baris mana saja, tidak terpaku pada A16
-    for row in all_values:
+    for row in data_rows:
         # Lewati baris jika tidak ada isi di kolom "Jenis Pekerjaan"
         if len(row) <= jenis_pekerjaan_col_index or not row[jenis_pekerjaan_col_index].strip():
             continue
 
         no_val = row[no_col_index].strip()
         jenis_pekerjaan = row[jenis_pekerjaan_col_index].strip()
-
-        # Lewati header tabel
-        if jenis_pekerjaan.upper() == "JENIS PEKERJAAN":
-            continue
         
-        # Logika untuk mengenali Kategori Utama (Hanya Romawi)
+        # --- LOGIKA BARU UNTUK MENGENALI KATEGORI UTAMA ---
+        # Kategori utama adalah baris yang kolom "NO" nya HANYA berisi huruf Romawi.
         if re.fullmatch(r'^[IVXLCDM]+$', no_val):
             current_category = jenis_pekerjaan
             if current_category not in categorized_prices:
                 categorized_prices[current_category] = []
-            continue
+            continue # Lanjut ke baris berikutnya setelah menemukan kategori
 
-        # Item pekerjaan valid harus memiliki Satuan
+        # --- LOGIKA BARU UNTUK MENGENALI & MELEWATI SUB-JUDUL ---
+        # Diasumsikan sub-judul (seperti IX.a) tidak memiliki "Satuan".
         satuan_val = row[sat_col_index].strip() if len(row) > sat_col_index else ""
         if not satuan_val:
-            continue # Melewati sub-judul atau baris lain yang tidak memiliki satuan
-
-        # Mengambil harga dari kolom yang benar (G dan H)
+            # Ini kemungkinan adalah sub-judul, jadi kita lewati.
+            continue
+        
+        # Jika sampai di sini, berarti ini adalah item pekerjaan yang valid
         harga_material_raw = row[material_col_index] if len(row) > material_col_index else "0"
         harga_upah_raw = row[upah_col_index] if len(row) > upah_col_index else "0"
 
@@ -159,13 +166,11 @@ def process_sheet(sheet, lingkup):
             "Harga Upah": harga_upah
         }
 
-        # Pastikan kategori sudah ada sebelum menambahkan item
         if current_category not in categorized_prices:
             categorized_prices[current_category] = []
         categorized_prices[current_category].append(item_data)
 
     return categorized_prices
-
 
 # --- Endpoint API ---
 @data_bp.route('/get-data', methods=['GET'])
@@ -188,8 +193,9 @@ def get_data():
         creds = get_google_creds()
         client = gspread.authorize(creds)
         spreadsheet = client.open_by_key(spreadsheet_id)
+        sheet = spreadsheet.get_worksheet(0)
         
-        processed_data = process_sheet(spreadsheet, lingkup_param)
+        processed_data = process_sheet(sheet, lingkup_param)
         return jsonify(processed_data)
     except Exception as e:
         import traceback
