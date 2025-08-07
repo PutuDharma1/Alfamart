@@ -1,4 +1,4 @@
-# Tambahkan dua baris ini di paling atas, sebelum import lainnya
+# Pastikan dua baris ini ada di paling atas file
 from gevent import monkey
 monkey.patch_all()
 

@@ -36,7 +36,6 @@ const handleCurrencyInput = (event) => {
     calculateTotalPrice(input);
 };
 
-// --- FUNGSI YANG DIPERBARUI UNTUK DROPDOWN RAPI ---
 const populateJenisPekerjaanOptionsForNewRow = (rowElement) => {
     const scope = rowElement.dataset.scope;
     const selectEl = rowElement.querySelector(".jenis-pekerjaan");
@@ -52,20 +51,16 @@ const populateJenisPekerjaanOptionsForNewRow = (rowElement) => {
     selectEl.innerHTML = '<option value="">-- Pilih Jenis Pekerjaan --</option>';
 
     if (dataSource) {
-        // Loop melalui setiap kategori dari data master
         for (const category in dataSource) {
             const itemsInCategory = dataSource[category];
             if (itemsInCategory.length > 0) {
-                // Buat grup untuk kategori
                 const optgroup = document.createElement('optgroup');
                 optgroup.label = `--- ${category} ---`;
                 
-                // Tambahkan setiap item pekerjaan sebagai opsi di dalam grup
                 itemsInCategory.forEach(item => {
                     const option = document.createElement("option");
                     option.value = item["Jenis Pekerjaan"];
                     option.textContent = item["Jenis Pekerjaan"];
-                    // Kaitkan kategori ke opsi untuk autofill nanti
                     option.dataset.category = category;
                     optgroup.appendChild(option);
                 });
@@ -78,22 +73,17 @@ const populateJenisPekerjaanOptionsForNewRow = (rowElement) => {
     }
 };
 
-
 const autoFillPrices = (selectElement) => {
     const row = selectElement.closest("tr");
     if (!row) return;
 
-    // Dapatkan opsi yang dipilih, bukan hanya nilainya
     const selectedOption = selectElement.options[selectElement.selectedIndex];
     const selectedJenisPekerjaan = selectedOption.value;
     
-    // Gunakan data-category dari opsi yang dipilih
     const currentCategory = selectedOption.dataset.category;
     const currentLingkupPekerjaan = lingkupPekerjaanSelect.value;
     
-    // Jika tidak ada kategori (misal: memilih "--Pilih--"), reset dan keluar
     if (!currentCategory) {
-        // Reset fields
         const inputs = row.querySelectorAll('input');
         inputs.forEach(input => {
             if (input.classList.contains('volume')) input.value = "0.00";
@@ -103,6 +93,7 @@ const autoFillPrices = (selectElement) => {
                 input.style.backgroundColor = "";
             }
         });
+        row.querySelector('.satuan').value = '';
         calculateTotalPrice(row.querySelector(".volume"));
         return;
     }
@@ -144,27 +135,20 @@ const autoFillPrices = (selectElement) => {
     calculateTotalPrice(volumeInput);
 };
 
-
 const createBoQRow = (category, scope) => {
     const row = document.createElement("tr");
     row.classList.add("boq-item-row");
-    // Kategori sekarang hanya digunakan untuk data-scope, karena autofill akan mengambil dari opsi dropdown
     row.dataset.scope = scope; 
     row.innerHTML = `<td class="col-no"><span class="row-number"></span></td><td class="col-jenis-pekerjaan"><select class="jenis-pekerjaan form-control" name="Jenis_Pekerjaan_Item" required><option value="">-- Pilih --</option></select></td><td class="col-satuan"><input type="text" class="satuan form-control" name="Satuan_Item" required readonly /></td><td class="col-volume"><input type="text" class="volume form-control" name="Volume_Item" value="0.00" inputmode="decimal" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\\..*?)\\..*/g, '$1').replace(/(\\.\\d{2})\\d+/, '$1')" /></td><td class="col-harga"><input type="text" class="harga-material form-control" name="Harga_Material_Item" inputmode="numeric" required readonly /></td><td class="col-harga"><input type="text" class="harga-upah form-control" name="Harga_Upah_Item" inputmode="numeric" required readonly /></td><td class="col-harga"><input type="text" class="total-material form-control" disabled /></td><td class="col-harga"><input type="text" class="total-upah form-control" disabled /></td><td class="col-harga"><input type="text" class="total-harga form-control" disabled /></td><td class="col-aksi"><button type="button" class="delete-row-btn">Hapus</button></td>`;
     row.querySelector(".volume").addEventListener("input", (e) => calculateTotalPrice(e.target));
     row.querySelector(".delete-row-btn").addEventListener("click", () => { row.remove(); updateAllRowNumbersAndTotals(); });
-    // Event listener autofill diubah sedikit
     row.querySelector('.jenis-pekerjaan').addEventListener('change', (e) => {
-        // Ambil elemen select yang berubah
         const selectElement = e.target;
-        // Dapatkan elemen baris (tr) terdekat
         const tableRow = selectElement.closest('tr');
         if (tableRow) {
-            // Isi kategori baris berdasarkan data dari opsi yang dipilih
             const selectedOption = selectElement.options[selectElement.selectedIndex];
             tableRow.dataset.category = selectedOption.dataset.category || '';
         }
-        // Panggil fungsi autofill seperti biasa
         autoFillPrices(selectElement);
     });
     return row;
@@ -213,7 +197,6 @@ const updateAllRowNumbersAndTotals = () => {
     document.querySelectorAll(".boq-table-body").forEach(tbody => {
         tbody.querySelectorAll(".boq-item-row").forEach((row, index) => {
             row.querySelector(".row-number").textContent = index + 1;
-            calculateTotalPrice(row.querySelector(".volume"));
         });
         calculateSubTotal(tbody);
     });
@@ -248,13 +231,16 @@ const calculateGrandTotal = () => {
     if (grandTotalAmount) grandTotalAmount.textContent = formatRupiah(total);
 };
 
+// --- FUNGSI YANG DIPERBARUI DENGAN KEAMANAN ---
 async function populateFormWithHistory(data) {
     console.log("Populating form with rejected data:", data);
     form.reset();
     document.querySelectorAll(".boq-table-body").forEach(tbody => tbody.innerHTML = "");
 
     for (const key in data) {
-        const input = form.querySelector(`[name="${key.replace(/ /g, '_')}"]`);
+        // Ganti nama properti dari sheet (dengan spasi) ke nama input (dengan underscore)
+        const inputName = key.replace(/ /g, '_');
+        const input = form.querySelector(`[name="${inputName}"]`);
         if (input) {
             input.value = data[key];
         }
@@ -263,11 +249,13 @@ async function populateFormWithHistory(data) {
     lingkupPekerjaanSelect.dispatchEvent(new Event('change'));
     cabangSelect.dispatchEvent(new Event('change'));
     
-    await new Promise(resolve => setTimeout(resolve, 1500)); 
+    // Tunggu data harga selesai dimuat
+    await new Promise(resolve => setTimeout(resolve, 2000)); 
 
+    // Kosongkan tabel lagi sebelum mengisi dengan data history
     document.querySelectorAll(".boq-table-body").forEach(tbody => tbody.innerHTML = "");
 
-    for (let i = 1; i <= 100; i++) {
+    for (let i = 1; i <= 200; i++) { // Naikkan batas loop jika perlu
         if (data[`Jenis_Pekerjaan_${i}`]) {
             const category = data[`Kategori_Pekerjaan_${i}`];
             const scope = lingkupPekerjaanSelect.value;
@@ -279,27 +267,22 @@ async function populateFormWithHistory(data) {
                 populateJenisPekerjaanOptionsForNewRow(newRow);
                 
                 newRow.querySelector('.jenis-pekerjaan').value = data[`Jenis_Pekerjaan_${i}`];
-                newRow.querySelector('.satuan').value = data[`Satuan_Item_${i}`];
-                newRow.querySelector('.volume').value = data[`Volume_Item_${i}`];
+                
+                // Panggil autofill untuk mengisi satuan & harga awal dari master
+                autoFillPrices(newRow.querySelector('.jenis-pekerjaan'));
+
+                // Timpa nilai dengan data dari history
+                newRow.querySelector('.volume').value = data[`Volume_Item_${i}`] || '0.00';
                 
                 const materialInput = newRow.querySelector('.harga-material');
                 const upahInput = newRow.querySelector('.harga-upah');
                 
-                materialInput.value = formatNumberWithSeparators(data[`Harga_Material_Item_${i}`]);
-                upahInput.value = formatNumberWithSeparators(data[`Harga_Upah_Item_${i}`]);
-                
-                const jenisPekerjaanData = categorizedPrices.categorizedSipilPrices[category]?.find(item => item["Jenis Pekerjaan"] === data[`Jenis_Pekerjaan_${i}`]) || categorizedPrices.categorizedMePrices[category]?.find(item => item["Jenis Pekerjaan"] === data[`Jenis_Pekerjaan_${i}`]);
-                if(jenisPekerjaanData) {
-                    if (jenisPekerjaanData["Harga Material"] === "Kondisional") {
-                        materialInput.readOnly = false;
-                        materialInput.style.backgroundColor = "#fffde7";
-                        materialInput.addEventListener('input', handleCurrencyInput);
-                    }
-                     if (jenisPekerjaanData["Harga Upah"] === "Kondisional") {
-                        upahInput.readOnly = false;
-                        upahInput.style.backgroundColor = "#fffde7";
-                        upahInput.addEventListener('input', handleCurrencyInput);
-                    }
+                // Cek apakah harga kondisional
+                if (materialInput.readOnly === false) { // Jika master-nya kondisional
+                    materialInput.value = formatNumberWithSeparators(data[`Harga_Material_Item_${i}`]);
+                }
+                if (upahInput.readOnly === false) { // Jika master-nya kondisional
+                    upahInput.value = formatNumberWithSeparators(data[`Harga_Upah_Item_${i}`]);
                 }
             }
         }
@@ -325,16 +308,22 @@ async function handleFormSubmit() {
 
     let itemIndex = 1;
     document.querySelectorAll(".boq-table-body:not(.hidden) .boq-item-row").forEach(row => {
-        data[`Kategori_Pekerjaan_${itemIndex}`] = row.dataset.category;
-        data[`Jenis_Pekerjaan_${itemIndex}`] = row.querySelector('.jenis-pekerjaan').value;
-        data[`Satuan_Item_${itemIndex}`] = row.querySelector('.satuan').value;
-        data[`Volume_Item_${itemIndex}`] = parseFloat(row.querySelector('.volume').value) || 0;
-        data[`Harga_Material_Item_${itemIndex}`] = parseFormattedNumber(row.querySelector('.harga-material').value);
-        data[`Harga_Upah_Item_${itemIndex}`] = parseFormattedNumber(row.querySelector('.harga-upah').value);
-        data[`Total_Material_Item_${itemIndex}`] = parseRupiah(row.querySelector('.total-material').value);
-        data[`Total_Upah_Item_${itemIndex}`] = parseRupiah(row.querySelector('.total-upah').value);
-        data[`Total_Harga_Item_${itemIndex}`] = parseRupiah(row.querySelector('.total-harga').value);
-        itemIndex++;
+        // Hanya kirim data jika ada jenis pekerjaan yang dipilih dan volume > 0
+        const jenisPekerjaan = row.querySelector('.jenis-pekerjaan').value;
+        const volume = parseFloat(row.querySelector('.volume').value) || 0;
+
+        if (jenisPekerjaan && volume > 0) {
+            data[`Kategori_Pekerjaan_${itemIndex}`] = row.dataset.category;
+            data[`Jenis_Pekerjaan_${itemIndex}`] = jenisPekerjaan;
+            data[`Satuan_Item_${itemIndex}`] = row.querySelector('.satuan').value;
+            data[`Volume_Item_${itemIndex}`] = volume;
+            data[`Harga_Material_Item_${itemIndex}`] = parseFormattedNumber(row.querySelector('.harga-material').value);
+            data[`Harga_Upah_Item_${itemIndex}`] = parseFormattedNumber(row.querySelector('.harga-upah').value);
+            data[`Total_Material_Item_${itemIndex}`] = parseRupiah(row.querySelector('.total-material').value);
+            data[`Total_Upah_Item_${itemIndex}`] = parseRupiah(row.querySelector('.total-upah').value);
+            data[`Total_Harga_Item_${itemIndex}`] = parseRupiah(row.querySelector('.total-harga').value);
+            itemIndex++;
+        }
     });
 
     try {
@@ -403,7 +392,6 @@ function createTableStructure(categoryName, scope) {
     return wrapper;
 }
 
-// --- FUNGSI YANG DIPERBARUI ---
 async function initializePage() {
     form = document.getElementById("form");
     submitButton = document.getElementById("submit-button");
@@ -423,13 +411,11 @@ async function initializePage() {
     sipilCategories.forEach(category => sipilTablesWrapper.appendChild(createTableStructure(category, "Sipil")));
     meCategories.forEach(category => meTablesWrapper.appendChild(createTableStructure(category, "ME")));
     
-    // Ambil email dan cabang dari session storage
     const userEmail = sessionStorage.getItem('loggedInUserEmail');
     const userCabang = sessionStorage.getItem('loggedInUserCabang');
 
     try {
         if (userEmail && userCabang) {
-            // Sertakan 'cabang' dalam permintaan ke API
             const statusResponse = await fetch(`${PYTHON_API_BASE_URL}/api/check_status?email=${encodeURIComponent(userEmail)}&cabang=${encodeURIComponent(userCabang)}`);
             const statusResult = await statusResponse.json();
             if (statusResult.rejected_submissions && statusResult.rejected_submissions.length > 0) {
