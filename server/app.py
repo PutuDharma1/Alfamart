@@ -1,3 +1,7 @@
+# Tambahkan dua baris ini di paling atas, sebelum import lainnya
+from gevent import monkey
+monkey.patch_all()
+
 import datetime
 import os
 import traceback
