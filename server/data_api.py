@@ -101,45 +101,37 @@ def process_price_value(raw_value):
         return 0.0
     return safe_to_float(raw_value)
 
-# --- FUNGSI UTAMA YANG DIPERBAIKI ---
+# --- FUNGSI UTAMA DENGAN LOGIKA YANG DIPERBAIKI ---
 def process_sheet(sheet, lingkup):
-    # Mengambil seluruh data dari sheet pertama
+    # Mengambil seluruh data dari sheet pertama agar lebih fleksibel
     try:
-        all_values = sheet.get_worksheet(0).get_all_values()
+        worksheet = sheet.get_worksheet(0)
+        all_values = worksheet.get_all_values()
     except Exception as e:
         raise ValueError(f"Gagal mengambil data dari sheet. Error: {str(e)}")
 
     categorized_prices = {}
     current_category = "Uncategorized"
     
-    # Menemukan baris header utama (No, Kode, Jenis Pekerjaan, etc.)
-    header_row_index = -1
-    for i, row in enumerate(all_values):
-        if "JENIS PEKERJAAN" in [str(cell).upper() for cell in row]:
-            header_row_index = i
-            break
-            
-    if header_row_index == -1:
-        raise ValueError("Header 'Jenis Pekerjaan' tidak ditemukan di dalam sheet.")
-        
-    # Data dimulai setelah baris header
-    data_rows = all_values[header_row_index + 1:]
-
-    # Indeks kolom berdasarkan posisi relatif dari "JENIS PEKERJAAN"
-    # A=0, B=1, C=2, D=3 (Jenis Pekerjaan), E=4, F=5, G=6 (Material), H=7 (Upah)
+    # Indeks kolom (A=0, B=1, dst.)
     no_col_index = 1
     jenis_pekerjaan_col_index = 3
     sat_col_index = 4
-    material_col_index = 6
-    upah_col_index = 7
+    material_col_index = 6  # Kolom G
+    upah_col_index = 7      # Kolom H
 
-    for row in data_rows:
-        # Cek jika baris kosong atau tidak relevan
+    # Loop dimulai dari baris mana saja, tidak terpaku pada A16
+    for row in all_values:
+        # Lewati baris jika tidak ada isi di kolom "Jenis Pekerjaan"
         if len(row) <= jenis_pekerjaan_col_index or not row[jenis_pekerjaan_col_index].strip():
             continue
 
         no_val = row[no_col_index].strip()
         jenis_pekerjaan = row[jenis_pekerjaan_col_index].strip()
+
+        # Lewati header tabel
+        if jenis_pekerjaan.upper() == "JENIS PEKERJAAN":
+            continue
         
         # Logika untuk mengenali Kategori Utama (Hanya Romawi)
         if re.fullmatch(r'^[IVXLCDM]+$', no_val):
@@ -153,7 +145,7 @@ def process_sheet(sheet, lingkup):
         if not satuan_val:
             continue # Melewati sub-judul atau baris lain yang tidak memiliki satuan
 
-        # Mengambil harga dari kolom G (indeks 6) dan H (indeks 7)
+        # Mengambil harga dari kolom yang benar (G dan H)
         harga_material_raw = row[material_col_index] if len(row) > material_col_index else "0"
         harga_upah_raw = row[upah_col_index] if len(row) > upah_col_index else "0"
 
@@ -167,6 +159,7 @@ def process_sheet(sheet, lingkup):
             "Harga Upah": harga_upah
         }
 
+        # Pastikan kategori sudah ada sebelum menambahkan item
         if current_category not in categorized_prices:
             categorized_prices[current_category] = []
         categorized_prices[current_category].append(item_data)
