@@ -82,6 +82,7 @@ def get_google_creds():
             raise Exception("Critical: token.json is missing, invalid, or expired and cannot be refreshed.")
     return creds
 
+# --- FUNGSI safe_to_float YANG DIPERBAIKI ---
 def safe_to_float(value):
     if isinstance(value, (int, float)):
         return float(value)
@@ -89,7 +90,8 @@ def safe_to_float(value):
     if not s_value or s_value == '-':
         return 0.0
     try:
-        return float(s_value.replace('.', '').replace(',', '.'))
+        # Menghapus tanda koma (,) pemisah ribuan sebelum konversi
+        return float(s_value.replace(',', ''))
     except (ValueError, TypeError):
         return 0.0
 
@@ -99,9 +101,9 @@ def process_price_value(raw_value):
         return 'Kondisional'
     if 'kontraktor' in value_str:
         return 0.0
+    # Menggunakan safe_to_float yang sudah diperbaiki
     return safe_to_float(raw_value)
 
-# --- FUNGSI UTAMA DENGAN LOGIKA YANG DIPERBAIKI ---
 def process_sheet(sheet, lingkup):
     try:
         worksheet = sheet.get_worksheet(0)
@@ -119,22 +121,33 @@ def process_sheet(sheet, lingkup):
     
     # Pencarian dinamis untuk kolom harga
     header_row = []
-    if lingkup == "SIPIL":
-        # Untuk Sipil, header ada di baris 17 (indeks 16)
-        if len(all_values) > 16:
-            header_row = [str(cell).strip() for cell in all_values[16]]
-    elif lingkup == "ME":
-        # Untuk ME, header ada di baris 14 (indeks 13)
-        if len(all_values) > 13:
-            header_row = [str(cell).strip() for cell in all_values[13]]
+    header_row_index = -1
     
+    # Menentukan baris header berdasarkan lingkup
+    target_header_row_index = 16 if lingkup == "SIPIL" else 13
+    
+    if len(all_values) > target_header_row_index:
+        header_row_index = target_header_row_index
+        header_row = [str(cell).strip() for cell in all_values[header_row_index]]
+    else:
+        raise ValueError(f"Baris header tidak ditemukan di sheet untuk lingkup {lingkup}.")
+
     # Dapatkan indeks dari header yang ditemukan
     try:
-        material_col_index = header_row.index("Material")
-        upah_col_index = header_row.index("Upah")
-    except ValueError:
-        # Fallback jika header tidak ditemukan
-        raise ValueError(f"Header 'Material' atau 'Upah' tidak ditemukan pada baris yang seharusnya untuk lingkup {lingkup}.")
+        # Mencari header yang mengandung kata 'Material' dan 'Upah'
+        material_col_index = -1
+        upah_col_index = -1
+        for i, header_text in enumerate(header_row):
+            if "material" in header_text.lower():
+                material_col_index = i
+            if "upah" in header_text.lower():
+                upah_col_index = i
+        
+        if material_col_index == -1 or upah_col_index == -1:
+            raise ValueError("Header 'Material' atau 'Upah' tidak ditemukan.")
+
+    except ValueError as e:
+        raise ValueError(f"Error pada header untuk lingkup {lingkup}: {e}")
 
     # Loop seluruh baris untuk memproses data
     for row in all_values:
@@ -175,7 +188,6 @@ def process_sheet(sheet, lingkup):
         categorized_prices[current_category].append(item_data)
 
     return categorized_prices
-
 
 # --- Endpoint API ---
 @data_bp.route('/get-data', methods=['GET'])
