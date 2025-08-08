@@ -12,7 +12,7 @@ let categorizedPrices = {};
 let pendingStoreCodes = [];
 let approvedStoreCodes = [];
 let rejectedSubmissionsList = [];
-let originalFormData = null; // Variabel baru untuk menyimpan data asli saat revisi
+let originalFormData = null;
 
 const sipilCategories = ["PEKERJAAN PERSIAPAN", "PEKERJAAN BOBOKAN / BONGKARAN", "PEKERJAAN TANAH", "PEKERJAAN PONDASI & BETON", "PEKERJAAN PASANGAN", "PEKERJAAN BESI", "PEKERJAAN KERAMIK", "PEKERJAAN PLUMBING", "PEKERJAAN SANITARY & ACECORIES", "PEKERJAAN ATAP", "PEKERJAAN KUSEN, PINTU & KACA", "PEKERJAAN FINISHING", "PEKERJAAN TAMBAHAN"];
 const meCategories = ["INSTALASI", "FIXTURE", "PEKERJAAN TAMBAH DAYA LISTRIK"];
@@ -37,7 +37,6 @@ const handleCurrencyInput = (event) => {
     calculateTotalPrice(input);
 };
 
-// --- FUNGSI BARU UNTUK MENGUMPULKAN DATA FORM SAAT INI ---
 function getCurrentFormData() {
     const formData = new FormData(form);
     const data = Object.fromEntries(formData.entries());
@@ -57,7 +56,7 @@ function getCurrentFormData() {
             itemIndex++;
         }
     });
-    return JSON.stringify(data); // Konversi ke string untuk perbandingan mudah
+    return JSON.stringify(data);
 }
 
 const populateJenisPekerjaanOptionsForNewRow = (rowElement) => {
@@ -66,10 +65,6 @@ const populateJenisPekerjaanOptionsForNewRow = (rowElement) => {
     const selectEl = rowElement.querySelector(".jenis-pekerjaan");
 
     if (!selectEl) return;
-    if (!cabangSelect.value || !lingkupPekerjaanSelect.value) {
-        selectEl.innerHTML = '<option value="">-- Pilih Cabang & Lingkup Pekerjaan Dulu --</option>';
-        return;
-    }
     
     const dataSource = (scope === "Sipil") ? categorizedPrices.categorizedSipilPrices : (scope === "ME") ? categorizedPrices.categorizedMePrices : {};
     const itemsInCategory = dataSource ? (dataSource[category] || []) : [];
@@ -88,6 +83,7 @@ const populateJenisPekerjaanOptionsForNewRow = (rowElement) => {
     }
 };
 
+// --- FUNGSI YANG DIPERBAIKI ---
 const autoFillPrices = (selectElement) => {
     const row = selectElement.closest("tr");
     if (!row) return;
@@ -96,25 +92,23 @@ const autoFillPrices = (selectElement) => {
     const currentCategory = row.dataset.category;
     const currentLingkupPekerjaan = lingkupPekerjaanSelect.value;
     
-    if (!selectedJenisPekerjaan) {
-        const inputs = row.querySelectorAll('input');
-        inputs.forEach(input => {
-            if (input.classList.contains('volume')) input.value = "0.00";
-            else if(input.type === 'text') input.value = "0";
-            if (input.classList.contains('harga-material') || input.classList.contains('harga-upah')) {
-                input.readOnly = true;
-                input.style.backgroundColor = "";
-            }
-        });
-        row.querySelector('.satuan').value = '';
-        calculateTotalPrice(row.querySelector(".volume"));
-        return;
-    }
-
     const volumeInput = row.querySelector(".volume");
     const materialPriceInput = row.querySelector(".harga-material");
     const upahPriceInput = row.querySelector(".harga-upah");
     const satuanInput = row.querySelector(".satuan");
+
+    if (!selectedJenisPekerjaan) {
+        volumeInput.value = "0.00";
+        materialPriceInput.value = "0";
+        upahPriceInput.value = "0";
+        satuanInput.value = "";
+        materialPriceInput.readOnly = true;
+        upahPriceInput.readOnly = true;
+        materialPriceInput.style.backgroundColor = "";
+        upahPriceInput.style.backgroundColor = "";
+        calculateTotalPrice(selectElement); // Hitung ulang total
+        return;
+    }
 
     materialPriceInput.removeEventListener('input', handleCurrencyInput);
     upahPriceInput.removeEventListener('input', handleCurrencyInput);
@@ -140,12 +134,14 @@ const autoFillPrices = (selectElement) => {
         setupPriceInput(materialPriceInput, selectedItem["Harga Material"]);
         setupPriceInput(upahPriceInput, selectedItem["Harga Upah"]);
     } else {
-        volumeInput.value = "0.00"; volumeInput.readOnly = false;
-        materialPriceInput.value = "0"; materialPriceInput.readOnly = true; materialPriceInput.style.backgroundColor = "";
-        upahPriceInput.value = "0"; upahPriceInput.readOnly = true; upahPriceInput.style.backgroundColor = "";
+        volumeInput.value = "0.00";
+        materialPriceInput.value = "0";
+        upahPriceInput.value = "0";
         satuanInput.value = "";
     }
-    calculateTotalPrice(volumeInput);
+    
+    // Panggil fungsi kalkulasi setelah harga terisi
+    calculateTotalPrice(selectElement);
 };
 
 const createBoQRow = (category, scope) => {
@@ -233,7 +229,6 @@ const calculateGrandTotal = () => {
     if (grandTotalAmount) grandTotalAmount.textContent = formatRupiah(total);
 };
 
-// --- FUNGSI YANG DIPERBARUI ---
 async function populateFormWithHistory(data) {
     form.reset();
     document.querySelectorAll(".boq-table-body").forEach(tbody => tbody.innerHTML = "");
@@ -283,24 +278,21 @@ async function populateFormWithHistory(data) {
     }
     updateAllRowNumbersAndTotals();
 
-    // Simpan data asli setelah form terisi penuh
     originalFormData = getCurrentFormData();
 }
 
-// --- FUNGSI YANG DIPERBARUI ---
 async function handleFormSubmit() {
     if (!form.checkValidity()) {
         form.reportValidity();
         return;
     }
 
-    // Periksa jika ada perubahan
     const currentData = getCurrentFormData();
     if (originalFormData && currentData === originalFormData) {
         messageDiv.textContent = 'Tidak ada perubahan yang terdeteksi. Silakan ubah data sebelum mengirim.';
-        messageDiv.style.backgroundColor = '#ffc107'; // Warna kuning untuk peringatan
+        messageDiv.style.backgroundColor = '#ffc107';
         messageDiv.style.display = 'block';
-        return; // Hentikan pengiriman
+        return;
     }
 
     submitButton.disabled = true;
