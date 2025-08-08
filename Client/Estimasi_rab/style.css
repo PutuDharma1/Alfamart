@@ -379,3 +379,9 @@ table tbody td input[readonly] {
     font-size: 1.5rem;
   }
 }
+/* Aturan untuk membuat dropdown rata kiri */
+table tbody td select.jenis-pekerjaan {
+    text-align: left;
+    -moz-text-align-last: left; /* Khusus untuk Firefox */
+    text-align-last: left;
+}
