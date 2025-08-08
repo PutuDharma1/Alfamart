@@ -36,7 +36,10 @@ const handleCurrencyInput = (event) => {
     calculateTotalPrice(input);
 };
 
+// --- FUNGSI YANG DIPERBAIKI ---
 const populateJenisPekerjaanOptionsForNewRow = (rowElement) => {
+    // Ambil kategori spesifik dari baris yang baru dibuat
+    const category = rowElement.dataset.category;
     const scope = rowElement.dataset.scope;
     const selectEl = rowElement.querySelector(".jenis-pekerjaan");
 
@@ -48,28 +51,20 @@ const populateJenisPekerjaanOptionsForNewRow = (rowElement) => {
     
     const dataSource = (scope === "Sipil") ? categorizedPrices.categorizedSipilPrices : (scope === "ME") ? categorizedPrices.categorizedMePrices : {};
     
+    // Ambil item HANYA untuk kategori yang relevan
+    const itemsInCategory = dataSource ? (dataSource[category] || []) : [];
+
     selectEl.innerHTML = '<option value="">-- Pilih Jenis Pekerjaan --</option>';
 
-    if (dataSource) {
-        for (const category in dataSource) {
-            const itemsInCategory = dataSource[category];
-            if (itemsInCategory.length > 0) {
-                const optgroup = document.createElement('optgroup');
-                optgroup.label = `--- ${category} ---`;
-                
-                itemsInCategory.forEach(item => {
-                    const option = document.createElement("option");
-                    option.value = item["Jenis Pekerjaan"];
-                    option.textContent = item["Jenis Pekerjaan"];
-                    option.dataset.category = category;
-                    optgroup.appendChild(option);
-                });
-                
-                selectEl.appendChild(optgroup);
-            }
-        }
+    if (itemsInCategory.length > 0) {
+        itemsInCategory.forEach(item => {
+            const option = document.createElement("option");
+            option.value = item["Jenis Pekerjaan"];
+            option.textContent = item["Jenis Pekerjaan"];
+            selectEl.appendChild(option);
+        });
     } else {
-        selectEl.innerHTML = '<option value="">-- Tidak ada data harga --</option>';
+        selectEl.innerHTML = '<option value="">-- Tidak ada item --</option>';
     }
 };
 
@@ -77,13 +72,12 @@ const autoFillPrices = (selectElement) => {
     const row = selectElement.closest("tr");
     if (!row) return;
 
-    const selectedOption = selectElement.options[selectElement.selectedIndex];
-    const selectedJenisPekerjaan = selectedOption.value;
-    
-    const currentCategory = selectedOption.dataset.category;
+    const selectedJenisPekerjaan = selectElement.value;
+    // Kategori sekarang diambil dari data-category baris (tr), bukan dari dropdown lagi
+    const currentCategory = row.dataset.category;
     const currentLingkupPekerjaan = lingkupPekerjaanSelect.value;
     
-    if (!currentCategory) {
+    if (!selectedJenisPekerjaan) {
         const inputs = row.querySelectorAll('input');
         inputs.forEach(input => {
             if (input.classList.contains('volume')) input.value = "0.00";
@@ -143,15 +137,7 @@ const createBoQRow = (category, scope) => {
     row.innerHTML = `<td class="col-no"><span class="row-number"></span></td><td class="col-jenis-pekerjaan"><select class="jenis-pekerjaan form-control" name="Jenis_Pekerjaan_Item" required><option value="">-- Pilih --</option></select></td><td class="col-satuan"><input type="text" class="satuan form-control" name="Satuan_Item" required readonly /></td><td class="col-volume"><input type="text" class="volume form-control" name="Volume_Item" value="0.00" inputmode="decimal" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\\..*?)\\..*/g, '$1').replace(/(\\.\\d{2})\\d+/, '$1')" /></td><td class="col-harga"><input type="text" class="harga-material form-control" name="Harga_Material_Item" inputmode="numeric" required readonly /></td><td class="col-harga"><input type="text" class="harga-upah form-control" name="Harga_Upah_Item" inputmode="numeric" required readonly /></td><td class="col-harga"><input type="text" class="total-material form-control" disabled /></td><td class="col-harga"><input type="text" class="total-upah form-control" disabled /></td><td class="col-harga"><input type="text" class="total-harga form-control" disabled /></td><td class="col-aksi"><button type="button" class="delete-row-btn">Hapus</button></td>`;
     row.querySelector(".volume").addEventListener("input", (e) => calculateTotalPrice(e.target));
     row.querySelector(".delete-row-btn").addEventListener("click", () => { row.remove(); updateAllRowNumbersAndTotals(); });
-    row.querySelector('.jenis-pekerjaan').addEventListener('change', (e) => {
-        const selectElement = e.target;
-        const tableRow = selectElement.closest('tr');
-        if (tableRow) {
-            const selectedOption = selectElement.options[selectElement.selectedIndex];
-            tableRow.dataset.category = selectedOption.dataset.category || category;
-        }
-        autoFillPrices(selectElement);
-    });
+    row.querySelector('.jenis-pekerjaan').addEventListener('change', (e) => autoFillPrices(e.target));
     return row;
 };
 
@@ -228,17 +214,13 @@ const calculateGrandTotal = () => {
     if (grandTotalAmount) grandTotalAmount.textContent = formatRupiah(total);
 };
 
-// --- FUNGSI YANG DIPERBAIKI ---
 async function populateFormWithHistory(data) {
-    console.log("Menerima data untuk revisi:", data); // Untuk debugging
     form.reset();
     document.querySelectorAll(".boq-table-body").forEach(tbody => tbody.innerHTML = "");
 
     for (const key in data) {
-        // Mencari input berdasarkan nama kolom (dengan spasi)
         const input = form.querySelector(`[name="${key}"]`);
         if (input) {
-            console.log(`Mengisi form: ${key} = ${data[key]}`); // Untuk debugging
             input.value = data[key];
         }
     }
@@ -449,12 +431,15 @@ async function initializePage() {
                 const newRow = createBoQRow(category, scope);
                 targetTbody.appendChild(newRow);
                 populateJenisPekerjaanOptionsForNewRow(newRow);
+                updateAllRowNumbersAndTotals();
             }
         });
     });
     
     lingkupPekerjaanSelect.addEventListener("change", () => {
         const selectedScope = lingkupPekerjaanSelect.value;
+        document.querySelectorAll(".boq-table-body").forEach(tbody => tbody.innerHTML = "");
+        updateAllRowNumbersAndTotals();
         sipilTablesWrapper.classList.toggle("hidden", selectedScope !== 'Sipil');
         meTablesWrapper.classList.toggle("hidden", selectedScope !== 'ME');
         if (cabangSelect.value) {
@@ -462,7 +447,11 @@ async function initializePage() {
         }
     });
     
-    cabangSelect.addEventListener('change', fetchAndPopulatePrices);
+    cabangSelect.addEventListener('change', () => {
+        document.querySelectorAll(".boq-table-body").forEach(tbody => tbody.innerHTML = "");
+        updateAllRowNumbersAndTotals();
+        fetchAndPopulatePrices();
+    });
 
     currentResetButton.addEventListener("click", () => {
         if (confirm("Apakah Anda yakin ingin mengulang dan mengosongkan semua isian form?")) {
