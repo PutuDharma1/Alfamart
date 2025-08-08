@@ -67,6 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 sessionStorage.setItem('authenticated', 'true');
                 sessionStorage.setItem('loggedInUserEmail', username);
+                // --- BARIS INI DITAMBAHKAN ---
                 sessionStorage.setItem('loggedInUserCabang', password);
 
                 setTimeout(() => {

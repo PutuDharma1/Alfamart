@@ -18,6 +18,25 @@ const sipilCategories = ["PEKERJAAN PERSIAPAN", "PEKERJAAN BOBOKAN / BONGKARAN",
 const meCategories = ["INSTALASI", "FIXTURE", "PEKERJAAN TAMBAH DAYA LISTRIK"];
 const PYTHON_API_BASE_URL = "https://alfamart.onrender.com";
 
+// --- PETA GRUP CABANG KHUSUS ---
+const branchGroups = {
+    "BANDUNG 1": ["BANDUNG 1", "BANDUNG 2"],
+    "BANDUNG 2": ["BANDUNG 1", "BANDUNG 2"],
+    "LOMBOK": ["LOMBOK", "SUMBAWA"],
+    "SUMBAWA": ["LOMBOK", "SUMBAWA"],
+    "MEDAN": ["MEDAN", "ACEH"],
+    "ACEH": ["MEDAN", "ACEH"],
+    "PALEMBANG": ["PALEMBANG", "BENGKULU", "BANGKA", "BELITUNG"],
+    "BENGKULU": ["PALEMBANG", "BENGKULU", "BANGKA", "BELITUNG"],
+    "BANGKA": ["PALEMBANG", "BENGKULU", "BANGKA", "BELITUNG"],
+    "BELITUNG": ["PALEMBANG", "BENGKULU", "BANGKA", "BELITUNG"],
+    "SIDOARJO": ["SIDOARJO", "SIDOARJO BPN_SMD", "MANOKWARI", "NTT", "SORONG"],
+    "SIDOARJO BPN_SMD": ["SIDOARJO", "SIDOARJO BPN_SMD", "MANOKWARI", "NTT", "SORONG"],
+    "MANOKWARI": ["SIDOARJO", "SIDOARJO BPN_SMD", "MANOKWARI", "NTT", "SORONG"],
+    "NTT": ["SIDOARJO", "SIDOARJO BPN_SMD", "MANOKWARI", "NTT", "SORONG"],
+    "SORONG": ["SIDOARJO", "SIDOARJO BPN_SMD", "MANOKWARI", "NTT", "SORONG"]
+};
+
 // --- Helper Functions ---
 const formatRupiah = (number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(number);
 const parseRupiah = (formattedString) => parseFloat(String(formattedString).replace(/Rp\s?|\./g, "").replace(/,/g, ".")) || 0;
@@ -83,7 +102,6 @@ const populateJenisPekerjaanOptionsForNewRow = (rowElement) => {
     }
 };
 
-// --- FUNGSI YANG DIPERBAIKI ---
 const autoFillPrices = (selectElement) => {
     const row = selectElement.closest("tr");
     if (!row) return;
@@ -106,7 +124,7 @@ const autoFillPrices = (selectElement) => {
         upahPriceInput.readOnly = true;
         materialPriceInput.style.backgroundColor = "";
         upahPriceInput.style.backgroundColor = "";
-        calculateTotalPrice(selectElement); // Hitung ulang total
+        calculateTotalPrice(selectElement);
         return;
     }
 
@@ -140,7 +158,6 @@ const autoFillPrices = (selectElement) => {
         satuanInput.value = "";
     }
     
-    // INI ADALAH BARIS KUNCI PERBAIKANNYA
     calculateTotalPrice(selectElement);
 };
 
@@ -240,8 +257,9 @@ async function populateFormWithHistory(data) {
         }
     }
     
-    lingkupPekerjaanSelect.dispatchEvent(new Event('change'));
+    // Panggil event change secara manual setelah mengisi data
     cabangSelect.dispatchEvent(new Event('change'));
+    lingkupPekerjaanSelect.dispatchEvent(new Event('change'));
     
     await new Promise(resolve => setTimeout(resolve, 2000)); 
 
@@ -390,6 +408,7 @@ function createTableStructure(categoryName, scope) {
     return wrapper;
 }
 
+// --- FUNGSI UTAMA YANG DIPERBARUI ---
 async function initializePage() {
     form = document.getElementById("form");
     submitButton = document.getElementById("submit-button");
@@ -401,6 +420,37 @@ async function initializePage() {
     meTablesWrapper = document.getElementById("me-tables-wrapper");
     currentResetButton = form.querySelector("button[type='reset']");
 
+    const userEmail = sessionStorage.getItem('loggedInUserEmail');
+    const userCabang = sessionStorage.getItem('loggedInUserCabang')?.toUpperCase();
+
+    // --- LOGIKA BARU UNTUK CABANG OTOMATIS & GRUP ---
+    cabangSelect.innerHTML = ''; // Kosongkan dropdown
+
+    if (userCabang) {
+        // Cek apakah cabang pengguna ada di dalam grup khusus
+        const group = branchGroups[userCabang];
+        if (group) {
+            // Jika ya, isi dropdown dengan semua cabang di grup tersebut
+            group.forEach(branchName => {
+                const option = document.createElement('option');
+                option.value = branchName;
+                option.textContent = branchName;
+                cabangSelect.appendChild(option);
+            });
+            cabangSelect.value = userCabang; // Set default ke cabang pengguna
+            cabangSelect.disabled = false; // Biarkan bisa dipilih
+        } else {
+            // Jika tidak, isi hanya dengan cabang pengguna dan nonaktifkan
+            const option = document.createElement('option');
+            option.value = userCabang;
+            option.textContent = userCabang;
+            cabangSelect.appendChild(option);
+            cabangSelect.value = userCabang;
+            cabangSelect.disabled = true;
+        }
+    }
+    // --- AKHIR LOGIKA BARU ---
+
     messageDiv.textContent = 'Memuat data status...';
     messageDiv.style.display = 'block';
 
@@ -408,9 +458,6 @@ async function initializePage() {
     meTablesWrapper.innerHTML = '';
     sipilCategories.forEach(category => sipilTablesWrapper.appendChild(createTableStructure(category, "Sipil")));
     meCategories.forEach(category => meTablesWrapper.appendChild(createTableStructure(category, "ME")));
-    
-    const userEmail = sessionStorage.getItem('loggedInUserEmail');
-    const userCabang = sessionStorage.getItem('loggedInUserCabang');
 
     try {
         if (userEmail && userCabang) {
@@ -424,10 +471,6 @@ async function initializePage() {
             } else {
                 messageDiv.style.display = 'none';
             }
-            if (statusResult.active_codes) {
-                pendingStoreCodes = statusResult.active_codes.pending || [];
-                approvedStoreCodes = statusResult.active_codes.approved || [];
-            }
         } else {
              messageDiv.style.display = 'none';
         }
@@ -437,7 +480,6 @@ async function initializePage() {
         messageDiv.style.backgroundColor = '#dc3545';
     } finally {
         lingkupPekerjaanSelect.disabled = false;
-        cabangSelect.disabled = false;
     }
     
     document.getElementById('lokasi')?.addEventListener('input', function(e) {
@@ -467,7 +509,7 @@ async function initializePage() {
         });
     });
     
-    const handleScopeChange = () => {
+    lingkupPekerjaanSelect.addEventListener("change", () => {
         const selectedScope = lingkupPekerjaanSelect.value;
         document.querySelectorAll(".boq-table-body").forEach(tbody => tbody.innerHTML = "");
         updateAllRowNumbersAndTotals();
@@ -476,16 +518,13 @@ async function initializePage() {
         if (cabangSelect.value) {
             fetchAndPopulatePrices();
         }
-    };
+    });
 
-    const handleBranchChange = () => {
+    cabangSelect.addEventListener('change', () => {
         document.querySelectorAll(".boq-table-body").forEach(tbody => tbody.innerHTML = "");
         updateAllRowNumbersAndTotals();
         fetchAndPopulatePrices();
-    };
-
-    lingkupPekerjaanSelect.addEventListener("change", handleScopeChange);
-    cabangSelect.addEventListener('change', handleBranchChange);
+    });
 
     currentResetButton.addEventListener("click", () => {
         if (confirm("Apakah Anda yakin ingin mengulang dan mengosongkan semua isian form?")) {
