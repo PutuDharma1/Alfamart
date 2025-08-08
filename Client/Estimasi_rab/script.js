@@ -140,7 +140,7 @@ const autoFillPrices = (selectElement) => {
         satuanInput.value = "";
     }
     
-    // Panggil fungsi kalkulasi setelah harga terisi
+    // INI ADALAH BARIS KUNCI PERBAIKANNYA
     calculateTotalPrice(selectElement);
 };
 
