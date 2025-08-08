@@ -36,22 +36,14 @@ const handleCurrencyInput = (event) => {
     calculateTotalPrice(input);
 };
 
-// --- FUNGSI YANG DIPERBAIKI ---
 const populateJenisPekerjaanOptionsForNewRow = (rowElement) => {
-    // Ambil kategori spesifik dari baris yang baru dibuat
     const category = rowElement.dataset.category;
     const scope = rowElement.dataset.scope;
     const selectEl = rowElement.querySelector(".jenis-pekerjaan");
 
     if (!selectEl) return;
-    if (!cabangSelect.value || !lingkupPekerjaanSelect.value) {
-        selectEl.innerHTML = '<option value="">-- Pilih Cabang & Lingkup Pekerjaan Dulu --</option>';
-        return;
-    }
     
     const dataSource = (scope === "Sipil") ? categorizedPrices.categorizedSipilPrices : (scope === "ME") ? categorizedPrices.categorizedMePrices : {};
-    
-    // Ambil item HANYA untuk kategori yang relevan
     const itemsInCategory = dataSource ? (dataSource[category] || []) : [];
 
     selectEl.innerHTML = '<option value="">-- Pilih Jenis Pekerjaan --</option>';
@@ -73,7 +65,6 @@ const autoFillPrices = (selectElement) => {
     if (!row) return;
 
     const selectedJenisPekerjaan = selectElement.value;
-    // Kategori sekarang diambil dari data-category baris (tr), bukan dari dropdown lagi
     const currentCategory = row.dataset.category;
     const currentLingkupPekerjaan = lingkupPekerjaanSelect.value;
     
@@ -166,7 +157,7 @@ async function fetchAndPopulatePrices() {
         } else if (selectedScope === 'ME') {
             categorizedPrices.categorizedMePrices = data;
         }
-        console.log(`Data harga untuk ${selectedScope} berhasil dimuat:`, data);
+        console.log(`Data harga untuk ${selectedScope} berhasil dimuat.`);
         messageDiv.style.display = 'none';
         
     } catch (error) {
@@ -365,6 +356,7 @@ function createTableStructure(categoryName, scope) {
     return wrapper;
 }
 
+// --- FUNGSI UTAMA YANG DIPERBARUI ---
 async function initializePage() {
     form = document.getElementById("form");
     submitButton = document.getElementById("submit-button");
@@ -423,9 +415,16 @@ async function initializePage() {
     });
 
     document.querySelectorAll(".add-row-btn").forEach(button => {
-        button.addEventListener("click", () => {
+        button.addEventListener("click", async () => { // Jadikan async
             const category = button.dataset.category;
             const scope = button.dataset.scope;
+
+            // Pastikan data sudah ada sebelum menambah baris
+            const dataSource = scope === "Sipil" ? categorizedPrices.categorizedSipilPrices : categorizedPrices.categorizedMePrices;
+            if (!dataSource || Object.keys(dataSource).length === 0) {
+                await fetchAndPopulatePrices();
+            }
+
             const targetTbody = document.querySelector(`.boq-table-body[data-category="${category}"]`);
             if (targetTbody) {
                 const newRow = createBoQRow(category, scope);
@@ -436,7 +435,7 @@ async function initializePage() {
         });
     });
     
-    lingkupPekerjaanSelect.addEventListener("change", () => {
+    const handleScopeChange = () => {
         const selectedScope = lingkupPekerjaanSelect.value;
         document.querySelectorAll(".boq-table-body").forEach(tbody => tbody.innerHTML = "");
         updateAllRowNumbersAndTotals();
@@ -445,13 +444,16 @@ async function initializePage() {
         if (cabangSelect.value) {
             fetchAndPopulatePrices();
         }
-    });
-    
-    cabangSelect.addEventListener('change', () => {
+    };
+
+    const handleBranchChange = () => {
         document.querySelectorAll(".boq-table-body").forEach(tbody => tbody.innerHTML = "");
         updateAllRowNumbersAndTotals();
         fetchAndPopulatePrices();
-    });
+    };
+
+    lingkupPekerjaanSelect.addEventListener("change", handleScopeChange);
+    cabangSelect.addEventListener('change', handleBranchChange);
 
     currentResetButton.addEventListener("click", () => {
         if (confirm("Apakah Anda yakin ingin mengulang dan mengosongkan semua isian form?")) {
