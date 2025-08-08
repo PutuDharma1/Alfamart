@@ -48,7 +48,6 @@ class GoogleServiceProvider:
         self.drive_service = build('drive', 'v3', credentials=self.creds)
 
     def validate_user(self, email, cabang):
-        """Memvalidasi kredensial pengguna terhadap sheet 'Cabang'."""
         try:
             cabang_sheet = self.sheet.worksheet(config.CABANG_SHEET_NAME)
             for record in cabang_sheet.get_all_records():
@@ -68,7 +67,7 @@ class GoogleServiceProvider:
         file = self.drive_service.files().create(body=file_metadata, media_body=media, fields='id, webViewLink').execute()
         return file.get('webViewLink')
 
-    # --- FUNGSI YANG DIPERBARUI ---
+    # --- FUNGSI YANG DIPERBAIKI ---
     def check_user_submissions(self, email, cabang):
         try:
             all_values = self.data_entry_sheet.get_all_values()
@@ -83,8 +82,6 @@ class GoogleServiceProvider:
             rejected_submissions = []
             
             processed_locations = set()
-            
-            # Filter berdasarkan cabang pengguna yang login (case-insensitive)
             user_cabang = str(cabang).strip().lower()
 
             for record in reversed(records):
@@ -99,10 +96,9 @@ class GoogleServiceProvider:
                     pending_codes.append(lokasi)
                 elif status == config.STATUS.APPROVED:
                     approved_codes.append(lokasi)
-                # HANYA tambahkan ke daftar jika cabangnya cocok
                 elif status in [config.STATUS.REJECTED_BY_COORDINATOR, config.STATUS.REJECTED_BY_MANAGER] and record_cabang == user_cabang:
-                    submission_data = {key.replace(' ', '_'): val for key, val in record.items()}
-                    rejected_submissions.append(submission_data)
+                    # Menghapus konversi ke underscore
+                    rejected_submissions.append(record)
 
                 processed_locations.add(lokasi)
 
