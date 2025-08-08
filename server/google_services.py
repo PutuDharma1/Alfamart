@@ -67,7 +67,6 @@ class GoogleServiceProvider:
         file = self.drive_service.files().create(body=file_metadata, media_body=media, fields='id, webViewLink').execute()
         return file.get('webViewLink')
 
-    # --- FUNGSI YANG DIPERBAIKI ---
     def check_user_submissions(self, email, cabang):
         try:
             all_values = self.data_entry_sheet.get_all_values()
@@ -97,7 +96,7 @@ class GoogleServiceProvider:
                 elif status == config.STATUS.APPROVED:
                     approved_codes.append(lokasi)
                 elif status in [config.STATUS.REJECTED_BY_COORDINATOR, config.STATUS.REJECTED_BY_MANAGER] and record_cabang == user_cabang:
-                    # Menghapus konversi ke underscore
+                    # Mengirim data 'record' apa adanya, tanpa mengubah nama kolom
                     rejected_submissions.append(record)
 
                 processed_locations.add(lokasi)
