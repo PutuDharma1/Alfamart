@@ -12,6 +12,7 @@ let categorizedPrices = {};
 let pendingStoreCodes = [];
 let approvedStoreCodes = [];
 let rejectedSubmissionsList = [];
+let originalFormData = null; // Variabel baru untuk menyimpan data asli saat revisi
 
 const sipilCategories = ["PEKERJAAN PERSIAPAN", "PEKERJAAN BOBOKAN / BONGKARAN", "PEKERJAAN TANAH", "PEKERJAAN PONDASI & BETON", "PEKERJAAN PASANGAN", "PEKERJAAN BESI", "PEKERJAAN KERAMIK", "PEKERJAAN PLUMBING", "PEKERJAAN SANITARY & ACECORIES", "PEKERJAAN ATAP", "PEKERJAAN KUSEN, PINTU & KACA", "PEKERJAAN FINISHING", "PEKERJAAN TAMBAHAN"];
 const meCategories = ["INSTALASI", "FIXTURE", "PEKERJAAN TAMBAH DAYA LISTRIK"];
@@ -36,12 +37,39 @@ const handleCurrencyInput = (event) => {
     calculateTotalPrice(input);
 };
 
+// --- FUNGSI BARU UNTUK MENGUMPULKAN DATA FORM SAAT INI ---
+function getCurrentFormData() {
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+    
+    let itemIndex = 1;
+    document.querySelectorAll(".boq-table-body:not(.hidden) .boq-item-row").forEach(row => {
+        const jenisPekerjaan = row.querySelector('.jenis-pekerjaan').value;
+        const volume = parseFloat(row.querySelector('.volume').value) || 0;
+
+        if (jenisPekerjaan && volume > 0) {
+            data[`Kategori_Pekerjaan_${itemIndex}`] = row.dataset.category;
+            data[`Jenis_Pekerjaan_${itemIndex}`] = jenisPekerjaan;
+            data[`Satuan_Item_${itemIndex}`] = row.querySelector('.satuan').value;
+            data[`Volume_Item_${itemIndex}`] = volume;
+            data[`Harga_Material_Item_${itemIndex}`] = parseFormattedNumber(row.querySelector('.harga-material').value);
+            data[`Harga_Upah_Item_${itemIndex}`] = parseFormattedNumber(row.querySelector('.harga-upah').value);
+            itemIndex++;
+        }
+    });
+    return JSON.stringify(data); // Konversi ke string untuk perbandingan mudah
+}
+
 const populateJenisPekerjaanOptionsForNewRow = (rowElement) => {
     const category = rowElement.dataset.category;
     const scope = rowElement.dataset.scope;
     const selectEl = rowElement.querySelector(".jenis-pekerjaan");
 
     if (!selectEl) return;
+    if (!cabangSelect.value || !lingkupPekerjaanSelect.value) {
+        selectEl.innerHTML = '<option value="">-- Pilih Cabang & Lingkup Pekerjaan Dulu --</option>';
+        return;
+    }
     
     const dataSource = (scope === "Sipil") ? categorizedPrices.categorizedSipilPrices : (scope === "ME") ? categorizedPrices.categorizedMePrices : {};
     const itemsInCategory = dataSource ? (dataSource[category] || []) : [];
@@ -205,6 +233,7 @@ const calculateGrandTotal = () => {
     if (grandTotalAmount) grandTotalAmount.textContent = formatRupiah(total);
 };
 
+// --- FUNGSI YANG DIPERBARUI ---
 async function populateFormWithHistory(data) {
     form.reset();
     document.querySelectorAll(".boq-table-body").forEach(tbody => tbody.innerHTML = "");
@@ -253,12 +282,25 @@ async function populateFormWithHistory(data) {
         }
     }
     updateAllRowNumbersAndTotals();
+
+    // Simpan data asli setelah form terisi penuh
+    originalFormData = getCurrentFormData();
 }
 
+// --- FUNGSI YANG DIPERBARUI ---
 async function handleFormSubmit() {
     if (!form.checkValidity()) {
         form.reportValidity();
         return;
+    }
+
+    // Periksa jika ada perubahan
+    const currentData = getCurrentFormData();
+    if (originalFormData && currentData === originalFormData) {
+        messageDiv.textContent = 'Tidak ada perubahan yang terdeteksi. Silakan ubah data sebelum mengirim.';
+        messageDiv.style.backgroundColor = '#ffc107'; // Warna kuning untuk peringatan
+        messageDiv.style.display = 'block';
+        return; // Hentikan pengiriman
     }
 
     submitButton.disabled = true;
@@ -356,7 +398,6 @@ function createTableStructure(categoryName, scope) {
     return wrapper;
 }
 
-// --- FUNGSI UTAMA YANG DIPERBARUI ---
 async function initializePage() {
     form = document.getElementById("form");
     submitButton = document.getElementById("submit-button");
@@ -415,11 +456,10 @@ async function initializePage() {
     });
 
     document.querySelectorAll(".add-row-btn").forEach(button => {
-        button.addEventListener("click", async () => { // Jadikan async
+        button.addEventListener("click", async () => {
             const category = button.dataset.category;
             const scope = button.dataset.scope;
 
-            // Pastikan data sudah ada sebelum menambah baris
             const dataSource = scope === "Sipil" ? categorizedPrices.categorizedSipilPrices : categorizedPrices.categorizedMePrices;
             if (!dataSource || Object.keys(dataSource).length === 0) {
                 await fetchAndPopulatePrices();
