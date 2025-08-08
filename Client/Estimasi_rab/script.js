@@ -21,7 +21,7 @@ const PYTHON_API_BASE_URL = "https://alfamart.onrender.com";
 const formatRupiah = (number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(number);
 const parseRupiah = (formattedString) => parseFloat(String(formattedString).replace(/Rp\s?|\./g, "").replace(/,/g, ".")) || 0;
 const formatNumberWithSeparators = (num) => (num === null || isNaN(num)) ? '0' : new Intl.NumberFormat('id-ID').format(num);
-const parseFormattedNumber = (str) => typeof str !== 'string' ? (Number(str) || 0) : (parseFloat(String(str).replace(/\./g, '')) || 0);
+const parseFormattedNumber = (str) => typeof str !== 'string' ? (Number(str) || 0) : (parseFloat(String(str).replace(/\./g, '').replace(/,/g, '.')) || 0);
 
 const handleCurrencyInput = (event) => {
     const input = event.target;
@@ -139,6 +139,7 @@ const createBoQRow = (category, scope) => {
     const row = document.createElement("tr");
     row.classList.add("boq-item-row");
     row.dataset.scope = scope; 
+    row.dataset.category = category;
     row.innerHTML = `<td class="col-no"><span class="row-number"></span></td><td class="col-jenis-pekerjaan"><select class="jenis-pekerjaan form-control" name="Jenis_Pekerjaan_Item" required><option value="">-- Pilih --</option></select></td><td class="col-satuan"><input type="text" class="satuan form-control" name="Satuan_Item" required readonly /></td><td class="col-volume"><input type="text" class="volume form-control" name="Volume_Item" value="0.00" inputmode="decimal" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\\..*?)\\..*/g, '$1').replace(/(\\.\\d{2})\\d+/, '$1')" /></td><td class="col-harga"><input type="text" class="harga-material form-control" name="Harga_Material_Item" inputmode="numeric" required readonly /></td><td class="col-harga"><input type="text" class="harga-upah form-control" name="Harga_Upah_Item" inputmode="numeric" required readonly /></td><td class="col-harga"><input type="text" class="total-material form-control" disabled /></td><td class="col-harga"><input type="text" class="total-upah form-control" disabled /></td><td class="col-harga"><input type="text" class="total-harga form-control" disabled /></td><td class="col-aksi"><button type="button" class="delete-row-btn">Hapus</button></td>`;
     row.querySelector(".volume").addEventListener("input", (e) => calculateTotalPrice(e.target));
     row.querySelector(".delete-row-btn").addEventListener("click", () => { row.remove(); updateAllRowNumbersAndTotals(); });
@@ -147,7 +148,7 @@ const createBoQRow = (category, scope) => {
         const tableRow = selectElement.closest('tr');
         if (tableRow) {
             const selectedOption = selectElement.options[selectElement.selectedIndex];
-            tableRow.dataset.category = selectedOption.dataset.category || '';
+            tableRow.dataset.category = selectedOption.dataset.category || category;
         }
         autoFillPrices(selectElement);
     });
@@ -158,11 +159,7 @@ async function fetchAndPopulatePrices() {
     const selectedCabang = cabangSelect.value;
     const selectedScope = lingkupPekerjaanSelect.value;
 
-    document.querySelectorAll(".boq-table-body").forEach(tbody => tbody.innerHTML = "");
-    updateAllRowNumbersAndTotals();
-
     if (!selectedCabang || !selectedScope) {
-        messageDiv.style.display = 'none';
         return;
     }
 
@@ -231,17 +228,17 @@ const calculateGrandTotal = () => {
     if (grandTotalAmount) grandTotalAmount.textContent = formatRupiah(total);
 };
 
-// --- FUNGSI YANG DIPERBARUI DENGAN KEAMANAN ---
+// --- FUNGSI YANG DIPERBAIKI ---
 async function populateFormWithHistory(data) {
-    console.log("Populating form with rejected data:", data);
+    console.log("Menerima data untuk revisi:", data); // Untuk debugging
     form.reset();
     document.querySelectorAll(".boq-table-body").forEach(tbody => tbody.innerHTML = "");
 
     for (const key in data) {
-        // Ganti nama properti dari sheet (dengan spasi) ke nama input (dengan underscore)
-        const inputName = key.replace(/ /g, '_');
-        const input = form.querySelector(`[name="${inputName}"]`);
+        // Mencari input berdasarkan nama kolom (dengan spasi)
+        const input = form.querySelector(`[name="${key}"]`);
         if (input) {
+            console.log(`Mengisi form: ${key} = ${data[key]}`); // Untuk debugging
             input.value = data[key];
         }
     }
@@ -249,13 +246,11 @@ async function populateFormWithHistory(data) {
     lingkupPekerjaanSelect.dispatchEvent(new Event('change'));
     cabangSelect.dispatchEvent(new Event('change'));
     
-    // Tunggu data harga selesai dimuat
     await new Promise(resolve => setTimeout(resolve, 2000)); 
 
-    // Kosongkan tabel lagi sebelum mengisi dengan data history
     document.querySelectorAll(".boq-table-body").forEach(tbody => tbody.innerHTML = "");
 
-    for (let i = 1; i <= 200; i++) { // Naikkan batas loop jika perlu
+    for (let i = 1; i <= 200; i++) {
         if (data[`Jenis_Pekerjaan_${i}`]) {
             const category = data[`Kategori_Pekerjaan_${i}`];
             const scope = lingkupPekerjaanSelect.value;
@@ -268,20 +263,17 @@ async function populateFormWithHistory(data) {
                 
                 newRow.querySelector('.jenis-pekerjaan').value = data[`Jenis_Pekerjaan_${i}`];
                 
-                // Panggil autofill untuk mengisi satuan & harga awal dari master
                 autoFillPrices(newRow.querySelector('.jenis-pekerjaan'));
 
-                // Timpa nilai dengan data dari history
                 newRow.querySelector('.volume').value = data[`Volume_Item_${i}`] || '0.00';
                 
                 const materialInput = newRow.querySelector('.harga-material');
                 const upahInput = newRow.querySelector('.harga-upah');
                 
-                // Cek apakah harga kondisional
-                if (materialInput.readOnly === false) { // Jika master-nya kondisional
+                if (materialInput.readOnly === false) {
                     materialInput.value = formatNumberWithSeparators(data[`Harga_Material_Item_${i}`]);
                 }
-                if (upahInput.readOnly === false) { // Jika master-nya kondisional
+                if (upahInput.readOnly === false) {
                     upahInput.value = formatNumberWithSeparators(data[`Harga_Upah_Item_${i}`]);
                 }
             }
@@ -308,7 +300,6 @@ async function handleFormSubmit() {
 
     let itemIndex = 1;
     document.querySelectorAll(".boq-table-body:not(.hidden) .boq-item-row").forEach(row => {
-        // Hanya kirim data jika ada jenis pekerjaan yang dipilih dan volume > 0
         const jenisPekerjaan = row.querySelector('.jenis-pekerjaan').value;
         const volume = parseFloat(row.querySelector('.volume').value) || 0;
 
@@ -458,7 +449,6 @@ async function initializePage() {
                 const newRow = createBoQRow(category, scope);
                 targetTbody.appendChild(newRow);
                 populateJenisPekerjaanOptionsForNewRow(newRow);
-                updateAllRowNumbersAndTotals();
             }
         });
     });
