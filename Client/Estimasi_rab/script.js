@@ -491,7 +491,7 @@ async function initializePage() {
 
     // --- LOGIKA BARU UNTUK ULOK OTOMATIS & GRUP ---
     const lokasiCabangSelect = document.getElementById('lokasi_cabang');
-    lokasiCabangSelect.innerHTML = '<option value="">-- Kode --</option>'; 
+    lokasiCabangSelect.innerHTML = '<option value="">-- Kode Cabang --</option>'; 
 
     if (userCabang) {
         // Kasus spesial Cikokol
