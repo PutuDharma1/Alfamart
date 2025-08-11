@@ -87,7 +87,7 @@
                     <thead>
                         <tr>
                             <th rowspan="2" style="width: 3%;">NO.</th>
-                            <th rowspan="2" class="text-left" style="width: 35%;">JENIS PEKERJAAN</th>
+                            <th rowspan="2" class="text-left" style="width: 34%;">JENIS PEKERJAAN</th>
                             <th rowspan="2" style="width: 5%;">SATUAN</th>
                             <th rowspan="2" style="width: 6%;">VOLUME</th>
                             <th colspan="2">HARGA SATUAN (Rp)</th>
@@ -109,15 +109,15 @@
                                 <td class="text-left">{{ item.jenisPekerjaan or '' }}</td>
                                 <td>{{ item.satuan or '' }}</td>
                                 <td class="text-right">{{ "%.2f"|format(item.volume) }}</td>
-                                <td class="text-right">{{ item.hargaMaterial or '0' }}</td>
-                                <td class="text-right">{{ item.hargaUpah or '0' }}</td>
-                                <td class="text-right">{{ item.totalMaterial or '0' }}</td>
-                                <td class="text-right">{{ item.totalUpah or '0' }}</td>
-                                <td class="text-right" style="font-weight:bold;">{{ item.totalHarga or '0' }}</td>
+                                <td class="text-right">{{ item.hargaMaterialFormatted or '0' }}</td>
+                                <td class="text-right">{{ item.hargaUpahFormatted or '0' }}</td>
+                                <td class="text-right">{{ item.totalMaterialFormatted or '0' }}</td>
+                                <td class="text-right">{{ item.totalUpahFormatted or '0' }}</td>
+                                <td class="text-right" style="font-weight:bold;">{{ item.totalHargaFormatted or '0' }}</td>
                             </tr>
-                            {% set ns.sub_total_material = ns.sub_total_material + (item.totalMaterial|replace('.', '')|float) %}
-                            {% set ns.sub_total_upah = ns.sub_total_upah + (item.totalUpah|replace('.', '')|float) %}
-                            {% set ns.sub_total_harga = ns.sub_total_harga + (item.totalHarga|replace('.', '')|float) %}
+                            {% set ns.sub_total_material = ns.sub_total_material + item.totalMaterialRaw %}
+                            {% set ns.sub_total_upah = ns.sub_total_upah + item.totalUpahRaw %}
+                            {% set ns.sub_total_harga = ns.sub_total_harga + item.totalHargaRaw %}
                         {% endfor %}
                         <tr class="sub-total-row">
                             <td colspan="6" class="text-right"><strong>SUB TOTAL</strong></td>

@@ -74,21 +74,40 @@ def create_approval_details_block(google_provider, approver_email, approval_time
     </div>
     """
 
+# --- FUNGSI UTAMA YANG DIPERBARUI ---
 def create_pdf_from_data(google_provider, form_data):
     grouped_items = {}
     grand_total = 0
-    # ▼▼▼ BATAS LOOP SUDAH DIPERBARUI MENJADI 101 (untuk 100 item) ▼▼▼
-    for i in range(1, 101):
+    
+    for i in range(1, 201): # Batas loop dinaikkan untuk mengakomodasi lebih banyak item
         if form_data.get(f"Jenis_Pekerjaan_{i}"):
             kategori = form_data.get(f"Kategori_Pekerjaan_{i}", "Lain-lain")
-            if kategori not in grouped_items: grouped_items[kategori] = []
-            total_harga = float(form_data.get(f"Total_Harga_Item_{i}", 0))
-            grand_total += total_harga
+            if kategori not in grouped_items: 
+                grouped_items[kategori] = []
+
+            # Ambil nilai numerik mentah
+            total_harga_raw = float(form_data.get(f"Total_Harga_Item_{i}", 0))
+            total_material_raw = float(form_data.get(f"Total_Material_Item_{i}", 0))
+            total_upah_raw = float(form_data.get(f"Total_Upah_Item_{i}", 0))
+            
+            grand_total += total_harga_raw
+            
             item = {
-                "jenisPekerjaan": form_data.get(f"Jenis_Pekerjaan_{i}"), "satuan": form_data.get(f"Satuan_Item_{i}"),
-                "volume": float(form_data.get(f"Volume_Item_{i}", 0)), "hargaMaterial": format_rupiah(form_data.get(f"Harga_Material_Item_{i}", 0)),
-                "hargaUpah": format_rupiah(form_data.get(f"Harga_Upah_Item_{i}", 0)), "totalMaterial": format_rupiah(form_data.get(f"Total_Material_Item_{i}", 0)),
-                "totalUpah": format_rupiah(form_data.get(f"Total_Upah_Item_{i}", 0)), "totalHarga": format_rupiah(total_harga),
+                "jenisPekerjaan": form_data.get(f"Jenis_Pekerjaan_{i}"),
+                "satuan": form_data.get(f"Satuan_Item_{i}"),
+                "volume": float(form_data.get(f"Volume_Item_{i}", 0)),
+                
+                # Data yang sudah diformat untuk ditampilkan
+                "hargaMaterialFormatted": format_rupiah(form_data.get(f"Harga_Material_Item_{i}", 0)),
+                "hargaUpahFormatted": format_rupiah(form_data.get(f"Harga_Upah_Item_{i}", 0)),
+                "totalMaterialFormatted": format_rupiah(total_material_raw),
+                "totalUpahFormatted": format_rupiah(total_upah_raw),
+                "totalHargaFormatted": format_rupiah(total_harga_raw),
+
+                # Data mentah untuk kalkulasi di template
+                "totalMaterialRaw": total_material_raw,
+                "totalUpahRaw": total_upah_raw,
+                "totalHargaRaw": total_harga_raw
             }
             grouped_items[kategori].append(item)
     
