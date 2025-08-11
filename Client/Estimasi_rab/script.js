@@ -18,7 +18,6 @@ const sipilCategories = ["PEKERJAAN PERSIAPAN", "PEKERJAAN BOBOKAN / BONGKARAN",
 const meCategories = ["INSTALASI", "FIXTURE", "PEKERJAAN TAMBAH DAYA LISTRIK"];
 const PYTHON_API_BASE_URL = "https://alfamart.onrender.com";
 
-// --- PETA GRUP CABANG KHUSUS UNTUK DROPDOWN CABANG ---
 const branchGroups = {
     "BANDUNG 1": ["BANDUNG 1", "BANDUNG 2"],
     "BANDUNG 2": ["BANDUNG 1", "BANDUNG 2"],
@@ -37,7 +36,6 @@ const branchGroups = {
     "SORONG": ["SIDOARJO", "SIDOARJO BPN_SMD", "MANOKWARI", "NTT", "SORONG"]
 };
 
-// --- PETA BARU: NAMA CABANG KE KODE ULOK ---
 const branchToUlokMap = {
     "WHC IMAM BONJOL": "7AZ1",
     "LUWU": "2VZ1",
@@ -71,14 +69,13 @@ const branchToUlokMap = {
     "CILACAP": "IZ01",
     "CILEUNGSI2": "JZ01",
     "SEMARANG": "HZ01",
-    "CIKOKOL": "KZ01", // Default untuk Cikokol
+    "CIKOKOL": "KZ01",
     "LAMPUNG": "LZ01",
     "MALANG": "MZ01",
     "MANADO": "1YZ1",
     "BATAM": "2DZ1",
     "MADIUN": "2MZ1"
 };
-
 
 // --- Helper Functions ---
 const formatRupiah = (number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(number);
@@ -494,7 +491,7 @@ async function initializePage() {
 
     // --- LOGIKA BARU UNTUK ULOK OTOMATIS & GRUP ---
     const lokasiCabangSelect = document.getElementById('lokasi_cabang');
-    lokasiCabangSelect.innerHTML = '<option value="">-- Kode --</option>'; // Kosongkan
+    lokasiCabangSelect.innerHTML = '<option value="">-- Kode --</option>'; 
 
     if (userCabang) {
         // Kasus spesial Cikokol
@@ -507,7 +504,19 @@ async function initializePage() {
                 lokasiCabangSelect.appendChild(option);
             }
             lokasiCabangSelect.disabled = false;
-        } else {
+        } 
+        // --- KASUS SPESIAL BANDUNG ---
+        else if (userCabang === 'BANDUNG') {
+            const bandungOptions = { "BANDUNG 1": "BZ01", "BANDUNG 2": "NZ01" };
+            for (const name in bandungOptions) {
+                const option = document.createElement('option');
+                option.value = bandungOptions[name];
+                option.textContent = `${name} (${bandungOptions[name]})`;
+                lokasiCabangSelect.appendChild(option);
+            }
+            lokasiCabangSelect.disabled = false;
+        }
+        else {
             const ulokCode = branchToUlokMap[userCabang];
             if (ulokCode) {
                 const option = document.createElement('option');
