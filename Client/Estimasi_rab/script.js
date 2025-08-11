@@ -18,6 +18,7 @@ const sipilCategories = ["PEKERJAAN PERSIAPAN", "PEKERJAAN BOBOKAN / BONGKARAN",
 const meCategories = ["INSTALASI", "FIXTURE", "PEKERJAAN TAMBAH DAYA LISTRIK"];
 const PYTHON_API_BASE_URL = "https://alfamart.onrender.com";
 
+// --- PETA GRUP CABANG KHUSUS UNTUK DROPDOWN CABANG ---
 const branchGroups = {
     "BANDUNG 1": ["BANDUNG 1", "BANDUNG 2"],
     "BANDUNG 2": ["BANDUNG 1", "BANDUNG 2"],
@@ -35,6 +36,49 @@ const branchGroups = {
     "NTT": ["SIDOARJO", "SIDOARJO BPN_SMD", "MANOKWARI", "NTT", "SORONG"],
     "SORONG": ["SIDOARJO", "SIDOARJO BPN_SMD", "MANOKWARI", "NTT", "SORONG"]
 };
+
+// --- PETA BARU: NAMA CABANG KE KODE ULOK ---
+const branchToUlokMap = {
+    "WHC IMAM BONJOL": "7AZ1",
+    "LUWU": "2VZ1",
+    "KARAWANG": "1JZ1",
+    "REMBANG": "2AZ1",
+    "BANJARMASIN": "1GZ1",
+    "PARUNG": "1MZ1",
+    "TEGAL": "2PZ1",
+    "GORONTALO": "2SZ1",
+    "PONTIANAK": "1PZ1",
+    "LOMBOK": "1SZ1",
+    "KOTABUMI": "1VZ1",
+    "SERANG": "2GZ1",
+    "CIANJUR": "2JZ1",
+    "BALARAJA": "TZ01",
+    "SIDOARJO": "UZ01",
+    "MEDAN": "WZ01",
+    "BOGOR": "XZ01",
+    "JEMBER": "YZ01",
+    "BALI": "QZ01",
+    "PALEMBANG": "PZ01",
+    "KLATEN": "OZ01",
+    "MAKASSAR": "RZ01",
+    "PLUMBON": "VZ01",
+    "PEKANBARU": "1AZ1",
+    "JAMBI": "1DZ1",
+    "HEAD OFFICE": "Z001",
+    "BANDUNG 1": "BZ01",
+    "BANDUNG 2": "NZ01",
+    "BEKASI": "CZ01",
+    "CILACAP": "IZ01",
+    "CILEUNGSI2": "JZ01",
+    "SEMARANG": "HZ01",
+    "CIKOKOL": "KZ01", // Default untuk Cikokol
+    "LAMPUNG": "LZ01",
+    "MALANG": "MZ01",
+    "MANADO": "1YZ1",
+    "BATAM": "2DZ1",
+    "MADIUN": "2MZ1"
+};
+
 
 // --- Helper Functions ---
 const formatRupiah = (number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(number);
@@ -307,7 +351,6 @@ async function populateFormWithHistory(data) {
     originalFormData = getCurrentFormData();
 }
 
-// --- FUNGSI UTAMA YANG DIPERBAIKI ---
 async function handleFormSubmit() {
     if (!form.checkValidity()) {
         form.reportValidity();
@@ -330,10 +373,7 @@ async function handleFormSubmit() {
     const formData = new FormData(form);
     const data = Object.fromEntries(formData.entries());
     
-    // --- BARIS KUNCI PERBAIKANNYA ---
-    // Secara manual tambahkan nilai cabang ke data yang akan dikirim
     data['Cabang'] = cabangSelect.value;
-    
     data['Email_Pembuat'] = sessionStorage.getItem('loggedInUserEmail');
 
     let itemIndex = 1;
@@ -451,6 +491,34 @@ async function initializePage() {
 
     const userEmail = sessionStorage.getItem('loggedInUserEmail');
     const userCabang = sessionStorage.getItem('loggedInUserCabang')?.toUpperCase();
+
+    // --- LOGIKA BARU UNTUK ULOK OTOMATIS & GRUP ---
+    const lokasiCabangSelect = document.getElementById('lokasi_cabang');
+    lokasiCabangSelect.innerHTML = '<option value="">-- Kode --</option>'; // Kosongkan
+
+    if (userCabang) {
+        // Kasus spesial Cikokol
+        if (userCabang === 'CIKOKOL') {
+            const cikokolOptions = { "CIKOKOL": "KZ01", "WHC IMAM BONJOL": "7AZ1" };
+            for (const name in cikokolOptions) {
+                const option = document.createElement('option');
+                option.value = cikokolOptions[name];
+                option.textContent = `${name} (${cikokolOptions[name]})`;
+                lokasiCabangSelect.appendChild(option);
+            }
+            lokasiCabangSelect.disabled = false;
+        } else {
+            const ulokCode = branchToUlokMap[userCabang];
+            if (ulokCode) {
+                const option = document.createElement('option');
+                option.value = ulokCode;
+                option.textContent = ulokCode;
+                lokasiCabangSelect.appendChild(option);
+                lokasiCabangSelect.value = ulokCode;
+                lokasiCabangSelect.disabled = true;
+            }
+        }
+    }
 
     cabangSelect.innerHTML = ''; 
 
