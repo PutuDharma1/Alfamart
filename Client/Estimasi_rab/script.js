@@ -15,7 +15,8 @@ let rejectedSubmissionsList = [];
 let originalFormData = null;
 
 const sipilCategories = ["PEKERJAAN PERSIAPAN", "PEKERJAAN BOBOKAN / BONGKARAN", "PEKERJAAN TANAH", "PEKERJAAN PONDASI & BETON", "PEKERJAAN PASANGAN", "PEKERJAAN BESI", "PEKERJAAN KERAMIK", "PEKERJAAN PLUMBING", "PEKERJAAN SANITARY & ACECORIES", "PEKERJAAN ATAP", "PEKERJAAN KUSEN, PINTU & KACA", "PEKERJAAN FINISHING", "PEKERJAAN TAMBAHAN"];
-const meCategories = ["INSTALASI", "FIXTURE", "PEKERJAAN TAMBAH DAYA LISTRIK"];
+// --- PERUBAHAN DI BARIS BERIKUT ---
+const meCategories = ["INSTALASI", "FIXTURE", "PEKERJAAN TAMBAHAN"];
 const PYTHON_API_BASE_URL = "https://alfamart.onrender.com";
 
 const branchGroups = {
@@ -489,12 +490,10 @@ async function initializePage() {
     const userEmail = sessionStorage.getItem('loggedInUserEmail');
     const userCabang = sessionStorage.getItem('loggedInUserCabang')?.toUpperCase();
 
-    // --- LOGIKA BARU UNTUK ULOK OTOMATIS & GRUP ---
     const lokasiCabangSelect = document.getElementById('lokasi_cabang');
-    lokasiCabangSelect.innerHTML = '<option value="">-- Kode Cabang --</option>'; 
+    lokasiCabangSelect.innerHTML = '<option value="">-- Kode --</option>'; 
 
     if (userCabang) {
-        // Kasus spesial Cikokol
         if (userCabang === 'CIKOKOL') {
             const cikokolOptions = { "CIKOKOL": "KZ01", "WHC IMAM BONJOL": "7AZ1" };
             for (const name in cikokolOptions) {
@@ -505,7 +504,6 @@ async function initializePage() {
             }
             lokasiCabangSelect.disabled = false;
         } 
-        // --- KASUS SPESIAL BANDUNG ---
         else if (userCabang === 'BANDUNG') {
             const bandungOptions = { "BANDUNG 1": "BZ01", "BANDUNG 2": "NZ01" };
             for (const name in bandungOptions) {
