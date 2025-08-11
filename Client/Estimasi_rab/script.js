@@ -14,9 +14,6 @@ let approvedStoreCodes = [];
 let rejectedSubmissionsList = [];
 let originalFormData = null;
 
-const sipilCategories = ["PEKERJAAN PERSIAPAN", "PEKERJAAN BOBOKAN / BONGKARAN", "PEKERJAAN TANAH", "PEKERJAAN PONDASI & BETON", "PEKERJAAN PASANGAN", "PEKERJAAN BESI", "PEKERJAAN KERAMIK", "PEKERJAAN PLUMBING", "PEKERJAAN SANITARY & ACECORIES", "PEKERJAAN ATAP", "PEKERJAAN KUSEN, PINTU & KACA", "PEKERJAAN FINISHING", "PEKERJAAN TAMBAHAN"];
-// --- PERUBAHAN DI BARIS BERIKUT ---
-const meCategories = ["INSTALASI", "FIXTURE", "PEKERJAAN TAMBAHAN"];
 const PYTHON_API_BASE_URL = "https://alfamart.onrender.com";
 
 const branchGroups = {
@@ -214,6 +211,38 @@ const createBoQRow = (category, scope) => {
     return row;
 };
 
+// --- FUNGSI BARU UNTUK MEMBANGUN TABEL SECARA DINAMIS ---
+function buildTables(scope, data) {
+    const wrapper = scope === 'Sipil' ? sipilTablesWrapper : meTablesWrapper;
+    wrapper.innerHTML = ''; // Kosongkan wrapper
+    const categories = Object.keys(data);
+    
+    categories.forEach(category => {
+        wrapper.appendChild(createTableStructure(category, scope));
+    });
+    
+    // Setelah tabel dibuat, pasang kembali event listener untuk tombol "Tambah Item"
+    document.querySelectorAll(".add-row-btn").forEach(button => {
+        button.addEventListener("click", async () => {
+            const category = button.dataset.category;
+            const scope = button.dataset.scope;
+
+            const dataSource = scope === "Sipil" ? categorizedPrices.categorizedSipilPrices : categorizedPrices.categorizedMePrices;
+            if (!dataSource || Object.keys(dataSource).length === 0) {
+                await fetchAndPopulatePrices();
+            }
+
+            const targetTbody = document.querySelector(`.boq-table-body[data-category="${category}"]`);
+            if (targetTbody) {
+                const newRow = createBoQRow(category, scope);
+                targetTbody.appendChild(newRow);
+                populateJenisPekerjaanOptionsForNewRow(newRow);
+                updateAllRowNumbersAndTotals();
+            }
+        });
+    });
+}
+
 async function fetchAndPopulatePrices() {
     const selectedCabang = cabangSelect.value;
     const selectedScope = lingkupPekerjaanSelect.value;
@@ -234,6 +263,10 @@ async function fetchAndPopulatePrices() {
             throw new Error(errorData.error || `Gagal mengambil data: ${response.statusText}`);
         }
         const data = await response.json();
+        
+        // Panggil fungsi buildTables setelah data diterima
+        buildTables(selectedScope, data);
+
         if (selectedScope === 'Sipil') {
             categorizedPrices.categorizedSipilPrices = data;
         } else if (selectedScope === 'ME') {
@@ -308,13 +341,10 @@ async function populateFormWithHistory(data) {
         }
     }
     
-    cabangSelect.dispatchEvent(new Event('change'));
-    lingkupPekerjaanSelect.dispatchEvent(new Event('change'));
-    
-    await new Promise(resolve => setTimeout(resolve, 2000)); 
+    // Trigger fetchAndPopulatePrices, yang sekarang juga akan membangun tabel
+    await fetchAndPopulatePrices();
 
-    document.querySelectorAll(".boq-table-body").forEach(tbody => tbody.innerHTML = "");
-
+    // Loop untuk mengisi item-item yang sudah ada
     for (let i = 1; i <= 200; i++) {
         if (data[`Jenis_Pekerjaan_${i}`]) {
             const category = data[`Kategori_Pekerjaan_${i}`];
@@ -553,11 +583,6 @@ async function initializePage() {
     messageDiv.textContent = 'Memuat data status...';
     messageDiv.style.display = 'block';
 
-    sipilTablesWrapper.innerHTML = '';
-    meTablesWrapper.innerHTML = '';
-    sipilCategories.forEach(category => sipilTablesWrapper.appendChild(createTableStructure(category, "Sipil")));
-    meCategories.forEach(category => meTablesWrapper.appendChild(createTableStructure(category, "ME")));
-
     try {
         if (userEmail && userCabang) {
             const statusResponse = await fetch(`${PYTHON_API_BASE_URL}/api/check_status?email=${encodeURIComponent(userEmail)}&cabang=${encodeURIComponent(userCabang)}`);
@@ -594,42 +619,25 @@ async function initializePage() {
            }
        }
     });
-
-    document.querySelectorAll(".add-row-btn").forEach(button => {
-        button.addEventListener("click", async () => {
-            const category = button.dataset.category;
-            const scope = button.dataset.scope;
-
-            const dataSource = scope === "Sipil" ? categorizedPrices.categorizedSipilPrices : categorizedPrices.categorizedMePrices;
-            if (!dataSource || Object.keys(dataSource).length === 0) {
-                await fetchAndPopulatePrices();
-            }
-
-            const targetTbody = document.querySelector(`.boq-table-body[data-category="${category}"]`);
-            if (targetTbody) {
-                const newRow = createBoQRow(category, scope);
-                targetTbody.appendChild(newRow);
-                populateJenisPekerjaanOptionsForNewRow(newRow);
-                updateAllRowNumbersAndTotals();
-            }
-        });
-    });
     
     lingkupPekerjaanSelect.addEventListener("change", () => {
         const selectedScope = lingkupPekerjaanSelect.value;
-        document.querySelectorAll(".boq-table-body").forEach(tbody => tbody.innerHTML = "");
-        updateAllRowNumbersAndTotals();
+        sipilTablesWrapper.innerHTML = '';
+        meTablesWrapper.innerHTML = '';
         sipilTablesWrapper.classList.toggle("hidden", selectedScope !== 'Sipil');
         meTablesWrapper.classList.toggle("hidden", selectedScope !== 'ME');
-        if (cabangSelect.value) {
+        if (cabangSelect.value && selectedScope) {
             fetchAndPopulatePrices();
         }
     });
 
     cabangSelect.addEventListener('change', () => {
-        document.querySelectorAll(".boq-table-body").forEach(tbody => tbody.innerHTML = "");
-        updateAllRowNumbersAndTotals();
-        fetchAndPopulatePrices();
+        const selectedScope = lingkupPekerjaanSelect.value;
+        sipilTablesWrapper.innerHTML = '';
+        meTablesWrapper.innerHTML = '';
+        if (cabangSelect.value && selectedScope) {
+            fetchAndPopulatePrices();
+        }
     });
 
     currentResetButton.addEventListener("click", () => {
