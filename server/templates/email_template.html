@@ -10,7 +10,7 @@
 <body>
     <p>Yth. Bapak/Ibu {{ level }},</p>
     <p>
-        Dokumen RAB untuk proyek <strong>{{ form_data.Proyek }}</strong> di lokasi/toko <strong>{{ form_data.Lokasi }}</strong> memerlukan tinjauan dan persetujuan Anda.
+        Dokumen RAB untuk proyek <strong>{{ form_data.Proyek }}</strong> dengan Nomor Ulok <strong>{{ form_data['Nomor Ulok'] }}</strong> memerlukan tinjauan dan persetujuan Anda.
     </p>
     {% if additional_info %}
     <p style="font-style: italic;">{{ additional_info }}</p>

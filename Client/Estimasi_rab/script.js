@@ -18,7 +18,6 @@ const sipilCategories = ["PEKERJAAN PERSIAPAN", "PEKERJAAN BOBOKAN / BONGKARAN",
 const meCategories = ["INSTALASI", "FIXTURE", "PEKERJAAN TAMBAH DAYA LISTRIK"];
 const PYTHON_API_BASE_URL = "https://alfamart.onrender.com";
 
-// --- PETA GRUP CABANG KHUSUS ---
 const branchGroups = {
     "BANDUNG 1": ["BANDUNG 1", "BANDUNG 2"],
     "BANDUNG 2": ["BANDUNG 1", "BANDUNG 2"],
@@ -246,18 +245,30 @@ const calculateGrandTotal = () => {
     if (grandTotalAmount) grandTotalAmount.textContent = formatRupiah(total);
 };
 
+// --- FUNGSI YANG DIPERBARUI ---
 async function populateFormWithHistory(data) {
     form.reset();
     document.querySelectorAll(".boq-table-body").forEach(tbody => tbody.innerHTML = "");
 
+    // Memecah Nomor Ulok untuk diisi ke form
+    const nomorUlok = data["Nomor Ulok"];
+    if (nomorUlok && nomorUlok.length === 12) {
+        document.getElementById('lokasi_cabang').value = nomorUlok.substring(0, 4);
+        const year = "20" + nomorUlok.substring(4, 6);
+        const month = nomorUlok.substring(6, 8);
+        document.getElementById('lokasi_tanggal').value = `${year}-${month}-01`; // Tanggal di set ke tgl 1
+        document.getElementById('lokasi_manual').value = nomorUlok.substring(8, 12);
+        // Panggil fungsi update untuk mengisi hidden input
+        updateNomorUlok();
+    }
+
     for (const key in data) {
         const input = form.querySelector(`[name="${key}"]`);
-        if (input) {
+        if (input && key !== "Nomor Ulok") {
             input.value = data[key];
         }
     }
     
-    // Panggil event change secara manual setelah mengisi data
     cabangSelect.dispatchEvent(new Event('change'));
     lingkupPekerjaanSelect.dispatchEvent(new Event('change'));
     
@@ -408,7 +419,24 @@ function createTableStructure(categoryName, scope) {
     return wrapper;
 }
 
-// --- FUNGSI UTAMA YANG DIPERBARUI ---
+// --- FUNGSI BARU UNTUK MENGGABUNGKAN NOMOR ULOK ---
+function updateNomorUlok() {
+    const kodeCabang = document.getElementById('lokasi_cabang').value;
+    const tanggalValue = document.getElementById('lokasi_tanggal').value;
+    const manualValue = document.getElementById('lokasi_manual').value;
+
+    if (kodeCabang && tanggalValue && manualValue.length === 4) {
+        const date = new Date(tanggalValue);
+        const year = String(date.getFullYear()).slice(-2); // '25'
+        const month = String(date.getMonth() + 1).padStart(2, '0'); // '01'
+        
+        const nomorUlok = `${kodeCabang}${year}${month}${manualValue}`;
+        document.getElementById('lokasi').value = nomorUlok;
+    } else {
+        document.getElementById('lokasi').value = ''; // Kosongkan jika belum lengkap
+    }
+}
+
 async function initializePage() {
     form = document.getElementById("form");
     submitButton = document.getElementById("submit-button");
@@ -423,24 +451,20 @@ async function initializePage() {
     const userEmail = sessionStorage.getItem('loggedInUserEmail');
     const userCabang = sessionStorage.getItem('loggedInUserCabang')?.toUpperCase();
 
-    // --- LOGIKA BARU UNTUK CABANG OTOMATIS & GRUP ---
-    cabangSelect.innerHTML = ''; // Kosongkan dropdown
+    cabangSelect.innerHTML = ''; 
 
     if (userCabang) {
-        // Cek apakah cabang pengguna ada di dalam grup khusus
         const group = branchGroups[userCabang];
         if (group) {
-            // Jika ya, isi dropdown dengan semua cabang di grup tersebut
             group.forEach(branchName => {
                 const option = document.createElement('option');
                 option.value = branchName;
                 option.textContent = branchName;
                 cabangSelect.appendChild(option);
             });
-            cabangSelect.value = userCabang; // Set default ke cabang pengguna
-            cabangSelect.disabled = false; // Biarkan bisa dipilih
+            cabangSelect.value = userCabang;
+            cabangSelect.disabled = false;
         } else {
-            // Jika tidak, isi hanya dengan cabang pengguna dan nonaktifkan
             const option = document.createElement('option');
             option.value = userCabang;
             option.textContent = userCabang;
@@ -449,7 +473,6 @@ async function initializePage() {
             cabangSelect.disabled = true;
         }
     }
-    // --- AKHIR LOGIKA BARU ---
 
     messageDiv.textContent = 'Memuat data status...';
     messageDiv.style.display = 'block';
@@ -465,8 +488,8 @@ async function initializePage() {
             const statusResult = await statusResponse.json();
             if (statusResult.rejected_submissions && statusResult.rejected_submissions.length > 0) {
                 rejectedSubmissionsList = statusResult.rejected_submissions;
-                const rejectedCodes = rejectedSubmissionsList.map(item => item.Lokasi).join(', ');
-                messageDiv.innerHTML = `Ditemukan pengajuan yang ditolak untuk kode toko: <strong>${rejectedCodes}</strong>. Masukkan salah satu kode untuk revisi.`;
+                const rejectedCodes = rejectedSubmissionsList.map(item => item['Nomor Ulok']).join(', ');
+                messageDiv.innerHTML = `Ditemukan pengajuan yang ditolak untuk Nomor Ulok: <strong>${rejectedCodes}</strong>. Masukkan Nomor Ulok lengkap untuk revisi.`;
                 messageDiv.style.backgroundColor = '#ffc107';
             } else {
                 messageDiv.style.display = 'none';
@@ -482,10 +505,18 @@ async function initializePage() {
         lingkupPekerjaanSelect.disabled = false;
     }
     
-    document.getElementById('lokasi')?.addEventListener('input', function(e) {
-       const rejectedData = rejectedSubmissionsList.find(item => item.Lokasi === e.target.value.toUpperCase());
-       if (rejectedData) {
-           populateFormWithHistory(rejectedData);
+    // --- EVENT LISTENER BARU UNTUK NOMOR ULOK ---
+    document.getElementById('lokasi_cabang').addEventListener('change', updateNomorUlok);
+    document.getElementById('lokasi_tanggal').addEventListener('change', updateNomorUlok);
+    document.getElementById('lokasi_manual').addEventListener('input', updateNomorUlok);
+
+    document.getElementById('lokasi_manual')?.addEventListener('input', function(e) {
+       const fullUlok = document.getElementById('lokasi').value;
+       if (fullUlok.length === 12) {
+           const rejectedData = rejectedSubmissionsList.find(item => item['Nomor Ulok'] === fullUlok);
+           if (rejectedData) {
+               populateFormWithHistory(rejectedData);
+           }
        }
     });
 

@@ -1,4 +1,4 @@
-# Pastikan dua baris ini ada di paling atas file
+# Tambahkan dua baris ini di paling atas, sebelum import lainnya
 from gevent import monkey
 monkey.patch_all()
 
@@ -84,8 +84,9 @@ def submit_form():
         data[config.COLUMN_NAMES.TIMESTAMP] = datetime.datetime.now(WIB).isoformat()
         
         jenis_toko = data.get('Proyek', 'N/A')
-        kode_toko = data.get('Lokasi', 'N/A')
-        pdf_filename = f"RAB_ALFAMART({jenis_toko})_({kode_toko}).pdf"
+        # --- PERUBAHAN DI SINI ---
+        nomor_ulok = data.get('Nomor Ulok', 'N/A')
+        pdf_filename = f"RAB_ALFAMART({jenis_toko})_({nomor_ulok}).pdf"
         
         pdf_bytes = create_pdf_from_data(google_provider, data)
         pdf_link = google_provider.upload_pdf_to_drive(pdf_bytes, pdf_filename)

@@ -17,7 +17,7 @@ class COLUMN_NAMES:
     STATUS = "Status"
     TIMESTAMP = "Timestamp"
     EMAIL_PEMBUAT = "Email_Pembuat"
-    LOKASI = "Lokasi"
+    LOKASI = "Nomor Ulok" # <-- PERUBAHAN DI SINI
     PROYEK = "Proyek"
     CABANG = "Cabang"
     LINGKUP_PEKERJAAN = "Lingkup_Pekerjaan"
