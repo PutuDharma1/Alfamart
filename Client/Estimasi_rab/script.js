@@ -250,15 +250,14 @@ async function populateFormWithHistory(data) {
     form.reset();
     document.querySelectorAll(".boq-table-body").forEach(tbody => tbody.innerHTML = "");
 
-    // Memecah Nomor Ulok untuk diisi ke form
     const nomorUlok = data["Nomor Ulok"];
     if (nomorUlok && nomorUlok.length === 12) {
         document.getElementById('lokasi_cabang').value = nomorUlok.substring(0, 4);
         const year = "20" + nomorUlok.substring(4, 6);
         const month = nomorUlok.substring(6, 8);
-        document.getElementById('lokasi_tanggal').value = `${year}-${month}-01`; // Tanggal di set ke tgl 1
+        // Format untuk input type="month" adalah YYYY-MM
+        document.getElementById('lokasi_tanggal').value = `${year}-${month}`;
         document.getElementById('lokasi_manual').value = nomorUlok.substring(8, 12);
-        // Panggil fungsi update untuk mengisi hidden input
         updateNomorUlok();
     }
 
@@ -419,21 +418,22 @@ function createTableStructure(categoryName, scope) {
     return wrapper;
 }
 
-// --- FUNGSI BARU UNTUK MENGGABUNGKAN NOMOR ULOK ---
+// --- FUNGSI YANG DIPERBARUI ---
 function updateNomorUlok() {
     const kodeCabang = document.getElementById('lokasi_cabang').value;
-    const tanggalValue = document.getElementById('lokasi_tanggal').value;
+    const tanggalValue = document.getElementById('lokasi_tanggal').value; // Ini akan bernilai "YYYY-MM"
     const manualValue = document.getElementById('lokasi_manual').value;
 
     if (kodeCabang && tanggalValue && manualValue.length === 4) {
-        const date = new Date(tanggalValue);
-        const year = String(date.getFullYear()).slice(-2); // '25'
-        const month = String(date.getMonth() + 1).padStart(2, '0'); // '01'
+        // "2025-08".split('-') -> ["2025", "08"]
+        const parts = tanggalValue.split('-');
+        const year = parts[0].slice(-2); // "25"
+        const month = parts[1]; // "08"
         
         const nomorUlok = `${kodeCabang}${year}${month}${manualValue}`;
         document.getElementById('lokasi').value = nomorUlok;
     } else {
-        document.getElementById('lokasi').value = ''; // Kosongkan jika belum lengkap
+        document.getElementById('lokasi').value = '';
     }
 }
 
@@ -505,7 +505,6 @@ async function initializePage() {
         lingkupPekerjaanSelect.disabled = false;
     }
     
-    // --- EVENT LISTENER BARU UNTUK NOMOR ULOK ---
     document.getElementById('lokasi_cabang').addEventListener('change', updateNomorUlok);
     document.getElementById('lokasi_tanggal').addEventListener('change', updateNomorUlok);
     document.getElementById('lokasi_manual').addEventListener('input', updateNomorUlok);
