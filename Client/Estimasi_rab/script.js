@@ -245,7 +245,6 @@ const calculateGrandTotal = () => {
     if (grandTotalAmount) grandTotalAmount.textContent = formatRupiah(total);
 };
 
-// --- FUNGSI YANG DIPERBARUI ---
 async function populateFormWithHistory(data) {
     form.reset();
     document.querySelectorAll(".boq-table-body").forEach(tbody => tbody.innerHTML = "");
@@ -255,7 +254,6 @@ async function populateFormWithHistory(data) {
         document.getElementById('lokasi_cabang').value = nomorUlok.substring(0, 4);
         const year = "20" + nomorUlok.substring(4, 6);
         const month = nomorUlok.substring(6, 8);
-        // Format untuk input type="month" adalah YYYY-MM
         document.getElementById('lokasi_tanggal').value = `${year}-${month}`;
         document.getElementById('lokasi_manual').value = nomorUlok.substring(8, 12);
         updateNomorUlok();
@@ -309,6 +307,7 @@ async function populateFormWithHistory(data) {
     originalFormData = getCurrentFormData();
 }
 
+// --- FUNGSI UTAMA YANG DIPERBAIKI ---
 async function handleFormSubmit() {
     if (!form.checkValidity()) {
         form.reportValidity();
@@ -330,6 +329,10 @@ async function handleFormSubmit() {
 
     const formData = new FormData(form);
     const data = Object.fromEntries(formData.entries());
+    
+    // --- BARIS KUNCI PERBAIKANNYA ---
+    // Secara manual tambahkan nilai cabang ke data yang akan dikirim
+    data['Cabang'] = cabangSelect.value;
     
     data['Email_Pembuat'] = sessionStorage.getItem('loggedInUserEmail');
 
@@ -418,17 +421,15 @@ function createTableStructure(categoryName, scope) {
     return wrapper;
 }
 
-// --- FUNGSI YANG DIPERBARUI ---
 function updateNomorUlok() {
     const kodeCabang = document.getElementById('lokasi_cabang').value;
-    const tanggalValue = document.getElementById('lokasi_tanggal').value; // Ini akan bernilai "YYYY-MM"
+    const tanggalValue = document.getElementById('lokasi_tanggal').value;
     const manualValue = document.getElementById('lokasi_manual').value;
 
     if (kodeCabang && tanggalValue && manualValue.length === 4) {
-        // "2025-08".split('-') -> ["2025", "08"]
         const parts = tanggalValue.split('-');
-        const year = parts[0].slice(-2); // "25"
-        const month = parts[1]; // "08"
+        const year = parts[0].slice(-2);
+        const month = parts[1];
         
         const nomorUlok = `${kodeCabang}${year}${month}${manualValue}`;
         document.getElementById('lokasi').value = nomorUlok;
