@@ -82,7 +82,6 @@ def get_google_creds():
             raise Exception("Critical: token.json is missing, invalid, or expired and cannot be refreshed.")
     return creds
 
-# --- FUNGSI safe_to_float YANG DIPERBAIKI ---
 def safe_to_float(value):
     if isinstance(value, (int, float)):
         return float(value)
@@ -157,6 +156,11 @@ def process_sheet(sheet, lingkup):
         no_val = row[no_col_index].strip()
         jenis_pekerjaan = row[jenis_pekerjaan_col_index].strip()
 
+        # --- PERUBAHAN DI SINI ---
+        # Jika kolom "NO." kosong, lewati baris ini karena dianggap baris ringkasan
+        if not no_val:
+            continue
+        
         if jenis_pekerjaan.upper() == "JENIS PEKERJAAN":
             continue
         
@@ -188,6 +192,7 @@ def process_sheet(sheet, lingkup):
         categorized_prices[current_category].append(item_data)
 
     return categorized_prices
+
 
 # --- Endpoint API ---
 @data_bp.route('/get-data', methods=['GET'])
