@@ -36,10 +36,20 @@
         <label for="lokasi_cabang">Nomor Ulok:</label>
         <div style="display: flex; gap: 10px; align-items: center;">
             <select id="lokasi_cabang" required style="flex: 1;">
-                <option value="">-- Kode Cabang --</option>
+                <option value="">-- Kode --</option>
                 </select>
             <span style="font-weight: bold;">-</span>
-            <input type="month" id="lokasi_tanggal" required style="flex: 1;" />
+            
+            <input
+              type="text"
+              id="lokasi_tanggal"
+              placeholder="YYMM"
+              maxlength="4"
+              oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+              required
+              style="flex: 1;"
+            />
+
             <span style="font-weight: bold;">-</span>
             <input
               type="text"
