@@ -83,32 +83,28 @@ def submit_form():
         data[config.COLUMN_NAMES.STATUS] = config.STATUS.WAITING_FOR_COORDINATOR
         data[config.COLUMN_NAMES.TIMESTAMP] = datetime.datetime.now(WIB).isoformat()
         
+        # Buat PDF dengan data asli dari form
+        pdf_bytes = create_pdf_from_data(google_provider, data)
+
+        # Sekarang, format Nomor Ulok untuk nama file dan data yang akan disimpan
         jenis_toko = data.get('Proyek', 'N/A')
         nomor_ulok_raw = data.get(config.COLUMN_NAMES.LOKASI, 'N/A')
-
-        # --- PERBAIKAN LOGIKA ---
-
-        # 1. Buat PDF menggunakan data asli (belum diformat)
-        # Ini memastikan semua data tabel ikut masuk ke dalam PDF
-        pdf_bytes = create_pdf_from_data(google_provider, data)
         
-        # 2. Format Nomor Ulok untuk nama file dan untuk disimpan ke sheet
         nomor_ulok_formatted = nomor_ulok_raw
         if isinstance(nomor_ulok_raw, str) and len(nomor_ulok_raw) == 12:
             nomor_ulok_formatted = f"{nomor_ulok_raw[:4]}-{nomor_ulok_raw[4:8]}-{nomor_ulok_raw[8:]}"
-
+        
         pdf_filename = f"RAB_ALFAMART({jenis_toko})_({nomor_ulok_formatted}).pdf"
         
-        # 3. Upload PDF ke Drive
+        # Upload PDF dan perbarui data dengan link PDF dan Nomor Ulok yang sudah diformat
         pdf_link = google_provider.upload_pdf_to_drive(pdf_bytes, pdf_filename)
         data[config.COLUMN_NAMES.LINK_PDF] = pdf_link
-
-        # 4. SEKARANG, perbarui 'data' dengan Nomor Ulok yang sudah diformat sebelum disimpan
         data[config.COLUMN_NAMES.LOKASI] = nomor_ulok_formatted
         
-        # 5. Simpan data yang sudah diperbarui ke Google Sheet
+        # Simpan data yang sudah lengkap ke Google Sheet
         new_row_index = google_provider.append_to_sheet(data, config.DATA_ENTRY_SHEET_NAME)
         
+        # Kirim email notifikasi
         cabang = data.get('Cabang')
         if not cabang:
              raise Exception("Field 'Cabang' is empty. Cannot find Coordinator.")
@@ -121,7 +117,6 @@ def submit_form():
         approval_url = f"{base_url}/api/handle_approval?action=approve&row={new_row_index}&level=coordinator&approver={coordinator_email}"
         rejection_url = f"{base_url}/api/handle_approval?action=reject&row={new_row_index}&level=coordinator&approver={coordinator_email}"
         
-        # Email akan menggunakan data dengan Nomor Ulok yang sudah diformat, yang mana tidak apa-apa.
         email_html = render_template('email_template.html', level='Koordinator', form_data=data, approval_url=approval_url, rejection_url=rejection_url)
         
         google_provider.send_email(to=coordinator_email, subject=f"[TAHAP 1: PERLU PERSETUJUAN] RAB Proyek: {jenis_toko}", html_body=email_html, pdf_attachment_bytes=pdf_bytes, pdf_filename=pdf_filename)

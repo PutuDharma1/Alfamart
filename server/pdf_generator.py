@@ -80,7 +80,6 @@ def create_pdf_from_data(google_provider, form_data):
     grand_total = 0
     
     # --- PERBAIKAN LOGIKA LOOP ---
-    # Mengumpulkan semua item pekerjaan dari form_data
     items_from_form = {}
     for key, value in form_data.items():
         if key.startswith("Jenis_Pekerjaan_"):
@@ -114,7 +113,6 @@ def create_pdf_from_data(google_provider, form_data):
                 items_from_form[index] = {}
             items_from_form[index]['hargaUpah'] = float(value or 0)
     
-    # Memproses item yang sudah dikumpulkan
     for index, item_data in items_from_form.items():
         kategori = item_data.get("kategori", "Lain-lain")
         if kategori not in grouped_items: 
@@ -181,12 +179,19 @@ def create_pdf_from_data(google_provider, form_data):
         tanggal_pengajuan_str = dt_object.strftime('%d %B %Y')
     else:
         tanggal_pengajuan_str = str(timestamp_from_data).split(" ")[0] if timestamp_from_data else ''
-            
+    
+    # --- PERUBAHAN DI SINI ---
+    # Membuat salinan data untuk dimodifikasi hanya untuk template
+    template_data = form_data.copy()
+    nomor_ulok_raw = template_data.get(config.COLUMN_NAMES.LOKASI, '')
+    if isinstance(nomor_ulok_raw, str) and len(nomor_ulok_raw) == 12:
+        template_data[config.COLUMN_NAMES.LOKASI] = f"{nomor_ulok_raw[:4]}-{nomor_ulok_raw[4:8]}-{nomor_ulok_raw[8:]}"
+
     logo_path = 'file:///' + os.path.abspath(os.path.join('static', 'Alfamart-Emblem.png'))
 
     html_string = render_template(
         'pdf_report.html', 
-        data=form_data, 
+        data=template_data, # Menggunakan data yang sudah diformat untuk PDF
         grouped_items=grouped_items,
         grand_total=format_rupiah(grand_total), 
         ppn=format_rupiah(ppn),
