@@ -40,19 +40,15 @@
                 </select>
             <span style="font-weight: bold;">-</span>
             
-            <div style="position: relative; flex: 1;">
-                <input
-                  type="text"
-                  id="lokasi_tanggal_display"
-                  placeholder="YYMM"
-                  maxlength="4"
-                  oninput="this.value = this.value.replace(/[^0-9]/g, '')"
-                  required
-                  style="width: 100%;"
-                  onclick="document.getElementById('lokasi_tanggal_real').showPicker()"
-                />
-                <input type="month" id="lokasi_tanggal_real" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; pointer-events: none;" />
-            </div>
+            <input
+              type="text"
+              id="lokasi_tanggal"
+              placeholder="YYMM"
+              maxlength="4"
+              oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+              required
+              style="flex: 1;"
+            />
 
             <span style="font-weight: bold;">-</span>
             <input
