@@ -511,10 +511,10 @@ function updateNomorUlok() {
     const tanggalValue = document.getElementById('lokasi_tanggal').value;
     const manualValue = document.getElementById('lokasi_manual').value;
 
-    if (kodeCabang && tanggalValue && manualValue.length === 4) {
-        const parts = tanggalValue.split('-');
-        const year = parts[0].slice(-2);
-        const month = parts[1];
+    // --- PERUBAHAN DI SINI ---
+    if (kodeCabang && tanggalValue && tanggalValue.length === 4 && manualValue.length === 4) {
+        const year = tanggalValue.substring(0, 2);
+        const month = tanggalValue.substring(2, 4);
         
         const nomorUlok = `${kodeCabang}${year}${month}${manualValue}`;
         document.getElementById('lokasi').value = nomorUlok;
@@ -624,7 +624,7 @@ async function initializePage() {
     }
     
     document.getElementById('lokasi_cabang').addEventListener('change', updateNomorUlok);
-    document.getElementById('lokasi_tanggal').addEventListener('change', updateNomorUlok);
+    document.getElementById('lokasi_tanggal').addEventListener('input', updateNomorUlok);
     document.getElementById('lokasi_manual').addEventListener('input', updateNomorUlok);
 
     document.getElementById('lokasi_manual')?.addEventListener('input', function(e) {
