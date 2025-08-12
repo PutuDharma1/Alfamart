@@ -16,6 +16,23 @@ let originalFormData = null;
 
 const PYTHON_API_BASE_URL = "https://alfamart.onrender.com";
 
+const sipilCategoryOrder = [
+    "PEKERJAAN PERSIAPAN", 
+    "PEKERJAAN BOBOKAN / BONGKARAN", 
+    "PEKERJAAN TANAH", 
+    "PEKERJAAN PONDASI & BETON", 
+    "PEKERJAAN PASANGAN", 
+    "PEKERJAAN BESI", 
+    "PEKERJAAN KERAMIK", 
+    "PEKERJAAN PLUMBING", 
+    "PEKERJAAN SANITARY & ACECORIES", 
+    "PEKERJAAN ATAP", 
+    "PEKERJAAN KUSEN, PINTU & KACA", 
+    "PEKERJAAN FINISHING", 
+    "PEKERJAAN BEANSPOT",
+    "PEKERJAAN TAMBAHAN"
+];
+
 const branchGroups = {
     "BANDUNG 1": ["BANDUNG 1", "BANDUNG 2"],
     "BANDUNG 2": ["BANDUNG 1", "BANDUNG 2"],
@@ -215,7 +232,7 @@ const createBoQRow = (category, scope) => {
 function buildTables(scope, data) {
     const wrapper = scope === 'Sipil' ? sipilTablesWrapper : meTablesWrapper;
     wrapper.innerHTML = ''; // Kosongkan wrapper
-    const categories = Object.keys(data);
+    const categories = scope === 'Sipil' ? sipilCategoryOrder : Object.keys(data);
     
     categories.forEach(category => {
         wrapper.appendChild(createTableStructure(category, scope));
