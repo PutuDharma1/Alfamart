@@ -84,9 +84,19 @@ def submit_form():
         data[config.COLUMN_NAMES.TIMESTAMP] = datetime.datetime.now(WIB).isoformat()
         
         jenis_toko = data.get('Proyek', 'N/A')
+        
         # --- PERUBAHAN DI SINI ---
-        nomor_ulok = data.get('Nomor Ulok', 'N/A')
-        pdf_filename = f"RAB_ALFAMART({jenis_toko})_({nomor_ulok}).pdf"
+        # Mengambil dan memformat Nomor Ulok
+        nomor_ulok_raw = data.get(config.COLUMN_NAMES.LOKASI, 'N/A')
+        nomor_ulok_formatted = nomor_ulok_raw
+        if isinstance(nomor_ulok_raw, str) and len(nomor_ulok_raw) == 12:
+            nomor_ulok_formatted = f"{nomor_ulok_raw[:4]}-{nomor_ulok_raw[4:8]}-{nomor_ulok_raw[8:]}"
+        
+        # Memperbarui data dengan Nomor Ulok yang sudah diformat
+        data[config.COLUMN_NAMES.LOKASI] = nomor_ulok_formatted
+        
+        # Menggunakan Nomor Ulok yang sudah diformat untuk nama file
+        pdf_filename = f"RAB_ALFAMART({jenis_toko})_({nomor_ulok_formatted}).pdf"
         
         pdf_bytes = create_pdf_from_data(google_provider, data)
         pdf_link = google_provider.upload_pdf_to_drive(pdf_bytes, pdf_filename)
