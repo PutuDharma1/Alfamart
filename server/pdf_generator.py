@@ -79,37 +79,73 @@ def create_pdf_from_data(google_provider, form_data):
     grouped_items = {}
     grand_total = 0
     
-    for i in range(1, 201): # Batas loop dinaikkan untuk mengakomodasi lebih banyak item
-        if form_data.get(f"Jenis_Pekerjaan_{i}"):
-            kategori = form_data.get(f"Kategori_Pekerjaan_{i}", "Lain-lain")
-            if kategori not in grouped_items: 
-                grouped_items[kategori] = []
+    # --- PERBAIKAN LOGIKA LOOP ---
+    # Mengumpulkan semua item pekerjaan dari form_data
+    items_from_form = {}
+    for key, value in form_data.items():
+        if key.startswith("Jenis_Pekerjaan_"):
+            index = key.split('_')[-1]
+            if index not in items_from_form:
+                items_from_form[index] = {}
+            items_from_form[index]['jenisPekerjaan'] = value
+        elif key.startswith("Kategori_Pekerjaan_"):
+            index = key.split('_')[-1]
+            if index not in items_from_form:
+                items_from_form[index] = {}
+            items_from_form[index]['kategori'] = value
+        elif key.startswith("Satuan_Item_"):
+            index = key.split('_')[-1]
+            if index not in items_from_form:
+                items_from_form[index] = {}
+            items_from_form[index]['satuan'] = value
+        elif key.startswith("Volume_Item_"):
+            index = key.split('_')[-1]
+            if index not in items_from_form:
+                items_from_form[index] = {}
+            items_from_form[index]['volume'] = float(value or 0)
+        elif key.startswith("Harga_Material_Item_"):
+            index = key.split('_')[-1]
+            if index not in items_from_form:
+                items_from_form[index] = {}
+            items_from_form[index]['hargaMaterial'] = float(value or 0)
+        elif key.startswith("Harga_Upah_Item_"):
+            index = key.split('_')[-1]
+            if index not in items_from_form:
+                items_from_form[index] = {}
+            items_from_form[index]['hargaUpah'] = float(value or 0)
+    
+    # Memproses item yang sudah dikumpulkan
+    for index, item_data in items_from_form.items():
+        kategori = item_data.get("kategori", "Lain-lain")
+        if kategori not in grouped_items: 
+            grouped_items[kategori] = []
 
-            # Ambil nilai numerik mentah
-            total_harga_raw = float(form_data.get(f"Total_Harga_Item_{i}", 0))
-            total_material_raw = float(form_data.get(f"Total_Material_Item_{i}", 0))
-            total_upah_raw = float(form_data.get(f"Total_Upah_Item_{i}", 0))
-            
-            grand_total += total_harga_raw
-            
-            item = {
-                "jenisPekerjaan": form_data.get(f"Jenis_Pekerjaan_{i}"),
-                "satuan": form_data.get(f"Satuan_Item_{i}"),
-                "volume": float(form_data.get(f"Volume_Item_{i}", 0)),
-                
-                # Data yang sudah diformat untuk ditampilkan
-                "hargaMaterialFormatted": format_rupiah(form_data.get(f"Harga_Material_Item_{i}", 0)),
-                "hargaUpahFormatted": format_rupiah(form_data.get(f"Harga_Upah_Item_{i}", 0)),
-                "totalMaterialFormatted": format_rupiah(total_material_raw),
-                "totalUpahFormatted": format_rupiah(total_upah_raw),
-                "totalHargaFormatted": format_rupiah(total_harga_raw),
+        volume = item_data.get('volume', 0)
+        harga_material = item_data.get('hargaMaterial', 0)
+        harga_upah = item_data.get('hargaUpah', 0)
 
-                # Data mentah untuk kalkulasi di template
-                "totalMaterialRaw": total_material_raw,
-                "totalUpahRaw": total_upah_raw,
-                "totalHargaRaw": total_harga_raw
-            }
-            grouped_items[kategori].append(item)
+        total_material_raw = volume * harga_material
+        total_upah_raw = volume * harga_upah
+        total_harga_raw = total_material_raw + total_upah_raw
+        
+        grand_total += total_harga_raw
+        
+        item_to_add = {
+            "jenisPekerjaan": item_data.get("jenisPekerjaan"),
+            "satuan": item_data.get("satuan"),
+            "volume": volume,
+            
+            "hargaMaterialFormatted": format_rupiah(harga_material),
+            "hargaUpahFormatted": format_rupiah(harga_upah),
+            "totalMaterialFormatted": format_rupiah(total_material_raw),
+            "totalUpahFormatted": format_rupiah(total_upah_raw),
+            "totalHargaFormatted": format_rupiah(total_harga_raw),
+
+            "totalMaterialRaw": total_material_raw,
+            "totalUpahRaw": total_upah_raw,
+            "totalHargaRaw": total_harga_raw
+        }
+        grouped_items[kategori].append(item_to_add)
     
     ppn = grand_total * 0.11
     final_grand_total = grand_total + ppn
