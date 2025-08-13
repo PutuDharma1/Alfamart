@@ -3,71 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Homepage - Aplikasi RAB</title>
-    <link rel="stylesheet" href="/Homepage/style.css">
+    <title>Login - Aplikasi RAB Alfamart</title>
+    <link rel="stylesheet" href="login_style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <header class="main-header">
-        <img src="/Assets/Alfamart-Emblem.png" alt="Alfamart Logo" class="header-logo">
-        <h1>Building & Maintenance</h1>
-    </header>
-
-    <main class="container">
-        <div class="welcome-message">
-            <h2>Selamat Datang, <span id="user-name">Pengguna</span>!</h2>
-            <p>Pilih menu di bawah untuk melanjutkan.</p>
+    <div class="login-container">
+        <div class="login-header">
+            <img src="/Assets/Alfamart-Emblem.png" alt="Logo Alfamart" class="login-logo">
+            <h1>Building & Maintenance</h1>
         </div>
+        <form id="login-form">
+            <div class="form-group">
+                <label for="username">Email</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Cabang</label>
+                <input type="text" id="password" name="password" required>
+            </div>
+            <button type="submit">Login</button>
+            <p id="login-message" class="login-message" style="display:none;"></p>
+        </form>
+    </div>
 
-        <nav class="menu-container">
-            <a href="/Estimasi_rab/" class="menu-item">
-                <h3>Estimasi RAB</h3>
-                <p>Buat atau revisi Rencana Anggaran Biaya.</p>
-            </a>
-            <a href="/SPK_form/" class="menu-item">
-                <h3>Buat SPK</h3>
-                <p>Buat Surat Perintah Kerja untuk kontraktor.</p>
-            </a>
-            <a href="https://frontend-form-virid.vercel.app/input_pic_pengawasan.html" class="menu-item">
-                <h3>Pengawasan</h3>
-                <p>Input informasi pengawasan.</p>
-            </a>
-            <a href="#" class="menu-item disabled">
-                <h3>Pengaturan</h3>
-                <p>Atur profil Anda (segera hadir).</p>
-            </a>
-        </nav>
-        
-        <div class="logout-container">
-            <button id="logout-button" class="btn-logout">Logout</button>
-        </div>
-    </main>
+    <script src="login_script.js"></script>
 
-    <script>
-        // Security & Personalization Script
-        document.addEventListener('DOMContentLoaded', () => {
-            const isAuthenticated = sessionStorage.getItem('authenticated');
-            const userEmail = sessionStorage.getItem('loggedInUserEmail');
-
-            if (!isAuthenticated) {
-                window.location.href = '/'; // Redirect ke halaman login
-            }
-
-            if (userEmail) {
-                const userNameSpan = document.getElementById('user-name');
-                if(userNameSpan) {
-                    userNameSpan.textContent = userEmail.split('@')[0];
-                }
-            }
-
-            const logoutButton = document.getElementById('logout-button');
-            if(logoutButton) {
-                logoutButton.addEventListener('click', () => {
-                    sessionStorage.clear();
-                    window.location.href = '/';
-                });
-            }
-        });
-    </script>
 </body>
 </html>
