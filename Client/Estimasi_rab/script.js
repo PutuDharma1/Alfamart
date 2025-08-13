@@ -441,7 +441,7 @@ async function handleFormSubmit() {
     });
 
     try {
-        const response = await fetch(`${PYTHON_API_BASE_URL}/api/submit`, {
+        const response = await fetch(`${PYTHON_API_BASE_URL}/api/submit_rab`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data),
