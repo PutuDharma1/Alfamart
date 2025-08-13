@@ -110,6 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
             data['Alamat'] = selectedRab.Alamat;
             data['Lingkup Pekerjaan'] = selectedRab.Lingkup_Pekerjaan;
             data['Grand Total'] = selectedRab['Grand Total'];
+            data['Cabang'] = selectedRab.Cabang; 
         }
 
         try {
