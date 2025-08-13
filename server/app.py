@@ -19,7 +19,19 @@ from spk_generator import create_spk_pdf
 # Inisialisasi Aplikasi dan CORS
 load_dotenv()
 app = Flask(__name__)
-cors = CORS(app, resources={r"/api/*": {"origins": ["http://127.0.0.1:5500", "http://localhost:5500", "https://alfamart-one.vercel.app"]}})
+
+# --- PERBAIKAN DI SINI ---
+# Mengubah r"/api/*" menjadi r"/*" agar aturan CORS berlaku untuk SEMUA endpoint,
+# termasuk /get-data yang tidak memiliki awalan /api.
+cors = CORS(app, resources={
+  r"/*": {
+    "origins": [
+      "http://127.0.0.1:5500",
+      "http://localhost:5500",
+      "https://alfamart-one.vercel.app"
+    ]
+  }
+})
 
 # Inisialisasi GoogleServiceProvider
 google_provider = GoogleServiceProvider()
