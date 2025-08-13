@@ -6,15 +6,18 @@ from datetime import datetime, timedelta
 from num2words import num2words
 import config
 
-# Atur locale ke Bahasa Indonesia
+# --- PERBAIKAN LOGIKA LOCALE ---
+# Blok ini akan mencoba mengatur locale ke Bahasa Indonesia.
+# Jika gagal, ia akan mencetak peringatan tetapi tidak akan menghentikan aplikasi.
 try:
     locale.setlocale(locale.LC_TIME, 'id_ID.UTF-8')
 except locale.Error:
-    locale.setlocale(locale.LC_TIME, 'Indonesian_Indonesia.1252')
+    try:
+        locale.setlocale(locale.LC_TIME, 'Indonesian_Indonesia.1252')
+    except locale.Error:
+        print("Peringatan: Locale Bahasa Indonesia tidak ditemukan. Nama bulan akan dalam Bahasa Inggris.")
 
 def get_nama_lengkap_by_email(google_provider, email):
-    # Fungsi ini diasumsikan sudah ada di google_services.py atau diimpor
-    # Jika belum, Anda bisa memindahkannya ke sini atau mengimpornya.
     if not email: return ""
     try:
         cabang_sheet = google_provider.sheet.worksheet(config.CABANG_SHEET_NAME)
