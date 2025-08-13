@@ -1,22 +1,20 @@
-# Tambahkan dua baris ini di paling atas
 from gevent import monkey
 monkey.patch_all()
 
 import datetime
 import os
 import traceback
+import json
 from flask import Flask, request, jsonify, render_template, url_for
 from dotenv import load_dotenv
 from flask_cors import CORS
 from datetime import timezone, timedelta
 
-# Impor file-file proyek
 import config
 from google_services import GoogleServiceProvider
 from pdf_generator import create_pdf_from_data
 from spk_generator import create_spk_pdf
 
-# Inisialisasi Aplikasi
 load_dotenv()
 app = Flask(__name__)
 
@@ -31,18 +29,14 @@ CORS(app,
      supports_credentials=True
 )
 
-# Inisialisasi GoogleServiceProvider
 google_provider = GoogleServiceProvider()
 
-# Import dan daftarkan Blueprint
 from data_api import data_bp
 app.register_blueprint(data_bp)
 
 @app.route('/')
 def index():
     return "Backend server is running and healthy.", 200
-
-# --- ENDPOINTS OTENTIKASI & DATA UMUM ---
 
 @app.route('/api/login', methods=['POST'])
 def login():
@@ -74,8 +68,6 @@ def check_status():
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
-# --- ENDPOINTS UNTUK ALUR KERJA RAB ---
-
 @app.route('/api/submit_rab', methods=['POST'])
 def submit_rab():
     data = request.get_json()
@@ -86,6 +78,10 @@ def submit_rab():
         WIB = timezone(timedelta(hours=7))
         data[config.COLUMN_NAMES.STATUS] = config.STATUS.WAITING_FOR_COORDINATOR
         data[config.COLUMN_NAMES.TIMESTAMP] = datetime.datetime.now(WIB).isoformat()
+        
+        item_keys_to_archive = ('Jenis_Pekerjaan_', 'Kategori_Pekerjaan_', 'Satuan_Item_', 'Volume_Item_', 'Harga_Material_Item_', 'Harga_Upah_Item_')
+        item_details = {k: v for k, v in data.items() if k.startswith(item_keys_to_archive)}
+        data['Item_Details_JSON'] = json.dumps(item_details)
         
         pdf_bytes = create_pdf_from_data(google_provider, data)
         
@@ -144,6 +140,14 @@ def handle_rab_approval():
         row_data = google_provider.get_row_data(row)
         if not row_data:
             return render_template('response_page.html', title='Data Not Found', message='This request may have been deleted.', logo_url=logo_url)
+        
+        item_details_json = row_data.get('Item_Details_JSON', '{}')
+        if item_details_json:
+            try:
+                item_details = json.loads(item_details_json)
+                row_data.update(item_details)
+            except json.JSONDecodeError:
+                print(f"Warning: Could not decode Item_Details_JSON for row {row}")
         
         current_status = row_data.get(config.COLUMN_NAMES.STATUS, "").strip()
         expected_status_map = {'coordinator': config.STATUS.WAITING_FOR_COORDINATOR, 'manager': config.STATUS.WAITING_FOR_MANAGER}
@@ -235,8 +239,6 @@ def handle_rab_approval():
     except Exception as e:
         traceback.print_exc()
         return render_template('response_page.html', title='Internal Error', message=f'An internal error occurred: {str(e)}', logo_url=logo_url), 500
-
-# --- ENDPOINTS BARU UNTUK ALUR KERJA SPK ---
 
 @app.route('/api/get_approved_rab', methods=['GET'])
 def get_approved_rab():

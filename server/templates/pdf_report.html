@@ -82,6 +82,7 @@
         </div>
         
         {% for category, items in grouped_items.items() %}
+            {% if items %}
             <div class="price-table-container">
                 <p class="category-header">{{ loop.index }}. {{ category }}</p>
                 <table class="price-table">
@@ -129,6 +130,7 @@
                     </tbody>
                 </table>
             </div>
+            {% endif %}
         {% endfor %}
         <table class="grand-total-table">
             <tbody>

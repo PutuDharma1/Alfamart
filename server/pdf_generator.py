@@ -74,12 +74,10 @@ def create_approval_details_block(google_provider, approver_email, approval_time
     </div>
     """
 
-# --- FUNGSI UTAMA YANG DIPERBARUI ---
 def create_pdf_from_data(google_provider, form_data):
     grouped_items = {}
     grand_total = 0
     
-    # --- PERBAIKAN LOGIKA LOOP ---
     items_from_form = {}
     for key, value in form_data.items():
         if key.startswith("Jenis_Pekerjaan_"):
@@ -114,6 +112,13 @@ def create_pdf_from_data(google_provider, form_data):
             items_from_form[index]['hargaUpah'] = float(value or 0)
     
     for index, item_data in items_from_form.items():
+        # Memastikan hanya item yang valid (punya nama dan volume) yang diproses.
+        jenis_pekerjaan_val = item_data.get("jenisPekerjaan", "").strip()
+        volume_val = float(item_data.get('volume', 0))
+
+        if not jenis_pekerjaan_val or volume_val <= 0:
+            continue # Lewati item ini jika nama atau volumenya kosong
+
         kategori = item_data.get("kategori", "Lain-lain")
         if kategori not in grouped_items: 
             grouped_items[kategori] = []
@@ -180,8 +185,6 @@ def create_pdf_from_data(google_provider, form_data):
     else:
         tanggal_pengajuan_str = str(timestamp_from_data).split(" ")[0] if timestamp_from_data else ''
     
-    # --- PERUBAHAN DI SINI ---
-    # Membuat salinan data untuk dimodifikasi hanya untuk template
     template_data = form_data.copy()
     nomor_ulok_raw = template_data.get(config.COLUMN_NAMES.LOKASI, '')
     if isinstance(nomor_ulok_raw, str) and len(nomor_ulok_raw) == 12:
@@ -191,7 +194,7 @@ def create_pdf_from_data(google_provider, form_data):
 
     html_string = render_template(
         'pdf_report.html', 
-        data=template_data, # Menggunakan data yang sudah diformat untuk PDF
+        data=template_data,
         grouped_items=grouped_items,
         grand_total=format_rupiah(grand_total), 
         ppn=format_rupiah(ppn),
