@@ -22,7 +22,8 @@ class COLUMN_NAMES:
     PROYEK = "Proyek"
     CABANG = "Cabang"
     LINGKUP_PEKERJAAN = "Lingkup_Pekerjaan"
-    # ... (sisa kolom lainnya tetap sama)
+    KOORDINATOR_APPROVER = "Pemberi Persetujuan Koordinator"
+    KOORDINATOR_APPROVAL_TIME = "Waktu Persetujuan Koordinator"
     MANAGER_APPROVER = "Pemberi Persetujuan Manager"
     MANAGER_APPROVAL_TIME = "Waktu Persetujuan Manager"
     LINK_PDF = "Link PDF"
