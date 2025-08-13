@@ -420,6 +420,7 @@ async function handleFormSubmit() {
     
     data['Cabang'] = cabangSelect.value;
     data['Email_Pembuat'] = sessionStorage.getItem('loggedInUserEmail');
+    data['Grand Total'] = parseRupiah(grandTotalAmount.textContent);
 
     let itemIndex = 1;
     document.querySelectorAll(".boq-table-body:not(.hidden) .boq-item-row").forEach(row => {
