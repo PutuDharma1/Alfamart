@@ -24,6 +24,10 @@
                 <h3>Estimasi RAB</h3>
                 <p>Buat atau revisi Rencana Anggaran Biaya.</p>
             </a>
+            <a href="/SPK_form/" class="menu-item">
+                <h3>Buat SPK</h3>
+                <p>Buat Surat Perintah Kerja untuk kontraktor.</p>
+            </a>
             <a href="https://frontend-form-virid.vercel.app/input_pic_pengawasan.html" class="menu-item">
                 <h3>Pengawasan</h3>
                 <p>Input informasi pengawasan.</p>
@@ -40,28 +44,30 @@
     </main>
 
     <script>
-        // Security & Personalization Script
+        // --- PERBAIKAN DI SINI ---
         document.addEventListener('DOMContentLoaded', () => {
+            // 1. Script Keamanan dipindahkan ke sini
             const isAuthenticated = sessionStorage.getItem('authenticated');
-            const userEmail = sessionStorage.getItem('loggedInUserEmail');
-
             if (!isAuthenticated) {
-                window.location.href = '/'; // Redirect ke halaman login
+                // Redirect ke root, yang merupakan halaman login
+                window.location.href = '/'; 
             }
 
+            // 2. Logika personalisasi tetap di sini
+            const userEmail = sessionStorage.getItem('loggedInUserEmail');
             if (userEmail) {
                 const userNameSpan = document.getElementById('user-name');
                 if(userNameSpan) {
-                    // Ambil bagian nama dari email sebelum simbol @
                     userNameSpan.textContent = userEmail.split('@')[0];
                 }
             }
 
+            // 3. Logika logout tetap di sini
             const logoutButton = document.getElementById('logout-button');
             if(logoutButton) {
                 logoutButton.addEventListener('click', () => {
-                    sessionStorage.clear(); // Hapus semua data sesi
-                    window.location.href = '/'; // Arahkan ke halaman login
+                    sessionStorage.clear();
+                    window.location.href = '/'; // Arahkan kembali ke halaman login
                 });
             }
         });
