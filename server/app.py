@@ -20,11 +20,16 @@ from spk_generator import create_spk_pdf
 load_dotenv()
 app = Flask(__name__)
 
-CORS(app, origins=[
-    "http://127.0.0.1:5500",
-    "http://localhost:5500",
-    "https://alfamart-one.vercel.app"
-], methods=["GET", "POST", "OPTIONS"], supports_credentials=True)
+CORS(app, 
+     origins=[
+         "http://127.0.0.1:5500", 
+         "http://localhost:5500", 
+         "https://alfamart-one.vercel.app"
+     ], 
+     methods=["GET", "POST", "OPTIONS", "PUT", "PATCH", "DELETE"], 
+     allow_headers=["Content-Type", "Authorization"],
+     supports_credentials=True
+)
 
 # Inisialisasi GoogleServiceProvider
 google_provider = GoogleServiceProvider()
