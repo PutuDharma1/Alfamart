@@ -264,7 +264,7 @@ def submit_spk():
         data['Timestamp'] = datetime.datetime.now(WIB).isoformat()
         data['Status'] = config.STATUS.WAITING_FOR_BM_APPROVAL
         
-        start_date = datetime.fromisoformat(data['Waktu Mulai'])
+        start_date = datetime.datetime.fromisoformat(data['Waktu Mulai']) 
         duration = int(data['Durasi'])
         end_date = start_date + timedelta(days=duration)
         data['Waktu Selesai'] = end_date.isoformat()
