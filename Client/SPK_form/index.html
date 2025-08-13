@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Form Surat Perintah Kerja (SPK) - Alfamart</title>
+    <script>
+        // Security Check: Redirect to login if not authenticated
+        const isAuthenticated = sessionStorage.getItem('authenticated');
+        if (!isAuthenticated) {
+            window.location.href = '/index.html';
+        }
+    </script>
+    <link rel="stylesheet" href="../Estimasi_rab/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <a href="/Homepage/index.html">
+            <img src="../Assets/Alfamart-Emblem.png" alt="Alfamart Logo" class="header-logo" />
+        </a>
+        <h1>Form Surat Perintah Kerja (SPK)</h1>
+    </header>
+
+    <div class="container">
+        <form id="spk-form" class="form-container">
+            <label for="nomor_ulok">Nomor Ulok (Pilih RAB yang sudah disetujui):</label>
+            <select name="Nomor Ulok" id="nomor_ulok" required>
+                <option value="">-- Memuat data RAB... --</option>
+            </select>
+
+            <div id="rab-details" style="display:none; margin-top: 1rem; padding: 1rem; background-color: #f4f7f6; border-radius: 8px;">
+                <p><strong>Proyek:</strong> <span id="detail_proyek"></span></p>
+                <p><strong>Lingkup Pekerjaan:</strong> <span id="detail_lingkup"></span></p>
+                <p><strong>Grand Total:</strong> <span id="detail_total"></span></p>
+            </div>
+
+            <label for="cabang">Cabang:</label>
+            <select name="Cabang" id="cabang" required>
+                <option value="">-- Cabang Terisi Otomatis --</option>
+            </select>
+
+            <label for="nama_kontraktor">Nama Kontraktor:</label>
+            <input type="text" id="nama_kontraktor" name="Nama Kontraktor" placeholder="Masukkan nama PT/CV Kontraktor" required />
+
+            <label for="waktu_mulai">Tanggal Mulai Pelaksanaan:</label>
+            <input type="date" id="waktu_mulai" name="Waktu Mulai" required />
+
+            <label for="durasi">Durasi Pelaksanaan:</label>
+            <select name="Durasi" id="durasi" required>
+                <option value="">-- Pilih Durasi --</option>
+                <option value="10">10 Hari Kalender</option>
+                <option value="14">14 Hari Kalender</option>
+                <option value="20">20 Hari Kalender</option>
+                <option value="30">30 Hari Kalender</option>
+                <option value="35">35 Hari Kalender</option>
+                <option value="40">40 Hari Kalender</option>
+                <option value="48">48 Hari Kalender</option>
+            </select>
+
+            <div class="button-group">
+                <button type="submit" id="submit-button">Kirim untuk Persetujuan</button>
+            </div>
+        </form>
+
+        <a href="/Homepage/index.html" class="back-btn">← Kembali ke Beranda</a>
+    </div>
+
+    <div id="message" role="status" aria-live="polite"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>

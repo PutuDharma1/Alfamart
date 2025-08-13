@@ -11,37 +11,40 @@ PDF_STORAGE_FOLDER_ID = "1lvPxOwNILXHmagVfPGkVlNEtfv3U4Emj" # Ganti dengan ID Fo
 DATA_ENTRY_SHEET_NAME = "Form2"
 APPROVED_DATA_SHEET_NAME = "Form3"
 CABANG_SHEET_NAME = "Cabang"
+SPK_DATA_SHEET_NAME = "SPK_Data" # BARU
 
 # --- Nama Kolom ---
 class COLUMN_NAMES:
     STATUS = "Status"
     TIMESTAMP = "Timestamp"
     EMAIL_PEMBUAT = "Email_Pembuat"
-    LOKASI = "Nomor Ulok" # <-- PERUBAHAN DI SINI
+    LOKASI = "Nomor Ulok"
     PROYEK = "Proyek"
     CABANG = "Cabang"
     LINGKUP_PEKERJAAN = "Lingkup_Pekerjaan"
-    LUAS_BANGUNAN = "Luas Bangunan"
-    LUAS_TERBANGUNAN = "Luas Terbangunan"
-    LUAS_AREA_TERBUKA = "Luas Area Terbuka"
-    LUAS_AREA_PARKIR = "Luas Area Parkir"
-    LUAS_AREA_SALES = "Luas Area Sales"
-    LUAS_GUDANG = "Luas Gudang"
-    KOORDINATOR_APPROVER = "Persetujuan Koordinator"
-    KOORDINATOR_APPROVAL_TIME = "Waktu Persetujuan Koordinator"
+    # ... (sisa kolom lainnya tetap sama)
     MANAGER_APPROVER = "Pemberi Persetujuan Manager"
     MANAGER_APPROVAL_TIME = "Waktu Persetujuan Manager"
     LINK_PDF = "Link PDF"
+    GRAND_TOTAL = "Grand Total" # BARU
+    ALAMAT = "Alamat" # BARU
+
 
 # --- Jabatan & Status ---
 class JABATAN:
     SUPPORT = "BRANCH BUILDING SUPPORT"
     KOORDINATOR = "BRANCH BUILDING COORDINATOR"
     MANAGER = "BRANCH BUILDING & MAINTENANCE MANAGER"
+    BRANCH_MANAGER = "BRANCH MANAGER" # BARU
 
 class STATUS:
+    # Status RAB
     WAITING_FOR_COORDINATOR = "Menunggu Persetujuan Koordinator"
     REJECTED_BY_COORDINATOR = "Ditolak oleh Koordinator"
     WAITING_FOR_MANAGER = "Menunggu Persetujuan Manajer"
     REJECTED_BY_MANAGER = "Ditolak oleh Manajer"
     APPROVED = "Disetujui"
+    # Status SPK (BARU)
+    WAITING_FOR_BM_APPROVAL = "Menunggu Persetujuan Branch Manager"
+    SPK_APPROVED = "SPK Disetujui"
+    SPK_REJECTED = "SPK Ditolak"

@@ -1,4 +1,4 @@
-# Tambahkan dua baris ini di paling atas, sebelum import lainnya
+# Tambahkan dua baris ini di paling atas
 from gevent import monkey
 monkey.patch_all()
 
@@ -10,22 +10,16 @@ from dotenv import load_dotenv
 from flask_cors import CORS
 from datetime import timezone, timedelta
 
+# Impor file-file proyek
 import config
 from google_services import GoogleServiceProvider
 from pdf_generator import create_pdf_from_data
+from spk_generator import create_spk_pdf
 
-# Inisialisasi Aplikasi dan CORS terlebih dahulu
+# Inisialisasi Aplikasi dan CORS
 load_dotenv()
 app = Flask(__name__)
-cors = CORS(app, resources={
-  r"/*": {
-    "origins": [
-      "http://127.0.0.1:5500",
-      "http://localhost:5500",
-      "https://alfamart-one.vercel.app"
-    ]
-  }
-})
+cors = CORS(app, resources={r"/api/*": {"origins": ["http://127.0.0.1:5500", "http://localhost:5500", "https://alfamart-one.vercel.app"]}})
 
 # Inisialisasi GoogleServiceProvider
 google_provider = GoogleServiceProvider()
@@ -34,20 +28,19 @@ google_provider = GoogleServiceProvider()
 from data_api import data_bp
 app.register_blueprint(data_bp)
 
-
 @app.route('/')
 def index():
     return "Backend server is running and healthy.", 200
+
+# --- ENDPOINTS OTENTIKASI & DATA UMUM ---
 
 @app.route('/api/login', methods=['POST'])
 def login():
     data = request.get_json()
     email = data.get('email')
     cabang = data.get('cabang')
-
     if not email or not cabang:
         return jsonify({"status": "error", "message": "Email and cabang are required"}), 400
-
     try:
         is_valid = google_provider.validate_user(email, cabang)
         if is_valid:
@@ -61,19 +54,20 @@ def login():
 @app.route('/api/check_status', methods=['GET'])
 def check_status():
     email = request.args.get('email')
-    cabang = request.args.get('cabang') # Mengambil parameter cabang
+    cabang = request.args.get('cabang')
     if not email or not cabang:
         return jsonify({"error": "Email and cabang parameters are missing"}), 400
     try:
-        # Meneruskan parameter cabang ke fungsi provider
         status_data = google_provider.check_user_submissions(email, cabang)
         return jsonify(status_data), 200
     except Exception as e:
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
-@app.route('/api/submit', methods=['POST'])
-def submit_form():
+# --- ENDPOINTS UNTUK ALUR KERJA RAB ---
+
+@app.route('/api/submit_rab', methods=['POST'])
+def submit_rab():
     data = request.get_json()
     if not data:
         return jsonify({"status": "error", "message": "Invalid JSON data"}), 400
@@ -83,10 +77,8 @@ def submit_form():
         data[config.COLUMN_NAMES.STATUS] = config.STATUS.WAITING_FOR_COORDINATOR
         data[config.COLUMN_NAMES.TIMESTAMP] = datetime.datetime.now(WIB).isoformat()
         
-        # Buat PDF dengan data asli dari form
         pdf_bytes = create_pdf_from_data(google_provider, data)
-
-        # Sekarang, format Nomor Ulok untuk nama file dan data yang akan disimpan
+        
         jenis_toko = data.get('Proyek', 'N/A')
         nomor_ulok_raw = data.get(config.COLUMN_NAMES.LOKASI, 'N/A')
         
@@ -96,15 +88,12 @@ def submit_form():
         
         pdf_filename = f"RAB_ALFAMART({jenis_toko})_({nomor_ulok_formatted}).pdf"
         
-        # Upload PDF dan perbarui data dengan link PDF dan Nomor Ulok yang sudah diformat
         pdf_link = google_provider.upload_pdf_to_drive(pdf_bytes, pdf_filename)
         data[config.COLUMN_NAMES.LINK_PDF] = pdf_link
         data[config.COLUMN_NAMES.LOKASI] = nomor_ulok_formatted
         
-        # Simpan data yang sudah lengkap ke Google Sheet
         new_row_index = google_provider.append_to_sheet(data, config.DATA_ENTRY_SHEET_NAME)
         
-        # Kirim email notifikasi
         cabang = data.get('Cabang')
         if not cabang:
              raise Exception("Field 'Cabang' is empty. Cannot find Coordinator.")
@@ -114,8 +103,8 @@ def submit_form():
             raise Exception(f"Coordinator email for branch '{cabang}' not found.")
 
         base_url = "https://alfamart.onrender.com"
-        approval_url = f"{base_url}/api/handle_approval?action=approve&row={new_row_index}&level=coordinator&approver={coordinator_email}"
-        rejection_url = f"{base_url}/api/handle_approval?action=reject&row={new_row_index}&level=coordinator&approver={coordinator_email}"
+        approval_url = f"{base_url}/api/handle_rab_approval?action=approve&row={new_row_index}&level=coordinator&approver={coordinator_email}"
+        rejection_url = f"{base_url}/api/handle_rab_approval?action=reject&row={new_row_index}&level=coordinator&approver={coordinator_email}"
         
         email_html = render_template('email_template.html', level='Koordinator', form_data=data, approval_url=approval_url, rejection_url=rejection_url)
         
@@ -129,15 +118,14 @@ def submit_form():
         traceback.print_exc()
         return jsonify({"status": "error", "message": str(e)}), 500
 
-@app.route('/api/handle_approval', methods=['GET'])
-def handle_approval():
+@app.route('/api/handle_rab_approval', methods=['GET'])
+def handle_rab_approval():
     action = request.args.get('action')
     row_str = request.args.get('row')
     level = request.args.get('level')
     approver = request.args.get('approver')
     
-    base_render_url = "https://alfamart.onrender.com"
-    logo_url = f"{base_render_url}{url_for('static', filename='Alfamart-Emblem.png')}"
+    logo_url = url_for('static', filename='Alfamart-Emblem.png', _external=True)
 
     if not all([action, row_str, level, approver]):
         return render_template('response_page.html', title='Incomplete Parameters', message='URL parameters are incomplete.', logo_url=logo_url), 400
@@ -188,8 +176,8 @@ def handle_approval():
                 row_data[config.COLUMN_NAMES.KOORDINATOR_APPROVER] = approver
                 row_data[config.COLUMN_NAMES.KOORDINATOR_APPROVAL_TIME] = current_time
                 base_url = "https://alfamart.onrender.com"
-                approval_url_manager = f"{base_url}/api/handle_approval?action=approve&row={row}&level=manager&approver={manager_email}"
-                rejection_url_manager = f"{base_url}/api/handle_approval?action=reject&row={row}&level=manager&approver={manager_email}"
+                approval_url_manager = f"{base_url}/api/handle_rab_approval?action=approve&row={row}&level=manager&approver={manager_email}"
+                rejection_url_manager = f"{base_url}/api/handle_rab_approval?action=reject&row={row}&level=manager&approver={manager_email}"
                 email_html_manager = render_template('email_template.html', level='Manajer', form_data=row_data, approval_url=approval_url_manager, rejection_url=rejection_url_manager, additional_info=f"Telah disetujui oleh Koordinator: {approver}")
                 pdf_bytes = create_pdf_from_data(google_provider, row_data)
                 pdf_filename = f"RAB_ALFAMART({jenis_toko}).pdf"
@@ -237,6 +225,138 @@ def handle_approval():
     except Exception as e:
         traceback.print_exc()
         return render_template('response_page.html', title='Internal Error', message=f'An internal error occurred: {str(e)}', logo_url=logo_url), 500
+
+# --- ENDPOINTS BARU UNTUK ALUR KERJA SPK ---
+
+@app.route('/api/get_approved_rab', methods=['GET'])
+def get_approved_rab():
+    user_cabang = request.args.get('cabang')
+    if not user_cabang:
+        return jsonify({"error": "Cabang parameter is missing"}), 400
+    try:
+        approved_rabs = google_provider.get_approved_rab_by_cabang(user_cabang)
+        return jsonify(approved_rabs), 200
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/submit_spk', methods=['POST'])
+def submit_spk():
+    data = request.get_json()
+    if not data:
+        return jsonify({"status": "error", "message": "Invalid JSON data"}), 400
+    
+    new_row_index = None
+    try:
+        WIB = timezone(timedelta(hours=7))
+        data['Timestamp'] = datetime.datetime.now(WIB).isoformat()
+        data['Status'] = config.STATUS.WAITING_FOR_BM_APPROVAL
+        
+        start_date = datetime.fromisoformat(data['Waktu Mulai'])
+        duration = int(data['Durasi'])
+        end_date = start_date + timedelta(days=duration)
+        data['Waktu Selesai'] = end_date.isoformat()
+
+        pdf_bytes = create_spk_pdf(google_provider, data)
+        pdf_filename = f"SPK_{data.get('Proyek')}_{data.get('Nomor Ulok')}.pdf"
+        
+        pdf_link = google_provider.upload_pdf_to_drive(pdf_bytes, pdf_filename)
+        data['Link PDF'] = pdf_link
+        
+        new_row_index = google_provider.append_to_sheet(data, config.SPK_DATA_SHEET_NAME)
+
+        cabang = data.get('Cabang')
+        branch_manager_email = google_provider.get_email_by_jabatan(cabang, config.JABATAN.BRANCH_MANAGER)
+        if not branch_manager_email:
+            raise Exception(f"Branch Manager email for branch '{cabang}' not found.")
+
+        base_url = "https://alfamart.onrender.com"
+        approval_url = f"{base_url}/api/handle_spk_approval?action=approve&row={new_row_index}&approver={branch_manager_email}"
+        rejection_url = f"{base_url}/api/handle_spk_approval?action=reject&row={new_row_index}&approver={branch_manager_email}"
+
+        email_html = render_template('email_template.html', 
+                                     level='Branch Manager', 
+                                     form_data=data, 
+                                     approval_url=approval_url, 
+                                     rejection_url=rejection_url)
+        
+        google_provider.send_email(to=branch_manager_email, 
+                                   subject=f"[PERLU PERSETUJUAN SPK] Proyek: {data.get('Proyek')}", 
+                                   html_body=email_html, 
+                                   pdf_attachment_bytes=pdf_bytes, 
+                                   pdf_filename=pdf_filename)
+        
+        return jsonify({"status": "success", "message": "SPK successfully submitted for approval."}), 200
+
+    except Exception as e:
+        if new_row_index:
+            google_provider.delete_row(config.SPK_DATA_SHEET_NAME, new_row_index)
+        traceback.print_exc()
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/handle_spk_approval', methods=['GET'])
+def handle_spk_approval():
+    action = request.args.get('action')
+    row_str = request.args.get('row')
+    approver = request.args.get('approver')
+    
+    logo_url = url_for('static', filename='Alfamart-Emblem.png', _external=True)
+
+    if not all([action, row_str, approver]):
+        return render_template('response_page.html', title='Parameter Tidak Lengkap', message='URL tidak lengkap.', logo_url=logo_url), 400
+    
+    try:
+        row_index = int(row_str)
+        spk_sheet = google_provider.sheet.worksheet(config.SPK_DATA_SHEET_NAME)
+        row_data = google_provider.get_row_data_by_sheet(spk_sheet, row_index)
+
+        if not row_data:
+            return render_template('response_page.html', title='Data Tidak Ditemukan', message='Permintaan ini mungkin sudah dihapus.', logo_url=logo_url)
+        
+        current_status = row_data.get('Status', '').strip()
+        if current_status != config.STATUS.WAITING_FOR_BM_APPROVAL:
+            msg = f'Tindakan ini sudah diproses. Status saat ini: <strong>{current_status}</strong>.'
+            return render_template('response_page.html', title='Tindakan Sudah Diproses', message=msg, logo_url=logo_url)
+
+        WIB = timezone(timedelta(hours=7))
+        current_time = datetime.datetime.now(WIB).isoformat()
+        
+        initiator_email = row_data.get('Dibuat Oleh')
+        
+        if action == 'approve':
+            new_status = config.STATUS.SPK_APPROVED
+            google_provider.update_cell_by_sheet(spk_sheet, row_index, 'Status', new_status)
+            google_provider.update_cell_by_sheet(spk_sheet, row_index, 'Disetujui Oleh', approver)
+            google_provider.update_cell_by_sheet(spk_sheet, row_index, 'Waktu Persetujuan', current_time)
+            
+            row_data['Status'] = new_status
+            row_data['Disetujui Oleh'] = approver
+            final_pdf_bytes = create_spk_pdf(google_provider, row_data)
+            final_pdf_filename = f"SPK_DISETUJUI_{row_data.get('Proyek')}_{row_data.get('Nomor Ulok')}.pdf"
+            final_pdf_link = google_provider.upload_pdf_to_drive(final_pdf_bytes, final_pdf_filename)
+            google_provider.update_cell_by_sheet(spk_sheet, row_index, 'Link PDF', final_pdf_link)
+            
+            if initiator_email:
+                subject = f"[DISETUJUI] SPK untuk Proyek: {row_data.get('Proyek')}"
+                body = f"<p>SPK yang Anda ajukan untuk proyek <b>{row_data.get('Proyek')}</b> ({row_data.get('Nomor Ulok')}) telah disetujui oleh Branch Manager.</p><p>File PDF final terlampir.</p>"
+                google_provider.send_email(to=initiator_email, subject=subject, html_body=body, pdf_attachment_bytes=final_pdf_bytes, pdf_filename=final_pdf_filename)
+
+            return render_template('response_page.html', title='Persetujuan Berhasil', message='Terima kasih. Persetujuan Anda telah dicatat.', logo_url=logo_url)
+
+        elif action == 'reject':
+            new_status = config.STATUS.SPK_REJECTED
+            google_provider.update_cell_by_sheet(spk_sheet, row_index, 'Status', new_status)
+            
+            if initiator_email:
+                subject = f"[DITOLAK] SPK untuk Proyek: {row_data.get('Proyek')}"
+                body = f"<p>SPK yang Anda ajukan untuk proyek <b>{row_data.get('Proyek')}</b> ({row_data.get('Nomor Ulok')}) telah ditolak oleh Branch Manager.</p>"
+                google_provider.send_email(to=initiator_email, subject=subject, html_body=body)
+
+            return render_template('response_page.html', title='Permintaan Ditolak', message='Status permintaan telah diperbarui menjadi ditolak.', logo_url=logo_url)
+
+    except Exception as e:
+        traceback.print_exc()
+        return render_template('response_page.html', title='Error Internal', message=f'Terjadi kesalahan: {str(e)}', logo_url=logo_url), 500
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5001))

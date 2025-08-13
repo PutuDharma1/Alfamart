@@ -96,7 +96,6 @@ class GoogleServiceProvider:
                 elif status == config.STATUS.APPROVED:
                     approved_codes.append(lokasi)
                 elif status in [config.STATUS.REJECTED_BY_COORDINATOR, config.STATUS.REJECTED_BY_MANAGER] and record_cabang == user_cabang:
-                    # Mengirim data 'record' apa adanya, tanpa mengubah nama kolom
                     rejected_submissions.append(record)
 
                 processed_locations.add(lokasi)
@@ -222,3 +221,59 @@ class GoogleServiceProvider:
             raise Exception(f"Spreadsheet with ID {spreadsheet_id} not found or permission denied.")
         except Exception as e:
             raise e
+
+    # --- FUNGSI BARU UNTUK SPK ---
+
+    def get_approved_rab_by_cabang(self, user_cabang):
+        """Mengambil semua data RAB dari sheet Form3 yang statusnya 'Disetujui'."""
+        try:
+            approved_sheet = self.sheet.worksheet(config.APPROVED_DATA_SHEET_NAME)
+            all_records = approved_sheet.get_all_records()
+            
+            branch_groups = {
+                "BANDUNG 1": ["BANDUNG 1", "BANDUNG 2"], "BANDUNG 2": ["BANDUNG 1", "BANDUNG 2"],
+                "LOMBOK": ["LOMBOK", "SUMBAWA"], "SUMBAWA": ["LOMBOK", "SUMBAWA"],
+                "MEDAN": ["MEDAN", "ACEH"], "ACEH": ["MEDAN", "ACEH"],
+                "PALEMBANG": ["PALEMBANG", "BENGKULU", "BANGKA", "BELITUNG"], "BENGKULU": ["PALEMBANG", "BENGKULU", "BANGKA", "BELITUNG"],
+                "BANGKA": ["PALEMBANG", "BENGKULU", "BANGKA", "BELITUNG"], "BELITUNG": ["PALEMBANG", "BENGKULU", "BANGKA", "BELITUNG"],
+                "SIDOARJO": ["SIDOARJO", "SIDOARJO BPN_SMD", "MANOKWARI", "NTT", "SORONG"], "SIDOARJO BPN_SMD": ["SIDOARJO", "SIDOARJO BPN_SMD", "MANOKWARI", "NTT", "SORONG"],
+                "MANOKWARI": ["SIDOARJO", "SIDOARJO BPN_SMD", "MANOKWARI", "NTT", "SORONG"], "NTT": ["SIDOARJO", "SIDOARJO BPN_SMD", "MANOKWARI", "NTT", "SORONG"],
+                "SORONG": ["SIDOARJO", "SIDOARJO BPN_SMD", "MANOKWARI", "NTT", "SORONG"]
+            }
+            
+            allowed_branches = branch_groups.get(user_cabang.upper(), [user_cabang.upper()])
+            allowed_branches_lower = [b.lower() for b in allowed_branches]
+
+            filtered_rabs = [
+                record for record in all_records 
+                if str(record.get('Cabang', '')).strip().lower() in allowed_branches_lower
+            ]
+            return filtered_rabs
+        except Exception as e:
+            print(f"Error getting approved RABs: {e}")
+            raise e
+
+    def get_row_data_by_sheet(self, worksheet, row_index):
+        """Mengambil data baris dari worksheet tertentu berdasarkan nomor barisnya."""
+        try:
+            # get_all_records mengabaikan header, jadi row_index 1 di UI adalah index 0 di list
+            records = worksheet.get_all_records()
+            if row_index > 0 and row_index <= len(records):
+                return records[row_index - 1] 
+            return {}
+        except Exception as e:
+            print(f"Error getting row data from {worksheet.title}: {e}")
+            return {}
+
+    def update_cell_by_sheet(self, worksheet, row_index, column_name, value):
+        """Memperbarui sel di worksheet tertentu."""
+        try:
+            # Menambahkan 1 ke row_index karena baris data di sheet dimulai dari 2 (setelah header)
+            actual_row = row_index + 1
+            headers = worksheet.row_values(1)
+            col_index = headers.index(column_name) + 1
+            worksheet.update_cell(actual_row, col_index, value)
+            return True
+        except Exception as e:
+            print(f"Error updating cell [{actual_row}, {column_name}] in {worksheet.title}: {e}")
+            return False
