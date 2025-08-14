@@ -74,7 +74,7 @@ def create_approval_details_block(google_provider, approver_email, approval_time
     </div>
     """
 
-def create_pdf_from_data(google_provider, form_data):
+def create_pdf_from_data(google_provider, form_data, exclude_sbo=False):
     grouped_items = {}
     grand_total = 0
     
@@ -82,42 +82,39 @@ def create_pdf_from_data(google_provider, form_data):
     for key, value in form_data.items():
         if key.startswith("Jenis_Pekerjaan_"):
             index = key.split('_')[-1]
-            if index not in items_from_form:
-                items_from_form[index] = {}
+            if index not in items_from_form: items_from_form[index] = {}
             items_from_form[index]['jenisPekerjaan'] = value
         elif key.startswith("Kategori_Pekerjaan_"):
             index = key.split('_')[-1]
-            if index not in items_from_form:
-                items_from_form[index] = {}
+            if index not in items_from_form: items_from_form[index] = {}
             items_from_form[index]['kategori'] = value
         elif key.startswith("Satuan_Item_"):
             index = key.split('_')[-1]
-            if index not in items_from_form:
-                items_from_form[index] = {}
+            if index not in items_from_form: items_from_form[index] = {}
             items_from_form[index]['satuan'] = value
         elif key.startswith("Volume_Item_"):
             index = key.split('_')[-1]
-            if index not in items_from_form:
-                items_from_form[index] = {}
+            if index not in items_from_form: items_from_form[index] = {}
             items_from_form[index]['volume'] = float(value or 0)
         elif key.startswith("Harga_Material_Item_"):
             index = key.split('_')[-1]
-            if index not in items_from_form:
-                items_from_form[index] = {}
+            if index not in items_from_form: items_from_form[index] = {}
             items_from_form[index]['hargaMaterial'] = float(value or 0)
         elif key.startswith("Harga_Upah_Item_"):
             index = key.split('_')[-1]
-            if index not in items_from_form:
-                items_from_form[index] = {}
+            if index not in items_from_form: items_from_form[index] = {}
             items_from_form[index]['hargaUpah'] = float(value or 0)
     
     for index, item_data in items_from_form.items():
-        # Memastikan hanya item yang valid (punya nama dan volume) yang diproses.
         jenis_pekerjaan_val = item_data.get("jenisPekerjaan", "").strip()
         volume_val = float(item_data.get('volume', 0))
 
         if not jenis_pekerjaan_val or volume_val <= 0:
-            continue # Lewati item ini jika nama atau volumenya kosong
+            continue
+
+        is_sbo_item = "sbo" in jenis_pekerjaan_val.lower()
+        if exclude_sbo and is_sbo_item:
+            continue
 
         kategori = item_data.get("kategori", "Lain-lain")
         if kategori not in grouped_items: 
@@ -130,20 +127,18 @@ def create_pdf_from_data(google_provider, form_data):
         total_material_raw = volume * harga_material
         total_upah_raw = volume * harga_upah
         total_harga_raw = total_material_raw + total_upah_raw
-        
         grand_total += total_harga_raw
         
         item_to_add = {
             "jenisPekerjaan": item_data.get("jenisPekerjaan"),
             "satuan": item_data.get("satuan"),
             "volume": volume,
-            
+            "is_sbo": is_sbo_item,
             "hargaMaterialFormatted": format_rupiah(harga_material),
             "hargaUpahFormatted": format_rupiah(harga_upah),
             "totalMaterialFormatted": format_rupiah(total_material_raw),
             "totalUpahFormatted": format_rupiah(total_upah_raw),
             "totalHargaFormatted": format_rupiah(total_harga_raw),
-
             "totalMaterialRaw": total_material_raw,
             "totalUpahRaw": total_upah_raw,
             "totalHargaRaw": total_harga_raw

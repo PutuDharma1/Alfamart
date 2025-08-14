@@ -18,13 +18,14 @@ from spk_generator import create_spk_pdf
 load_dotenv()
 app = Flask(__name__)
 
-CORS(app, 
+# Konfigurasi CORS yang sudah diperbaiki
+CORS(app,
      origins=[
-         "http://127.0.0.1:5500", 
-         "http://localhost:5500", 
+         "http://127.0.0.1:5500",
+         "http://localhost:5500",
          "https://alfamart-one.vercel.app"
-     ], 
-     methods=["GET", "POST", "OPTIONS", "PUT", "PATCH", "DELETE"], 
+     ],
+     methods=["GET", "POST", "OPTIONS", "PUT", "PATCH", "DELETE"],
      allow_headers=["Content-Type", "Authorization"],
      supports_credentials=True
 )
@@ -37,6 +38,8 @@ app.register_blueprint(data_bp)
 @app.route('/')
 def index():
     return "Backend server is running and healthy.", 200
+
+# --- ENDPOINTS OTENTIKASI & DATA UMUM ---
 
 @app.route('/api/login', methods=['POST'])
 def login():
@@ -68,6 +71,8 @@ def check_status():
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
+# --- ENDPOINTS UNTUK ALUR KERJA RAB ---
+
 @app.route('/api/submit_rab', methods=['POST'])
 def submit_rab():
     data = request.get_json()
@@ -78,12 +83,14 @@ def submit_rab():
         WIB = timezone(timedelta(hours=7))
         data[config.COLUMN_NAMES.STATUS] = config.STATUS.WAITING_FOR_COORDINATOR
         data[config.COLUMN_NAMES.TIMESTAMP] = datetime.datetime.now(WIB).isoformat()
-        
+
+        # Mengarsipkan rincian item ke dalam format JSON
         item_keys_to_archive = ('Jenis_Pekerjaan_', 'Kategori_Pekerjaan_', 'Satuan_Item_', 'Volume_Item_', 'Harga_Material_Item_', 'Harga_Upah_Item_')
         item_details = {k: v for k, v in data.items() if k.startswith(item_keys_to_archive)}
         data['Item_Details_JSON'] = json.dumps(item_details)
-        
-        pdf_bytes = create_pdf_from_data(google_provider, data)
+
+        # Membuat PDF awal
+        pdf_bytes = create_pdf_from_data(google_provider, data, exclude_sbo=False)
         
         jenis_toko = data.get('Proyek', 'N/A')
         nomor_ulok_raw = data.get(config.COLUMN_NAMES.LOKASI, 'N/A')
@@ -96,6 +103,8 @@ def submit_rab():
         
         pdf_link = google_provider.upload_pdf_to_drive(pdf_bytes, pdf_filename)
         data[config.COLUMN_NAMES.LINK_PDF] = pdf_link
+        
+        # BARIS PENTING YANG DIKEMBALIKAN
         data[config.COLUMN_NAMES.LOKASI] = nomor_ulok_formatted
         
         new_row_index = google_provider.append_to_sheet(data, config.DATA_ENTRY_SHEET_NAME)
@@ -114,7 +123,12 @@ def submit_rab():
         
         email_html = render_template('email_template.html', level='Koordinator', form_data=data, approval_url=approval_url, rejection_url=rejection_url)
         
-        google_provider.send_email(to=coordinator_email, subject=f"[TAHAP 1: PERLU PERSETUJUAN] RAB Proyek: {jenis_toko}", html_body=email_html, pdf_attachment_bytes=pdf_bytes, pdf_filename=pdf_filename)
+        google_provider.send_email(
+            to=coordinator_email, 
+            subject=f"[TAHAP 1: PERLU PERSETUJUAN] RAB Proyek: {jenis_toko}", 
+            html_body=email_html, 
+            attachments=[(pdf_filename, pdf_bytes)]
+        )
         
         return jsonify({"status": "success", "message": "Data successfully submitted and approval email sent."}), 200
 
@@ -195,7 +209,7 @@ def handle_rab_approval():
                 email_html_manager = render_template('email_template.html', level='Manajer', form_data=row_data, approval_url=approval_url_manager, rejection_url=rejection_url_manager, additional_info=f"Telah disetujui oleh Koordinator: {approver}")
                 pdf_bytes = create_pdf_from_data(google_provider, row_data)
                 pdf_filename = f"RAB_ALFAMART({jenis_toko}).pdf"
-                google_provider.send_email(manager_email, f"[TAHAP 2: PERLU PERSETUJUAN] RAB Proyek: {jenis_toko}", email_html_manager, pdf_bytes, pdf_filename)
+                google_provider.send_email(manager_email, f"[TAHAP 2: PERLU PERSETUJUAN] RAB Proyek: {jenis_toko}", email_html_manager, attachments=[(pdf_filename, pdf_bytes)])
             return render_template('response_page.html', title='Persetujuan Diteruskan', message='Terima kasih. Persetujuan Anda telah dicatat.', logo_url=logo_url)
         
         elif level == 'manager' and action == 'approve':
@@ -207,12 +221,16 @@ def handle_rab_approval():
             row_data[config.COLUMN_NAMES.MANAGER_APPROVER] = approver
             row_data[config.COLUMN_NAMES.MANAGER_APPROVAL_TIME] = current_time
             
-            final_pdf_bytes = create_pdf_from_data(google_provider, row_data)
-            final_pdf_filename = f"DISETUJUI_RAB_ALFAMART({jenis_toko}).pdf"
-            final_pdf_link = google_provider.upload_pdf_to_drive(final_pdf_bytes, final_pdf_filename)
+            pdf_lengkap_bytes = create_pdf_from_data(google_provider, row_data, exclude_sbo=False)
+            pdf_lengkap_filename = f"DISETUJUI_RAB_LENGKAP_{jenis_toko}_{row_data.get('Nomor Ulok')}.pdf"
             
+            pdf_nonsbo_bytes = create_pdf_from_data(google_provider, row_data, exclude_sbo=True)
+            pdf_nonsbo_filename = f"DISETUJUI_RAB_NON-SBO_{jenis_toko}_{row_data.get('Nomor Ulok')}.pdf"
+
+            final_pdf_link = google_provider.upload_pdf_to_drive(pdf_lengkap_bytes, pdf_lengkap_filename)
             google_provider.update_cell(row, config.COLUMN_NAMES.LINK_PDF, final_pdf_link)
             row_data[config.COLUMN_NAMES.LINK_PDF] = final_pdf_link
+            
             google_provider.copy_to_approved_sheet(row_data)
 
             if creator_email:
@@ -224,21 +242,32 @@ def handle_rab_approval():
                     cc_list.remove(creator_email)
                 
                 subject = f"[FINAL - DISETUJUI] Pengajuan RAB Proyek: {jenis_toko}"
-                email_body_html = f"<p>Pengajuan RAB untuk proyek <b>{jenis_toko}</b> di cabang <b>{cabang}</b> telah disetujui sepenuhnya.</p>"
+                email_body_html = (f"<p>Pengajuan RAB untuk proyek <b>{jenis_toko}</b> di cabang <b>{cabang}</b> telah disetujui sepenuhnya.</p>"
+                                   f"<p>Dua versi file PDF RAB telah dilampirkan:</p>"
+                                   f"<ul>"
+                                   f"<li><b>{pdf_lengkap_filename}</b>: Berisi semua item pekerjaan.</li>"
+                                   f"<li><b>{pdf_nonsbo_filename}</b>: Hanya berisi item pekerjaan di luar SBO.</li>"
+                                   f"</ul>")
+
+                email_attachments = [
+                    (pdf_lengkap_filename, pdf_lengkap_bytes),
+                    (pdf_nonsbo_filename, pdf_nonsbo_bytes)
+                ]
                 
                 google_provider.send_email(
                     to=creator_email,
                     cc=cc_list,
                     subject=subject,
                     html_body=email_body_html,
-                    pdf_attachment_bytes=final_pdf_bytes,
-                    pdf_filename=final_pdf_filename
+                    attachments=email_attachments
                 )
             return render_template('response_page.html', title='Persetujuan Berhasil', message='Tindakan Anda telah berhasil diproses.', logo_url=logo_url)
 
     except Exception as e:
         traceback.print_exc()
         return render_template('response_page.html', title='Internal Error', message=f'An internal error occurred: {str(e)}', logo_url=logo_url), 500
+
+# --- ENDPOINTS BARU UNTUK ALUR KERJA SPK ---
 
 @app.route('/api/get_approved_rab', methods=['GET'])
 def get_approved_rab():
@@ -264,7 +293,7 @@ def submit_spk():
         data['Timestamp'] = datetime.datetime.now(WIB).isoformat()
         data['Status'] = config.STATUS.WAITING_FOR_BM_APPROVAL
         
-        start_date = datetime.datetime.fromisoformat(data['Waktu Mulai']) 
+        start_date = datetime.datetime.fromisoformat(data['Waktu Mulai'])
         duration = int(data['Durasi'])
         end_date = start_date + timedelta(days=duration)
         data['Waktu Selesai'] = end_date.isoformat()
@@ -292,11 +321,12 @@ def submit_spk():
                                      approval_url=approval_url, 
                                      rejection_url=rejection_url)
         
-        google_provider.send_email(to=branch_manager_email, 
-                                   subject=f"[PERLU PERSETUJUAN SPK] Proyek: {data.get('Proyek')}", 
-                                   html_body=email_html, 
-                                   pdf_attachment_bytes=pdf_bytes, 
-                                   pdf_filename=pdf_filename)
+        google_provider.send_email(
+            to=branch_manager_email, 
+            subject=f"[PERLU PERSETUJUAN SPK] Proyek: {data.get('Proyek')}", 
+            html_body=email_html, 
+            attachments=[(pdf_filename, pdf_bytes)]
+        )
         
         return jsonify({"status": "success", "message": "SPK successfully submitted for approval."}), 200
 
@@ -351,7 +381,7 @@ def handle_spk_approval():
             if initiator_email:
                 subject = f"[DISETUJUI] SPK untuk Proyek: {row_data.get('Proyek')}"
                 body = f"<p>SPK yang Anda ajukan untuk proyek <b>{row_data.get('Proyek')}</b> ({row_data.get('Nomor Ulok')}) telah disetujui oleh Branch Manager.</p><p>File PDF final terlampir.</p>"
-                google_provider.send_email(to=initiator_email, subject=subject, html_body=body, pdf_attachment_bytes=final_pdf_bytes, pdf_filename=final_pdf_filename)
+                google_provider.send_email(to=initiator_email, subject=subject, html_body=body, attachments=[(final_pdf_filename, final_pdf_bytes)])
 
             return render_template('response_page.html', title='Persetujuan Berhasil', message='Terima kasih. Persetujuan Anda telah dicatat.', logo_url=logo_url)
 

@@ -106,7 +106,7 @@
                     <tbody>
                         {% set ns = namespace(sub_total_material=0, sub_total_upah=0, sub_total_harga=0) %}
                         {% for item in items %}
-                            <tr>
+                            <tr {% if item.is_sbo %}style="background-color: #e6ffed;"{% endif %}>
                                 <td>{{ loop.index }}</td>
                                 <td class="text-left">{{ item.jenisPekerjaan or '' }}</td>
                                 <td>{{ item.satuan or '' }}</td>

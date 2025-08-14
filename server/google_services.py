@@ -167,7 +167,7 @@ class GoogleServiceProvider:
             print(f"Error: Worksheet '{config.CABANG_SHEET_NAME}' not found.")
         return emails
 
-    def send_email(self, to, subject, html_body, pdf_attachment_bytes=None, pdf_filename="RAB.pdf", cc=None):
+    def send_email(self, to, subject, html_body, attachments=None, cc=None):
         try:
             message = MIMEMultipart()
             message['to'] = to
@@ -175,12 +175,15 @@ class GoogleServiceProvider:
             if cc:
                 message['cc'] = ', '.join(cc)
             message.attach(MIMEText(html_body, 'html'))
-            if pdf_attachment_bytes:
-                part = MIMEBase('application', 'octet-stream')
-                part.set_payload(pdf_attachment_bytes)
-                encoders.encode_base64(part)
-                part.add_header('Content-Disposition', f'attachment; filename="{pdf_filename}"')
-                message.attach(part)
+
+            if attachments:
+                for filename, file_bytes in attachments:
+                    part = MIMEBase('application', 'octet-stream')
+                    part.set_payload(file_bytes)
+                    encoders.encode_base64(part)
+                    part.add_header('Content-Disposition', f'attachment; filename="{filename}"')
+                    message.attach(part)
+
             raw_message = base64.urlsafe_b64encode(message.as_bytes()).decode()
             create_message = {'raw': raw_message}
             send_message = self.gmail_service.users().messages().send(userId='me', body=create_message).execute()
