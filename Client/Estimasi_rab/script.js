@@ -199,7 +199,7 @@ const autoFillPrices = (selectElement) => {
 
         const setupPriceInput = (input, price) => {
             const isEditable = price === "Kondisional";
-            const isSbo = price === "SBO" || currentCategory === "PEKERJAAN SBO"; // Menambahkan cek kategori
+            const isSbo = price === "SBO" || currentCategory === "PEKERJAAN SBO";
     
             input.readOnly = !isEditable;
             input.value = isEditable ? "0" : (isSbo ? formatNumberWithSeparators(price) : formatNumberWithSeparators(price));
@@ -240,7 +240,6 @@ function buildTables(scope, data) {
     const categories = scope === 'Sipil' ? sipilCategoryOrder : Object.keys(data);
     
     categories.forEach(category => {
-        // Hanya buat struktur tabel jika kategori ada di data yang diterima
         if (data[category]) {
             wrapper.appendChild(createTableStructure(category, scope));
         }
