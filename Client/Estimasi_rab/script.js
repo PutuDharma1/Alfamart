@@ -197,10 +197,14 @@ const autoFillPrices = (selectElement) => {
         satuanInput.value = selectedItem["Satuan"];
 
         const setupPriceInput = (input, price) => {
-            input.readOnly = price !== "Kondisional";
-            input.value = price === "Kondisional" ? "0" : formatNumberWithSeparators(price);
-            input.style.backgroundColor = price === "Kondisional" ? "#fffde7" : "";
-            if (price === "Kondisional") {
+            const isEditable = price === "Kondisional";
+            const isSbo = price === "SBO";
+    
+            input.readOnly = !isEditable;
+            input.value = isEditable ? "0" : (isSbo ? "SBO" : formatNumberWithSeparators(price));
+            input.style.backgroundColor = isEditable ? "#fffde7" : (isSbo ? "#e6ffed" : "");
+            
+            if (isEditable) {
                 input.addEventListener('input', handleCurrencyInput);
             }
         };
@@ -320,8 +324,13 @@ function calculateTotalPrice(inputElement) {
     const row = inputElement.closest("tr");
     if (!row) return;
     const volume = parseFloat(row.querySelector("input.volume").value) || 0;
-    const material = parseFormattedNumber(row.querySelector("input.harga-material").value);
-    const upah = parseFormattedNumber(row.querySelector("input.harga-upah").value);
+    
+    const materialValue = row.querySelector("input.harga-material").value;
+    const upahValue = row.querySelector("input.harga-upah").value;
+
+    const material = materialValue.toUpperCase() === 'SBO' ? 0 : parseFormattedNumber(materialValue);
+    const upah = upahValue.toUpperCase() === 'SBO' ? 0 : parseFormattedNumber(upahValue);
+
     const totalMaterial = volume * material;
     const totalUpah = volume * upah;
     row.querySelector("input.total-material").value = formatRupiah(totalMaterial);
@@ -428,12 +437,18 @@ async function handleFormSubmit() {
         const volume = parseFloat(row.querySelector('.volume').value) || 0;
 
         if (jenisPekerjaan && volume > 0) {
+            const materialInput = row.querySelector('.harga-material');
+            const upahInput = row.querySelector('.harga-upah');
+
+            const materialValue = materialInput.value.toUpperCase() === 'SBO' ? 'SBO' : parseFormattedNumber(materialInput.value);
+            const upahValue = upahInput.value.toUpperCase() === 'SBO' ? 'SBO' : parseFormattedNumber(upahInput.value);
+
             data[`Kategori_Pekerjaan_${itemIndex}`] = row.dataset.category;
             data[`Jenis_Pekerjaan_${itemIndex}`] = jenisPekerjaan;
             data[`Satuan_Item_${itemIndex}`] = row.querySelector('.satuan').value;
             data[`Volume_Item_${itemIndex}`] = volume;
-            data[`Harga_Material_Item_${itemIndex}`] = parseFormattedNumber(row.querySelector('.harga-material').value);
-            data[`Harga_Upah_Item_${itemIndex}`] = parseFormattedNumber(row.querySelector('.harga-upah').value);
+            data[`Harga_Material_Item_${itemIndex}`] = materialValue;
+            data[`Harga_Upah_Item_${itemIndex}`] = upahValue;
             data[`Total_Material_Item_${itemIndex}`] = parseRupiah(row.querySelector('.total-material').value);
             data[`Total_Upah_Item_${itemIndex}`] = parseRupiah(row.querySelector('.total-upah').value);
             data[`Total_Harga_Item_${itemIndex}`] = parseRupiah(row.querySelector('.total-harga').value);
@@ -509,16 +524,19 @@ function createTableStructure(categoryName, scope) {
 
 function updateNomorUlok() {
     const kodeCabang = document.getElementById('lokasi_cabang').value;
-    const tanggalValue = document.getElementById('lokasi_tanggal').value;
+    const tanggalInput = document.getElementById('lokasi_tanggal').value;
     const manualValue = document.getElementById('lokasi_manual').value;
 
-    // --- PERUBAHAN DI SINI ---
-    if (kodeCabang && tanggalValue && tanggalValue.length === 4 && manualValue.length === 4) {
-        const year = tanggalValue.substring(0, 2);
-        const month = tanggalValue.substring(2, 4);
-        
-        const nomorUlok = `${kodeCabang}${year}${month}${manualValue}`;
-        document.getElementById('lokasi').value = nomorUlok;
+    if (kodeCabang && tanggalInput && manualValue.length === 4) {
+        const [year, month] = tanggalInput.split('-');
+
+        if (year && month && year.length === 4 && month.length === 2) {
+            const YY = year.substring(2, 4);
+            const nomorUlok = `${kodeCabang}${YY}${month}${manualValue}`;
+            document.getElementById('lokasi').value = nomorUlok;
+        } else {
+            document.getElementById('lokasi').value = '';
+        }
     } else {
         document.getElementById('lokasi').value = '';
     }

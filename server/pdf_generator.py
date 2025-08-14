@@ -99,11 +99,11 @@ def create_pdf_from_data(google_provider, form_data, exclude_sbo=False):
         elif key.startswith("Harga_Material_Item_"):
             index = key.split('_')[-1]
             if index not in items_from_form: items_from_form[index] = {}
-            items_from_form[index]['hargaMaterial'] = float(value or 0)
+            items_from_form[index]['hargaMaterial'] = value
         elif key.startswith("Harga_Upah_Item_"):
             index = key.split('_')[-1]
             if index not in items_from_form: items_from_form[index] = {}
-            items_from_form[index]['hargaUpah'] = float(value or 0)
+            items_from_form[index]['hargaUpah'] = value
     
     for index, item_data in items_from_form.items():
         jenis_pekerjaan_val = item_data.get("jenisPekerjaan", "").strip()
@@ -112,7 +112,18 @@ def create_pdf_from_data(google_provider, form_data, exclude_sbo=False):
         if not jenis_pekerjaan_val or volume_val <= 0:
             continue
 
-        is_sbo_item = "sbo" in jenis_pekerjaan_val.lower()
+        is_sbo_item = False
+        lingkup_pekerjaan = form_data.get(config.COLUMN_NAMES.LINGKUP_PEKERJAAN, '')
+        
+        raw_material_price = item_data.get('hargaMaterial', 0)
+        raw_upah_price = item_data.get('hargaUpah', 0)
+
+        if lingkup_pekerjaan == 'ME':
+            is_sbo_item = "sbo" in jenis_pekerjaan_val.lower()
+        elif lingkup_pekerjaan == 'Sipil':
+            is_sbo_item = (isinstance(raw_material_price, str) and "sbo" in raw_material_price.lower()) or \
+                          (isinstance(raw_upah_price, str) and "sbo" in raw_upah_price.lower())
+        
         if exclude_sbo and is_sbo_item:
             continue
 
@@ -120,22 +131,25 @@ def create_pdf_from_data(google_provider, form_data, exclude_sbo=False):
         if kategori not in grouped_items: 
             grouped_items[kategori] = []
 
+        harga_material = float(raw_material_price) if isinstance(raw_material_price, (int, float)) else 0
+        harga_upah = float(raw_upah_price) if isinstance(raw_upah_price, (int, float)) else 0
+        
+        harga_material_formatted = format_rupiah(harga_material) if isinstance(raw_material_price, (int, float)) else raw_material_price
+        harga_upah_formatted = format_rupiah(harga_upah) if isinstance(raw_upah_price, (int, float)) else raw_upah_price
+        
         volume = item_data.get('volume', 0)
-        harga_material = item_data.get('hargaMaterial', 0)
-        harga_upah = item_data.get('hargaUpah', 0)
-
         total_material_raw = volume * harga_material
         total_upah_raw = volume * harga_upah
         total_harga_raw = total_material_raw + total_upah_raw
         grand_total += total_harga_raw
         
         item_to_add = {
-            "jenisPekerjaan": item_data.get("jenisPekerjaan"),
+            "jenisPekerjaan": jenis_pekerjaan_val,
             "satuan": item_data.get("satuan"),
             "volume": volume,
             "is_sbo": is_sbo_item,
-            "hargaMaterialFormatted": format_rupiah(harga_material),
-            "hargaUpahFormatted": format_rupiah(harga_upah),
+            "hargaMaterialFormatted": harga_material_formatted,
+            "hargaUpahFormatted": harga_upah_formatted,
             "totalMaterialFormatted": format_rupiah(total_material_raw),
             "totalUpahFormatted": format_rupiah(total_upah_raw),
             "totalHargaFormatted": format_rupiah(total_harga_raw),

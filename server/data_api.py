@@ -98,9 +98,10 @@ def process_price_value(raw_value):
     value_str = str(raw_value).strip().lower()
     if value_str == 'kondisional':
         return 'Kondisional'
+    if value_str == 'sbo':
+        return 'SBO'
     if 'kontraktor' in value_str:
         return 0.0
-    # Menggunakan safe_to_float yang sudah diperbaiki
     return safe_to_float(raw_value)
 
 def process_sheet(sheet, lingkup):
@@ -156,8 +157,6 @@ def process_sheet(sheet, lingkup):
         no_val = row[no_col_index].strip()
         jenis_pekerjaan = row[jenis_pekerjaan_col_index].strip()
 
-        # --- PERUBAHAN DI SINI ---
-        # Jika kolom "NO." kosong, lewati baris ini karena dianggap baris ringkasan
         if not no_val:
             continue
         
