@@ -30,7 +30,8 @@ const sipilCategoryOrder = [
     "PEKERJAAN KUSEN, PINTU & KACA", 
     "PEKERJAAN FINISHING", 
     "PEKERJAAN BEANSPOT",
-    "PEKERJAAN TAMBAHAN"
+    "PEKERJAAN TAMBAHAN",
+    "PEKERJAAN SBO"
 ];
 
 const branchGroups = {
@@ -198,10 +199,10 @@ const autoFillPrices = (selectElement) => {
 
         const setupPriceInput = (input, price) => {
             const isEditable = price === "Kondisional";
-            const isSbo = price === "SBO";
+            const isSbo = price === "SBO" || currentCategory === "PEKERJAAN SBO"; // Menambahkan cek kategori
     
             input.readOnly = !isEditable;
-            input.value = isEditable ? "0" : (isSbo ? "SBO" : formatNumberWithSeparators(price));
+            input.value = isEditable ? "0" : (isSbo ? formatNumberWithSeparators(price) : formatNumberWithSeparators(price));
             input.style.backgroundColor = isEditable ? "#fffde7" : (isSbo ? "#e6ffed" : "");
             
             if (isEditable) {
@@ -239,7 +240,10 @@ function buildTables(scope, data) {
     const categories = scope === 'Sipil' ? sipilCategoryOrder : Object.keys(data);
     
     categories.forEach(category => {
-        wrapper.appendChild(createTableStructure(category, scope));
+        // Hanya buat struktur tabel jika kategori ada di data yang diterima
+        if (data[category]) {
+            wrapper.appendChild(createTableStructure(category, scope));
+        }
     });
     
     // Setelah tabel dibuat, pasang kembali event listener untuk tombol "Tambah Item"
@@ -528,11 +532,14 @@ function updateNomorUlok() {
     const manualValue = document.getElementById('lokasi_manual').value;
 
     if (kodeCabang && tanggalInput && manualValue.length === 4) {
-        const [year, month] = tanggalInput.split('-');
+        // Asumsi format tanggal YYYY-MM
+        const [year, month] = tanggalInput.length === 4 ? [tanggalInput.substring(0, 2), tanggalInput.substring(2, 4)] : [null, null];
+        const YY = tanggalInput.substring(0,2);
+        const MM = tanggalInput.substring(2,4);
 
-        if (year && month && year.length === 4 && month.length === 2) {
-            const YY = year.substring(2, 4);
-            const nomorUlok = `${kodeCabang}${YY}${month}${manualValue}`;
+
+        if (YY && MM && YY.length === 2 && MM.length === 2) {
+            const nomorUlok = `${kodeCabang}${YY}${MM}${manualValue}`;
             document.getElementById('lokasi').value = nomorUlok;
         } else {
             document.getElementById('lokasi').value = '';

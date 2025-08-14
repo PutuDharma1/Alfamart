@@ -58,6 +58,23 @@ SPREADSHEET_IDS = {
     "HEAD OFFICE": {"ME": "1oQfZkWSP-TWQmQMY-gM1qVcLP_i47REBmJj1IfDNzkg", "SIPIL": "1Jf_qTHOMpmyLWp9zR_5CiwjyzWWtD8cH99qt4kJvLOw"}
 }
 
+# --- ID Spreadsheet SBO ---
+SBO_SPREADSHEET_ID = "11efRx3l6fXn5XLd_HZEQHmFWwQX5vRUIBVgFecCYMXQ"
+
+BRANCH_TO_ULOK_MAP = {
+    "WHC IMAM BONJOL": "7AZ1", "LUWU": "2VZ1", "KARAWANG": "1JZ1", "REMBANG": "2AZ1",
+    "BANJARMASIN": "1GZ1", "PARUNG": "1MZ1", "TEGAL": "2PZ1", "GORONTALO": "2SZ1",
+    "PONTIANAK": "1PZ1", "LOMBOK": "1SZ1", "KOTABUMI": "1VZ1", "SERANG": "2GZ1",
+    "CIANJUR": "2JZ1", "BALARAJA": "TZ01", "SIDOARJO": "UZ01", "MEDAN": "WZ01",
+    "BOGOR": "XZ01", "JEMBER": "YZ01", "BALI": "QZ01", "PALEMBANG": "PZ01",
+    "KLATEN": "OZ01", "MAKASSAR": "RZ01", "PLUMBON": "VZ01", "PEKANBARU": "1AZ1",
+    "JAMBI": "1DZ1", "HEAD OFFICE": "Z001", "BANDUNG 1": "BZ01", "BANDUNG 2": "NZ01",
+    "BEKASI": "CZ01", "CILACAP": "IZ01", "CILEUNGSI2": "JZ01", "SEMARANG": "HZ01",
+    "CIKOKOL": "KZ01", "LAMPUNG": "LZ01", "MALANG": "MZ01", "MANADO": "1YZ1",
+    "BATAM": "2DZ1", "MADIUN": "2MZ1"
+}
+ULOK_TO_BRANCH_MAP = {v: k for k, v in BRANCH_TO_ULOK_MAP.items()}
+
 # --- Fungsi Bantuan ---
 def get_google_creds():
     creds = None
@@ -103,6 +120,29 @@ def process_price_value(raw_value):
     if 'kontraktor' in value_str:
         return 0.0
     return safe_to_float(raw_value)
+
+def process_sbo_sheet(sheet, cabang_kode):
+    """Fungsi baru untuk memproses sheet SBO."""
+    try:
+        worksheet = sheet.get_worksheet(0)
+        all_records = worksheet.get_all_records() # Menggunakan get_all_records untuk kemudahan
+    except Exception as e:
+        raise ValueError(f"Gagal mengambil data dari sheet SBO. Error: {str(e)}")
+
+    sbo_items = []
+    for record in all_records:
+        # Cek jika kode cabang ada di dalam list kode cabang di sheet
+        if cabang_kode in str(record.get("Kode Cabang", "")).split(','):
+            item_data = {
+                "Jenis Pekerjaan": record.get("Item Pekerjaan"),
+                "Satuan": record.get("Satuan"),
+                "Harga Material": process_price_value(record.get("Harga Material")),
+                "Harga Upah": 0.0 # Harga Upah untuk SBO selalu 0
+            }
+            sbo_items.append(item_data)
+            
+    return {"PEKERJAAN SBO": sbo_items} if sbo_items else {}
+
 
 def process_sheet(sheet, lingkup):
     try:
@@ -216,6 +256,19 @@ def get_data():
         spreadsheet = client.open_by_key(spreadsheet_id)
         
         processed_data = process_sheet(spreadsheet, lingkup_param)
+        
+        # --- LOGIKA BARU UNTUK MENGGABUNGKAN DATA SBO ---
+        if lingkup_param == "SIPIL":
+            cabang_kode = BRANCH_TO_ULOK_MAP.get(cabang)
+            if cabang_kode:
+                try:
+                    sbo_spreadsheet = client.open_by_key(SBO_SPREADSHEET_ID)
+                    sbo_data = process_sbo_sheet(sbo_spreadsheet, cabang_kode)
+                    if sbo_data:
+                        processed_data.update(sbo_data) # Gabungkan data SBO
+                except Exception as e:
+                    print(f"Warning: Could not fetch or process SBO data. Error: {e}")
+
         return jsonify(processed_data)
     except Exception as e:
         import traceback

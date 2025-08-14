@@ -112,25 +112,17 @@ def create_pdf_from_data(google_provider, form_data, exclude_sbo=False):
         if not jenis_pekerjaan_val or volume_val <= 0:
             continue
 
-        is_sbo_item = False
-        lingkup_pekerjaan = form_data.get(config.COLUMN_NAMES.LINGKUP_PEKERJAAN, '')
-        
-        raw_material_price = item_data.get('hargaMaterial', 0)
-        raw_upah_price = item_data.get('hargaUpah', 0)
+        kategori = item_data.get("kategori", "Lain-lain")
+        is_sbo_item = kategori == "PEKERJAAN SBO"
 
-        if lingkup_pekerjaan == 'ME':
-            is_sbo_item = "sbo" in jenis_pekerjaan_val.lower()
-        elif lingkup_pekerjaan == 'Sipil':
-            is_sbo_item = (isinstance(raw_material_price, str) and "sbo" in raw_material_price.lower()) or \
-                          (isinstance(raw_upah_price, str) and "sbo" in raw_upah_price.lower())
-        
         if exclude_sbo and is_sbo_item:
             continue
 
-        kategori = item_data.get("kategori", "Lain-lain")
         if kategori not in grouped_items: 
             grouped_items[kategori] = []
 
+        raw_material_price = item_data.get('hargaMaterial', 0)
+        raw_upah_price = item_data.get('hargaUpah', 0)
         harga_material = float(raw_material_price) if isinstance(raw_material_price, (int, float)) else 0
         harga_upah = float(raw_upah_price) if isinstance(raw_upah_price, (int, float)) else 0
         
@@ -147,7 +139,7 @@ def create_pdf_from_data(google_provider, form_data, exclude_sbo=False):
             "jenisPekerjaan": jenis_pekerjaan_val,
             "satuan": item_data.get("satuan"),
             "volume": volume,
-            "is_sbo": is_sbo_item,
+            "is_sbo": is_sbo_item, # Flag untuk PDF
             "hargaMaterialFormatted": harga_material_formatted,
             "hargaUpahFormatted": harga_upah_formatted,
             "totalMaterialFormatted": format_rupiah(total_material_raw),
