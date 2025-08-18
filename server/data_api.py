@@ -121,25 +121,27 @@ def process_price_value(raw_value):
         return 0.0
     return safe_to_float(raw_value)
 
-def process_sbo_sheet(sheet, cabang_kode):
-    """Fungsi baru untuk memproses sheet SBO."""
+def process_sbo_sheet(sheet, cabang_kode, lingkup):
+    """Memproses sheet SBO berdasarkan kode cabang dan lingkup pekerjaan."""
     try:
         worksheet = sheet.get_worksheet(0)
-        all_records = worksheet.get_all_records() # Menggunakan get_all_records untuk kemudahan
+        all_records = worksheet.get_all_records()
     except Exception as e:
         raise ValueError(f"Gagal mengambil data dari sheet SBO. Error: {str(e)}")
 
     sbo_items = []
     for record in all_records:
-        # Cek jika kode cabang ada di dalam list kode cabang di sheet
-        if cabang_kode in str(record.get("Kode Cabang", "")).split(','):
-            item_data = {
-                "Jenis Pekerjaan": record.get("Item Pekerjaan"),
-                "Satuan": record.get("Satuan"),
-                "Harga Material": process_price_value(record.get("Harga Material")),
-                "Harga Upah": 0.0 # Harga Upah untuk SBO selalu 0
-            }
-            sbo_items.append(item_data)
+        # Filter berdasarkan lingkup pekerjaan
+        if str(record.get("Lingkup_Pekerjaan", "")).upper() == lingkup:
+            # Filter berdasarkan kode cabang
+            if cabang_kode in str(record.get("Kode Cabang", "")).split(','):
+                item_data = {
+                    "Jenis Pekerjaan": record.get("Item Pekerjaan"),
+                    "Satuan": record.get("Satuan"),
+                    "Harga Material": process_price_value(record.get("Harga Material")),
+                    "Harga Upah": 0.0  # Harga Upah untuk SBO selalu 0
+                }
+                sbo_items.append(item_data)
             
     return {"PEKERJAAN SBO": sbo_items} if sbo_items else {}
 
@@ -154,16 +156,13 @@ def process_sheet(sheet, lingkup):
     categorized_prices = {}
     current_category = "Uncategorized"
     
-    # Indeks kolom (A=0, B=1, dst.)
     no_col_index = 1
     jenis_pekerjaan_col_index = 3
     sat_col_index = 4
     
-    # Pencarian dinamis untuk kolom harga
     header_row = []
     header_row_index = -1
     
-    # Menentukan baris header berdasarkan lingkup
     target_header_row_index = 16 if lingkup == "SIPIL" else 13
     
     if len(all_values) > target_header_row_index:
@@ -172,9 +171,7 @@ def process_sheet(sheet, lingkup):
     else:
         raise ValueError(f"Baris header tidak ditemukan di sheet untuk lingkup {lingkup}.")
 
-    # Dapatkan indeks dari header yang ditemukan
     try:
-        # Mencari header yang mengandung kata 'Material' dan 'Upah'
         material_col_index = -1
         upah_col_index = -1
         for i, header_text in enumerate(header_row):
@@ -189,7 +186,6 @@ def process_sheet(sheet, lingkup):
     except ValueError as e:
         raise ValueError(f"Error pada header untuk lingkup {lingkup}: {e}")
 
-    # Loop seluruh baris untuk memproses data
     for row in all_values:
         if len(row) <= jenis_pekerjaan_col_index or not row[jenis_pekerjaan_col_index].strip():
             continue
@@ -197,10 +193,7 @@ def process_sheet(sheet, lingkup):
         no_val = row[no_col_index].strip()
         jenis_pekerjaan = row[jenis_pekerjaan_col_index].strip()
 
-        if not no_val:
-            continue
-        
-        if jenis_pekerjaan.upper() == "JENIS PEKERJAAN":
+        if not no_val or jenis_pekerjaan.upper() == "JENIS PEKERJAAN":
             continue
         
         if re.fullmatch(r'^[IVXLCDM]+$', no_val):
@@ -211,6 +204,10 @@ def process_sheet(sheet, lingkup):
 
         satuan_val = row[sat_col_index].strip() if len(row) > sat_col_index else ""
         if not satuan_val:
+            continue
+        
+        # Perubahan: Hapus pengecekan SBO dari nama item
+        if "(sbo)" in jenis_pekerjaan.lower():
             continue
 
         harga_material_raw = row[material_col_index] if len(row) > material_col_index else "0"
@@ -231,7 +228,6 @@ def process_sheet(sheet, lingkup):
         categorized_prices[current_category].append(item_data)
 
     return categorized_prices
-
 
 # --- Endpoint API ---
 @data_bp.route('/get-data', methods=['GET'])
@@ -257,17 +253,16 @@ def get_data():
         
         processed_data = process_sheet(spreadsheet, lingkup_param)
         
-        # --- LOGIKA BARU UNTUK MENGGABUNGKAN DATA SBO ---
-        if lingkup_param == "SIPIL":
-            cabang_kode = BRANCH_TO_ULOK_MAP.get(cabang)
-            if cabang_kode:
-                try:
-                    sbo_spreadsheet = client.open_by_key(SBO_SPREADSHEET_ID)
-                    sbo_data = process_sbo_sheet(sbo_spreadsheet, cabang_kode)
-                    if sbo_data:
-                        processed_data.update(sbo_data) # Gabungkan data SBO
-                except Exception as e:
-                    print(f"Warning: Could not fetch or process SBO data. Error: {e}")
+        # --- LOGIKA BARU UNTUK MENGGABUNGKAN DATA SBO UNTUK SIPIL & ME ---
+        cabang_kode = BRANCH_TO_ULOK_MAP.get(cabang)
+        if cabang_kode:
+            try:
+                sbo_spreadsheet = client.open_by_key(SBO_SPREADSHEET_ID)
+                sbo_data = process_sbo_sheet(sbo_spreadsheet, cabang_kode, lingkup_param)
+                if sbo_data:
+                    processed_data.update(sbo_data) # Gabungkan data SBO
+            except Exception as e:
+                print(f"Warning: Could not fetch or process SBO data. Error: {e}")
 
         return jsonify(processed_data)
     except Exception as e:

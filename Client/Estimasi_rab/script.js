@@ -34,6 +34,14 @@ const sipilCategoryOrder = [
     "PEKERJAAN SBO"
 ];
 
+// Perubahan: Memperbarui urutan kategori untuk ME
+const meCategoryOrder = [
+    "INSTALASI",
+    "FIXTURE",
+    "PEKERJAAN TAMBAHAN",
+    "PEKERJAAN SBO"
+];
+
 const branchGroups = {
     "BANDUNG 1": ["BANDUNG 1", "BANDUNG 2"],
     "BANDUNG 2": ["BANDUNG 1", "BANDUNG 2"],
@@ -199,10 +207,10 @@ const autoFillPrices = (selectElement) => {
 
         const setupPriceInput = (input, price) => {
             const isEditable = price === "Kondisional";
-            const isSbo = price === "SBO" || currentCategory === "PEKERJAAN SBO";
+            const isSbo = currentCategory === "PEKERJAAN SBO";
     
             input.readOnly = !isEditable;
-            input.value = isEditable ? "0" : (isSbo ? formatNumberWithSeparators(price) : formatNumberWithSeparators(price));
+            input.value = isEditable ? "0" : formatNumberWithSeparators(price);
             input.style.backgroundColor = isEditable ? "#fffde7" : (isSbo ? "#e6ffed" : "");
             
             if (isEditable) {
@@ -233,11 +241,10 @@ const createBoQRow = (category, scope) => {
     return row;
 };
 
-// --- FUNGSI BARU UNTUK MEMBANGUN TABEL SECARA DINAMIS ---
 function buildTables(scope, data) {
     const wrapper = scope === 'Sipil' ? sipilTablesWrapper : meTablesWrapper;
-    wrapper.innerHTML = ''; // Kosongkan wrapper
-    const categories = scope === 'Sipil' ? sipilCategoryOrder : Object.keys(data);
+    wrapper.innerHTML = '';
+    const categories = scope === 'Sipil' ? sipilCategoryOrder : meCategoryOrder;
     
     categories.forEach(category => {
         if (data[category]) {
@@ -245,7 +252,6 @@ function buildTables(scope, data) {
         }
     });
     
-    // Setelah tabel dibuat, pasang kembali event listener untuk tombol "Tambah Item"
     document.querySelectorAll(".add-row-btn").forEach(button => {
         button.addEventListener("click", async () => {
             const category = button.dataset.category;
@@ -288,7 +294,6 @@ async function fetchAndPopulatePrices() {
         }
         const data = await response.json();
         
-        // Panggil fungsi buildTables setelah data diterima
         buildTables(selectedScope, data);
 
         if (selectedScope === 'Sipil') {
@@ -331,8 +336,8 @@ function calculateTotalPrice(inputElement) {
     const materialValue = row.querySelector("input.harga-material").value;
     const upahValue = row.querySelector("input.harga-upah").value;
 
-    const material = materialValue.toUpperCase() === 'SBO' ? 0 : parseFormattedNumber(materialValue);
-    const upah = upahValue.toUpperCase() === 'SBO' ? 0 : parseFormattedNumber(upahValue);
+    const material = parseFormattedNumber(materialValue);
+    const upah = parseFormattedNumber(upahValue);
 
     const totalMaterial = volume * material;
     const totalUpah = volume * upah;
@@ -370,10 +375,8 @@ async function populateFormWithHistory(data) {
         }
     }
     
-    // Trigger fetchAndPopulatePrices, yang sekarang juga akan membangun tabel
     await fetchAndPopulatePrices();
 
-    // Loop untuk mengisi item-item yang sudah ada
     for (let i = 1; i <= 200; i++) {
         if (data[`Jenis_Pekerjaan_${i}`]) {
             const category = data[`Kategori_Pekerjaan_${i}`];
@@ -443,8 +446,8 @@ async function handleFormSubmit() {
             const materialInput = row.querySelector('.harga-material');
             const upahInput = row.querySelector('.harga-upah');
 
-            const materialValue = materialInput.value.toUpperCase() === 'SBO' ? 'SBO' : parseFormattedNumber(materialInput.value);
-            const upahValue = upahInput.value.toUpperCase() === 'SBO' ? 'SBO' : parseFormattedNumber(upahInput.value);
+            const materialValue = parseFormattedNumber(materialInput.value);
+            const upahValue = parseFormattedNumber(upahInput.value);
 
             data[`Kategori_Pekerjaan_${itemIndex}`] = row.dataset.category;
             data[`Jenis_Pekerjaan_${itemIndex}`] = jenisPekerjaan;
@@ -530,19 +533,11 @@ function updateNomorUlok() {
     const tanggalInput = document.getElementById('lokasi_tanggal').value;
     const manualValue = document.getElementById('lokasi_manual').value;
 
-    if (kodeCabang && tanggalInput && manualValue.length === 4) {
-        // Asumsi format tanggal YYYY-MM
-        const [year, month] = tanggalInput.length === 4 ? [tanggalInput.substring(0, 2), tanggalInput.substring(2, 4)] : [null, null];
+    if (kodeCabang && tanggalInput.length === 4 && manualValue.length === 4) {
         const YY = tanggalInput.substring(0,2);
         const MM = tanggalInput.substring(2,4);
-
-
-        if (YY && MM && YY.length === 2 && MM.length === 2) {
-            const nomorUlok = `${kodeCabang}${YY}${MM}${manualValue}`;
-            document.getElementById('lokasi').value = nomorUlok;
-        } else {
-            document.getElementById('lokasi').value = '';
-        }
+        const nomorUlok = `${kodeCabang}${YY}${MM}${manualValue}`;
+        document.getElementById('lokasi').value = nomorUlok;
     } else {
         document.getElementById('lokasi').value = '';
     }
