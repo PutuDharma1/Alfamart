@@ -60,7 +60,6 @@
             <p>PT. SUMBER ALFARIA TRIJAYA, Tbk</p>
             <p>BUILDING & MAINTENANCE DEPT</p>
             <p>CABANG: {{ data['Cabang'] or '' }}</p>
-            <p>ALAMAT: {{ data['Alamat'] or '' }}</p>
         </div>
         <div class="header-title">
             <h1>REKAPITULASI RENCANA ANGGARAN BIAYA</h1>
@@ -70,6 +69,7 @@
             <table style="width:100%; border-collapse:collapse;">
                 <tr><td style="width:30%;">NOMOR ULOK</td><td style="width:2%;">:</td><td>{{ data['Nomor Ulok'] or '' }}</td></tr>
                 <tr><td>PROYEK</td><td>:</td><td>{{ data['Proyek'] or '' }}</td></tr>
+                <tr><td>ALAMAT</td><td>:</td><td>{{ data['Alamat'] or '' }}</td></tr>
                 <tr><td>LINGKUP PEKERJAAN</td><td>:</td><td>{{ data['Lingkup_Pekerjaan'] or '' }}</td></tr>
                 <tr><td>LUAS BANGUNAN</td><td>:</td><td>{{ data['Luas Bangunan'] or '' }} m²</td></tr>
                 <tr><td>LUAS TERBANGUNAN</td><td>:</td><td>{{ data['Luas Terbangunan'] or '' }} m²</td></tr>
