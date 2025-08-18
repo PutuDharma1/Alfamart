@@ -205,10 +205,6 @@ def process_sheet(sheet, lingkup):
         satuan_val = row[sat_col_index].strip() if len(row) > sat_col_index else ""
         if not satuan_val:
             continue
-        
-        # Perubahan: Hapus pengecekan SBO dari nama item
-        if "(sbo)" in jenis_pekerjaan.lower():
-            continue
 
         harga_material_raw = row[material_col_index] if len(row) > material_col_index else "0"
         harga_upah_raw = row[upah_col_index] if len(row) > upah_col_index else "0"
