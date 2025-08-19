@@ -245,7 +245,6 @@ def get_data():
         
         processed_data = process_sheet(spreadsheet, lingkup_param)
         
-        # --- LOGIKA BARU UNTUK MENGGABUNGKAN DATA SBO ---
         cabang_kode = BRANCH_TO_ULOK_MAP.get(cabang)
         if cabang_kode:
             try:
@@ -255,13 +254,6 @@ def get_data():
                     processed_data.update(sbo_data)
             except Exception as e:
                 print(f"Warning: Could not fetch or process SBO data. Error: {e}")
-
-        
-        if lingkup_param == "ME":
-            if "PEKERJAAN TAMBAHAN" not in processed_data:
-                processed_data["PEKERJAAN TAMBAHAN"] = [] # Buat list kosong jika tidak ada
-            if "PEKERJAAN SBO" not in processed_data:
-                processed_data["PEKERJAAN SBO"] = [] # Buat list kosong jika tidak ada
 
         return jsonify(processed_data)
     except Exception as e:

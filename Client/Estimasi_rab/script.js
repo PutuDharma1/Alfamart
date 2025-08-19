@@ -37,7 +37,7 @@ const sipilCategoryOrder = [
 const meCategoryOrder = [
     "INSTALASI",
     "FIXTURE",
-    "PEKERJAAN TAMBAHAN",
+    "PEKERJAAN TAMBAHAN", // <-- Perbaikan di sini
     "PEKERJAAN SBO"
 ];
 
@@ -218,15 +218,21 @@ function buildTables(scope, data) {
     const categories = scope === 'Sipil' ? sipilCategoryOrder : meCategoryOrder;
     
     categories.forEach(category => {
-        if (data[category]) {
-            wrapper.appendChild(createTableStructure(category, scope));
-        }
+        // Selalu buat struktur (judul, tombol, tabel tersembunyi) untuk setiap kategori
+        wrapper.appendChild(createTableStructure(category, scope));
     });
     
     document.querySelectorAll(".add-row-btn").forEach(button => {
         button.addEventListener("click", async () => {
             const category = button.dataset.category;
             const scope = button.dataset.scope;
+
+            // Tampilkan tabel saat tombol diklik
+            const categoryWrapper = button.parentElement;
+            const tableContainer = categoryWrapper.querySelector('.table-container');
+            if (tableContainer) {
+                tableContainer.style.display = 'block';
+            }
 
             const dataSource = scope === "Sipil" ? categorizedPrices.categorizedSipilPrices : categorizedPrices.categorizedMePrices;
             if (!dataSource || Object.keys(dataSource).length === 0) {
@@ -264,9 +270,6 @@ async function fetchAndPopulatePrices() {
             throw new Error(errorData.error || `Gagal mengambil data: ${response.statusText}`);
         }
         const data = await response.json();
-        
-        sipilTablesWrapper.classList.toggle("hidden", selectedScope !== 'Sipil');
-        meTablesWrapper.classList.toggle("hidden", selectedScope !== 'ME');
         
         buildTables(selectedScope, data);
 
@@ -362,6 +365,10 @@ async function populateFormWithHistory(data) {
             const targetTbody = document.querySelector(`.boq-table-body[data-category="${category}"][data-scope="${scope}"]`);
             
             if (targetTbody) {
+                // Tampilkan tabelnya sebelum menambahkan baris
+                const tableContainer = targetTbody.closest('.table-container');
+                if(tableContainer) tableContainer.style.display = 'block';
+
                 const newRow = createBoQRow(category, scope);
                 targetTbody.appendChild(newRow);
                 populateJenisPekerjaanOptionsForNewRow(newRow);
@@ -479,7 +486,8 @@ async function handleFormSubmit() {
 function createTableStructure(categoryName, scope) {
     const tableContainer = document.createElement('div');
     tableContainer.className = 'table-container';
-    
+    tableContainer.style.display = 'none'; // Sembunyikan tabel secara default
+
     const sectionTitle = document.createElement('h2');
     sectionTitle.className = 'text-lg font-semibold mt-6 mb-2 section-title';
     sectionTitle.textContent = categoryName;
@@ -653,13 +661,13 @@ async function initializePage() {
     });
     
     lingkupPekerjaanSelect.addEventListener("change", () => {
-        if (cabangSelect.value && lingkupPekerjaanSelect.value) {
+        const selectedScope = lingkupPekerjaanSelect.value;
+        sipilTablesWrapper.innerHTML = '';
+        meTablesWrapper.innerHTML = '';
+        sipilTablesWrapper.classList.toggle("hidden", selectedScope !== 'Sipil');
+        meTablesWrapper.classList.toggle("hidden", selectedScope !== 'ME');
+        if (cabangSelect.value && selectedScope) {
             fetchAndPopulatePrices();
-        } else {
-            sipilTablesWrapper.innerHTML = '';
-            meTablesWrapper.innerHTML = '';
-            sipilTablesWrapper.classList.add("hidden");
-            meTablesWrapper.classList.add("hidden");
         }
     });
 

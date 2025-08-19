@@ -256,9 +256,6 @@ class GoogleServiceProvider:
         except Exception:
             return False
 
-    # =============================================================
-    # ▼▼▼ FUNGSI INI DIPERBAIKI SECARA SIGNIFIKAN ▼▼▼
-    # =============================================================
     def get_approved_rab_by_cabang(self, user_cabang):
         try:
             approved_sheet = self.sheet.worksheet(config.APPROVED_DATA_SHEET_NAME)
@@ -280,14 +277,13 @@ class GoogleServiceProvider:
 
             filtered_rabs = [rec for rec in all_records if str(rec.get('Cabang', '')).strip().lower() in allowed_branches_lower]
 
-            # Hitung total Non-SBO untuk setiap RAB yang difilter
             for rab in filtered_rabs:
                 total_non_sbo = 0
                 item_details_json = rab.get('Item_Details_JSON', '{}')
                 if item_details_json:
                     try:
                         item_details = json.loads(item_details_json)
-                        for i in range(1, 201): # Asumsi maksimal 200 item
+                        for i in range(1, 201): 
                             kategori_key = f'Kategori_Pekerjaan_{i}'
                             total_harga_key = f'Total_Harga_Item_{i}'
                             if kategori_key in item_details and item_details[kategori_key] != 'PEKERJAAN SBO':
@@ -295,7 +291,6 @@ class GoogleServiceProvider:
                     except (json.JSONDecodeError, ValueError) as e:
                         print(f"Could not process items for RAB {rab.get('Nomor Ulok')}: {e}")
                 
-                # Tambahkan PPN 11% ke total non-sbo
                 final_total_non_sbo = total_non_sbo * 1.11
                 rab['Grand Total Non-SBO'] = final_total_non_sbo
 
