@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!response.ok) throw new Error('Gagal mengambil data dari server.');
             
             const data = await response.json();
-            approvedRabData = data; // Store the full data
+            approvedRabData = data;
 
             ulokSelect.innerHTML = '<option value="">-- Pilih Nomor Ulok --</option>';
             if (data.length > 0) {
@@ -103,13 +103,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = Object.fromEntries(formData.entries());
         data['Dibuat Oleh'] = sessionStorage.getItem('loggedInUserEmail');
 
-        // Find the selected RAB data to include all necessary fields
         const selectedRab = approvedRabData.find(rab => rab['Nomor Ulok'] === data['Nomor Ulok']);
         if (selectedRab) {
             data['Proyek'] = selectedRab.Proyek;
             data['Alamat'] = selectedRab.Alamat;
             data['Lingkup Pekerjaan'] = selectedRab.Lingkup_Pekerjaan;
-            data['Grand Total'] = selectedRab['Grand Total'];
+            // =============================================================
+            // ▼▼▼ PERUBAHAN UTAMA: GUNAKAN GRAND TOTAL NON-SBO ▼▼▼
+            // =============================================================
+            data['Grand Total'] = selectedRab['Grand Total Non-SBO']; // Mengirim total Non-SBO ke backend
             data['Cabang'] = selectedRab.Cabang; 
         }
 
@@ -143,7 +145,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (selectedRab) {
             document.getElementById('detail_proyek').textContent = selectedRab.Proyek || 'N/A';
             document.getElementById('detail_lingkup').textContent = selectedRab.Lingkup_Pekerjaan || 'N/A';
-            document.getElementById('detail_total').textContent = formatRupiah(selectedRab['Grand Total'] || 0);
+            document.getElementById('detail_total').textContent = formatRupiah(selectedRab['Grand Total Non-SBO'] || 0);
             rabDetailsDiv.style.display = 'block';
         } else {
             rabDetailsDiv.style.display = 'none';

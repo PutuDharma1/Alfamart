@@ -1,7 +1,7 @@
 import os.path
 import io
 import gspread
-import json  # <-- BARIS INI DITAMBAHKAN UNTUK MEMPERBAIKI ERROR
+import json # Pastikan json diimpor
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -97,7 +97,6 @@ class GoogleServiceProvider:
                 elif status == config.STATUS.APPROVED:
                     approved_codes.append(lokasi)
                 elif status in [config.STATUS.REJECTED_BY_COORDINATOR, config.STATUS.REJECTED_BY_MANAGER] and record_cabang == user_cabang:
-                    # Ambil juga detail item agar bisa mengisi ulang form
                     item_details_json = record.get('Item_Details_JSON', '{}')
                     if item_details_json:
                         try:
@@ -107,14 +106,10 @@ class GoogleServiceProvider:
                             print(f"Warning: Could not decode Item_Details_JSON for rejected submission {lokasi}")
                     rejected_submissions.append(record)
 
-
                 processed_locations.add(lokasi)
 
             return {
-                "active_codes": {
-                    "pending": pending_codes,
-                    "approved": approved_codes
-                },
+                "active_codes": { "pending": pending_codes, "approved": approved_codes },
                 "rejected_submissions": rejected_submissions
             }
         except Exception as e:
@@ -182,10 +177,8 @@ class GoogleServiceProvider:
             message = MIMEMultipart()
             message['to'] = to
             message['subject'] = subject
-            if cc:
-                message['cc'] = ', '.join(cc)
+            if cc: message['cc'] = ', '.join(cc)
             message.attach(MIMEText(html_body, 'html'))
-
             if attachments:
                 for filename, file_bytes in attachments:
                     part = MIMEBase('application', 'octet-stream')
@@ -193,7 +186,6 @@ class GoogleServiceProvider:
                     encoders.encode_base64(part)
                     part.add_header('Content-Disposition', f'attachment; filename="{filename}"')
                     message.attach(part)
-
             raw_message = base64.urlsafe_b64encode(message.as_bytes()).decode()
             create_message = {'raw': raw_message}
             send_message = self.gmail_service.users().messages().send(userId='me', body=create_message).execute()
@@ -209,7 +201,6 @@ class GoogleServiceProvider:
             headers = self.get_sheet_headers(config.APPROVED_DATA_SHEET_NAME)
             data_to_append = [row_data.get(header, "") for header in headers]
             approved_sheet.append_row(data_to_append)
-            print(f"Data successfully copied to {config.APPROVED_DATA_SHEET_NAME}.")
             return True
         except Exception as e:
             print(f"Failed to copy data to approved sheet: {e}")
@@ -219,7 +210,6 @@ class GoogleServiceProvider:
         try:
             worksheet = self.sheet.worksheet(worksheet_name)
             worksheet.delete_rows(row_index)
-            print(f"Successfully deleted row {row_index} from {worksheet_name}.")
             return True
         except Exception as e:
             print(f"Failed to delete row {row_index} from {worksheet_name}: {e}")
@@ -241,16 +231,11 @@ class GoogleServiceProvider:
             all_records = self.data_entry_sheet.get_all_records()
             for record in all_records:
                 status = record.get(config.COLUMN_NAMES.STATUS, "").strip()
-                active_statuses = [
-                    config.STATUS.WAITING_FOR_COORDINATOR, 
-                    config.STATUS.WAITING_FOR_MANAGER, 
-                    config.STATUS.APPROVED
-                ]
+                active_statuses = [config.STATUS.WAITING_FOR_COORDINATOR, config.STATUS.WAITING_FOR_MANAGER, config.STATUS.APPROVED]
                 if status in active_statuses:
                     existing_ulok = record.get(config.COLUMN_NAMES.LOKASI, "")
                     normalized_existing_ulok = str(existing_ulok).replace("-", "")
-                    if normalized_existing_ulok == normalized_ulok_to_check:
-                        return True
+                    if normalized_existing_ulok == normalized_ulok_to_check: return True
             return False
         except Exception as e:
             print(f"Error checking for existing ulok: {e}")
@@ -265,17 +250,16 @@ class GoogleServiceProvider:
                 status = record.get(config.COLUMN_NAMES.STATUS, "")
                 pembuat = record.get(config.COLUMN_NAMES.EMAIL_PEMBUAT, "")
                 if existing_ulok == normalized_ulok and pembuat == email_pembuat:
-                    if status in [config.STATUS.REJECTED_BY_COORDINATOR, config.STATUS.REJECTED_BY_MANAGER]:
-                        return True
-                    else:
-                        return False
+                    if status in [config.STATUS.REJECTED_BY_COORDINATOR, config.STATUS.REJECTED_BY_MANAGER]: return True
+                    else: return False
             return False
         except Exception:
             return False
 
-    # --- FUNGSI BARU UNTUK SPK ---
+    # =============================================================
+    # ▼▼▼ FUNGSI INI DIPERBAIKI SECARA SIGNIFIKAN ▼▼▼
+    # =============================================================
     def get_approved_rab_by_cabang(self, user_cabang):
-        """Mengambil semua data RAB dari sheet Form3 yang statusnya 'Disetujui'."""
         try:
             approved_sheet = self.sheet.worksheet(config.APPROVED_DATA_SHEET_NAME)
             all_records = approved_sheet.get_all_records()
@@ -294,28 +278,42 @@ class GoogleServiceProvider:
             allowed_branches = branch_groups.get(user_cabang.upper(), [user_cabang.upper()])
             allowed_branches_lower = [b.lower() for b in allowed_branches]
 
-            filtered_rabs = [
-                record for record in all_records 
-                if str(record.get('Cabang', '')).strip().lower() in allowed_branches_lower
-            ]
+            filtered_rabs = [rec for rec in all_records if str(rec.get('Cabang', '')).strip().lower() in allowed_branches_lower]
+
+            # Hitung total Non-SBO untuk setiap RAB yang difilter
+            for rab in filtered_rabs:
+                total_non_sbo = 0
+                item_details_json = rab.get('Item_Details_JSON', '{}')
+                if item_details_json:
+                    try:
+                        item_details = json.loads(item_details_json)
+                        for i in range(1, 201): # Asumsi maksimal 200 item
+                            kategori_key = f'Kategori_Pekerjaan_{i}'
+                            total_harga_key = f'Total_Harga_Item_{i}'
+                            if kategori_key in item_details and item_details[kategori_key] != 'PEKERJAAN SBO':
+                                total_non_sbo += float(item_details.get(total_harga_key, 0))
+                    except (json.JSONDecodeError, ValueError) as e:
+                        print(f"Could not process items for RAB {rab.get('Nomor Ulok')}: {e}")
+                
+                # Tambahkan PPN 11% ke total non-sbo
+                final_total_non_sbo = total_non_sbo * 1.11
+                rab['Grand Total Non-SBO'] = final_total_non_sbo
+
             return filtered_rabs
         except Exception as e:
             print(f"Error getting approved RABs: {e}")
             raise e
 
     def get_row_data_by_sheet(self, worksheet, row_index):
-        """Mengambil data baris dari worksheet tertentu berdasarkan nomor barisnya."""
         try:
             records = worksheet.get_all_records()
-            if row_index > 0 and row_index <= len(records):
-                return records[row_index - 1] 
+            if row_index > 0 and row_index <= len(records): return records[row_index - 1] 
             return {}
         except Exception as e:
             print(f"Error getting row data from {worksheet.title}: {e}")
             return {}
 
     def update_cell_by_sheet(self, worksheet, row_index, column_name, value):
-        """Memperbarui sel di worksheet tertentu."""
         try:
             actual_row = row_index + 1
             headers = worksheet.row_values(1)

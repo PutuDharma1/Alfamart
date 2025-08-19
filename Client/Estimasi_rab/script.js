@@ -265,7 +265,6 @@ async function fetchAndPopulatePrices() {
         }
         const data = await response.json();
         
-        // Menampilkan atau menyembunyikan wrapper tabel berdasarkan lingkup
         sipilTablesWrapper.classList.toggle("hidden", selectedScope !== 'Sipil');
         meTablesWrapper.classList.toggle("hidden", selectedScope !== 'ME');
         
@@ -329,9 +328,6 @@ const calculateGrandTotal = () => {
     if (grandTotalAmount) grandTotalAmount.textContent = formatRupiah(total);
 };
 
-// =============================================================
-// ▼▼▼ FUNGSI INI DIPERBAIKI SECARA SIGNIFIKAN ▼▼▼
-// =============================================================
 async function populateFormWithHistory(data) {
     form.reset();
     sipilTablesWrapper.innerHTML = "";
@@ -355,14 +351,10 @@ async function populateFormWithHistory(data) {
         }
     }
     
-    // 1. Panggil fetchAndPopulatePrices secara langsung dan TUNGGU (await) hingga selesai.
-    // Ini akan memastikan tabel sudah ada sebelum kita mencoba mengisinya.
     await fetchAndPopulatePrices();
 
-    // 2. Parse detail item setelah tabel siap.
     const itemDetails = data['Item_Details_JSON'] ? JSON.parse(data['Item_Details_JSON']) : data;
 
-    // 3. Loop dan isi item ke dalam tabel yang sudah pasti ada.
     for (let i = 1; i <= 200; i++) {
         if (itemDetails[`Jenis_Pekerjaan_${i}`]) {
             const category = itemDetails[`Kategori_Pekerjaan_${i}`];
@@ -389,7 +381,6 @@ async function populateFormWithHistory(data) {
                 if (upahInput.readOnly === false) {
                     upahInput.value = formatNumberWithSeparators(itemDetails[`Harga_Upah_Item_${i}`]);
                 }
-                // Recalculate total for this row after potentially setting custom prices
                 calculateTotalPrice(newRow.querySelector('.volume'));
             }
         }
