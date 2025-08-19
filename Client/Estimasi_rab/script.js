@@ -48,10 +48,10 @@ const branchGroups = {
     "SUMBAWA": ["LOMBOK", "SUMBAWA"],
     "MEDAN": ["MEDAN", "ACEH"],
     "ACEH": ["MEDAN", "ACEH"],
-    "PALEMBANG": ["PALEMBANG", "BENGKULU", "BANGKA", "BELITUNG"],
-    "BENGKULU": ["PALEMBANG", "BENGKULU", "BANGKA", "BELITUNG"],
-    "BANGKA": ["PALEMBANG", "BENGKULU", "BANGKA", "BELITUNG"],
-    "BELITUNG": ["PALEMBANG", "BENGKULU", "BANGKA", "BELITUNG"],
+    "PALEMBANG": ["PALEMBANG", "BENGKUlu", "BANGKA", "BELITUNG"],
+    "BENGKULU": ["PALEMBANG", "BENGKUlu", "BANGKA", "BELITUNG"],
+    "BANGKA": ["PALEMBANG", "BENGKUlu", "BANGKA", "BELITUNG"],
+    "BELITUNG": ["PALEMBANG", "BENGKUlu", "BANGKA", "BELITUNG"],
     "SIDOARJO": ["SIDOARJO", "SIDOARJO BPN_SMD", "MANOKWARI", "NTT", "SORONG"],
     "SIDOARJO BPN_SMD": ["SIDOARJO", "SIDOARJO BPN_SMD", "MANOKWARI", "NTT", "SORONG"],
     "MANOKWARI": ["SIDOARJO", "SIDOARJO BPN_SMD", "MANOKWARI", "NTT", "SORONG"],
@@ -265,6 +265,10 @@ async function fetchAndPopulatePrices() {
         }
         const data = await response.json();
         
+        // Menampilkan atau menyembunyikan wrapper tabel berdasarkan lingkup
+        sipilTablesWrapper.classList.toggle("hidden", selectedScope !== 'Sipil');
+        meTablesWrapper.classList.toggle("hidden", selectedScope !== 'ME');
+        
         buildTables(selectedScope, data);
 
         if (selectedScope === 'Sipil') {
@@ -325,10 +329,14 @@ const calculateGrandTotal = () => {
     if (grandTotalAmount) grandTotalAmount.textContent = formatRupiah(total);
 };
 
+// =============================================================
+// ▼▼▼ FUNGSI INI DIPERBAIKI SECARA SIGNIFIKAN ▼▼▼
+// =============================================================
 async function populateFormWithHistory(data) {
     form.reset();
-    document.querySelectorAll(".boq-table-body").forEach(tbody => tbody.innerHTML = "");
-
+    sipilTablesWrapper.innerHTML = "";
+    meTablesWrapper.innerHTML = "";
+    
     const nomorUlok = data["Nomor Ulok"];
     if (nomorUlok && (nomorUlok.length === 12 || nomorUlok.length === 14)) {
         const ulokParts = nomorUlok.replace(/-/g, '').match(/^(.{4})(.{4})(.{4})$/);
@@ -347,10 +355,14 @@ async function populateFormWithHistory(data) {
         }
     }
     
-    await lingkupPekerjaanSelect.dispatchEvent(new Event('change'));
+    // 1. Panggil fetchAndPopulatePrices secara langsung dan TUNGGU (await) hingga selesai.
+    // Ini akan memastikan tabel sudah ada sebelum kita mencoba mengisinya.
+    await fetchAndPopulatePrices();
 
+    // 2. Parse detail item setelah tabel siap.
     const itemDetails = data['Item_Details_JSON'] ? JSON.parse(data['Item_Details_JSON']) : data;
 
+    // 3. Loop dan isi item ke dalam tabel yang sudah pasti ada.
     for (let i = 1; i <= 200; i++) {
         if (itemDetails[`Jenis_Pekerjaan_${i}`]) {
             const category = itemDetails[`Kategori_Pekerjaan_${i}`];
@@ -377,9 +389,12 @@ async function populateFormWithHistory(data) {
                 if (upahInput.readOnly === false) {
                     upahInput.value = formatNumberWithSeparators(itemDetails[`Harga_Upah_Item_${i}`]);
                 }
+                // Recalculate total for this row after potentially setting custom prices
+                calculateTotalPrice(newRow.querySelector('.volume'));
             }
         }
     }
+    
     updateAllRowNumbersAndTotals();
     originalFormData = getCurrentFormData();
 }
@@ -647,21 +662,18 @@ async function initializePage() {
     });
     
     lingkupPekerjaanSelect.addEventListener("change", () => {
-        const selectedScope = lingkupPekerjaanSelect.value;
-        sipilTablesWrapper.innerHTML = '';
-        meTablesWrapper.innerHTML = '';
-        sipilTablesWrapper.classList.toggle("hidden", selectedScope !== 'Sipil');
-        meTablesWrapper.classList.toggle("hidden", selectedScope !== 'ME');
-        if (cabangSelect.value && selectedScope) {
+        if (cabangSelect.value && lingkupPekerjaanSelect.value) {
             fetchAndPopulatePrices();
+        } else {
+            sipilTablesWrapper.innerHTML = '';
+            meTablesWrapper.innerHTML = '';
+            sipilTablesWrapper.classList.add("hidden");
+            meTablesWrapper.classList.add("hidden");
         }
     });
 
     cabangSelect.addEventListener('change', () => {
-        const selectedScope = lingkupPekerjaanSelect.value;
-        sipilTablesWrapper.innerHTML = '';
-        meTablesWrapper.innerHTML = '';
-        if (cabangSelect.value && selectedScope) {
+        if (cabangSelect.value && lingkupPekerjaanSelect.value) {
             fetchAndPopulatePrices();
         }
     });
