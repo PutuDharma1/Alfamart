@@ -106,7 +106,6 @@ def safe_to_float(value):
     if not s_value or s_value == '-':
         return 0.0
     try:
-        # Menghapus tanda koma (,) pemisah ribuan sebelum konversi
         return float(s_value.replace(',', ''))
     except (ValueError, TypeError):
         return 0.0
@@ -122,7 +121,6 @@ def process_price_value(raw_value):
     return safe_to_float(raw_value)
 
 def process_sbo_sheet(sheet, cabang_kode, lingkup):
-    """Memproses sheet SBO berdasarkan kode cabang dan lingkup pekerjaan."""
     try:
         worksheet = sheet.get_worksheet(0)
         all_records = worksheet.get_all_records()
@@ -131,15 +129,13 @@ def process_sbo_sheet(sheet, cabang_kode, lingkup):
 
     sbo_items = []
     for record in all_records:
-        # Filter berdasarkan lingkup pekerjaan
         if str(record.get("Lingkup_Pekerjaan", "")).upper() == lingkup:
-            # Filter berdasarkan kode cabang
             if cabang_kode in str(record.get("Kode Cabang", "")).split(','):
                 item_data = {
                     "Jenis Pekerjaan": record.get("Item Pekerjaan"),
                     "Satuan": record.get("Satuan"),
                     "Harga Material": process_price_value(record.get("Harga Material")),
-                    "Harga Upah": 0.0  # Harga Upah untuk SBO selalu 0
+                    "Harga Upah": 0.0
                 }
                 sbo_items.append(item_data)
             
@@ -249,16 +245,23 @@ def get_data():
         
         processed_data = process_sheet(spreadsheet, lingkup_param)
         
-        # --- LOGIKA BARU UNTUK MENGGABUNGKAN DATA SBO UNTUK SIPIL & ME ---
+        # --- LOGIKA BARU UNTUK MENGGABUNGKAN DATA SBO ---
         cabang_kode = BRANCH_TO_ULOK_MAP.get(cabang)
         if cabang_kode:
             try:
                 sbo_spreadsheet = client.open_by_key(SBO_SPREADSHEET_ID)
                 sbo_data = process_sbo_sheet(sbo_spreadsheet, cabang_kode, lingkup_param)
                 if sbo_data:
-                    processed_data.update(sbo_data) # Gabungkan data SBO
+                    processed_data.update(sbo_data)
             except Exception as e:
                 print(f"Warning: Could not fetch or process SBO data. Error: {e}")
+
+        
+        if lingkup_param == "ME":
+            if "PEKERJAAN TAMBAHAN" not in processed_data:
+                processed_data["PEKERJAAN TAMBAHAN"] = [] # Buat list kosong jika tidak ada
+            if "PEKERJAAN SBO" not in processed_data:
+                processed_data["PEKERJAAN SBO"] = [] # Buat list kosong jika tidak ada
 
         return jsonify(processed_data)
     except Exception as e:
