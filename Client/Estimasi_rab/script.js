@@ -37,7 +37,7 @@ const sipilCategoryOrder = [
 const meCategoryOrder = [
     "INSTALASI",
     "FIXTURE",
-    "PEKERJAAN TAMBAHAN", // <-- Perbaikan di sini
+    "PEKERJAAN TAMBAHAN",
     "PEKERJAAN SBO"
 ];
 
@@ -48,10 +48,10 @@ const branchGroups = {
     "SUMBAWA": ["LOMBOK", "SUMBAWA"],
     "MEDAN": ["MEDAN", "ACEH"],
     "ACEH": ["MEDAN", "ACEH"],
-    "PALEMBANG": ["PALEMBANG", "BENGKUlu", "BANGKA", "BELITUNG"],
-    "BENGKULU": ["PALEMBANG", "BENGKUlu", "BANGKA", "BELITUNG"],
-    "BANGKA": ["PALEMBANG", "BENGKUlu", "BANGKA", "BELITUNG"],
-    "BELITUNG": ["PALEMBANG", "BENGKUlu", "BANGKA", "BELITUNG"],
+    "PALEMBANG": ["PALEMBANG", "BENGKULU", "BANGKA", "BELITUNG"],
+    "BENGKULU": ["PALEMBANG", "BENGKULU", "BANGKA", "BELITUNG"],
+    "BANGKA": ["PALEMBANG", "BENGKULU", "BANGKA", "BELITUNG"],
+    "BELITUNG": ["PALEMBANG", "BENGKULU", "BANGKA", "BELITUNG"],
     "SIDOARJO": ["SIDOARJO", "SIDOARJO BPN_SMD", "MANOKWARI", "NTT", "SORONG"],
     "SIDOARJO BPN_SMD": ["SIDOARJO", "SIDOARJO BPN_SMD", "MANOKWARI", "NTT", "SORONG"],
     "MANOKWARI": ["SIDOARJO", "SIDOARJO BPN_SMD", "MANOKWARI", "NTT", "SORONG"],
@@ -218,7 +218,6 @@ function buildTables(scope, data) {
     const categories = scope === 'Sipil' ? sipilCategoryOrder : meCategoryOrder;
     
     categories.forEach(category => {
-        // Selalu buat struktur (judul, tombol, tabel tersembunyi) untuk setiap kategori
         wrapper.appendChild(createTableStructure(category, scope));
     });
     
@@ -227,7 +226,6 @@ function buildTables(scope, data) {
             const category = button.dataset.category;
             const scope = button.dataset.scope;
 
-            // Tampilkan tabel saat tombol diklik
             const categoryWrapper = button.parentElement;
             const tableContainer = categoryWrapper.querySelector('.table-container');
             if (tableContainer) {
@@ -331,11 +329,15 @@ const calculateGrandTotal = () => {
     if (grandTotalAmount) grandTotalAmount.textContent = formatRupiah(total);
 };
 
+// =============================================================
+// ▼▼▼ FUNGSI YANG DIPERBARUI SECARA SIGNIFIKAN ▼▼▼
+// =============================================================
 async function populateFormWithHistory(data) {
     form.reset();
     sipilTablesWrapper.innerHTML = "";
     meTablesWrapper.innerHTML = "";
-    
+
+    // 1. Isi semua field input standar
     const nomorUlok = data["Nomor Ulok"];
     if (nomorUlok && (nomorUlok.length === 12 || nomorUlok.length === 14)) {
         const ulokParts = nomorUlok.replace(/-/g, '').match(/^(.{4})(.{4})(.{4})$/);
@@ -354,18 +356,26 @@ async function populateFormWithHistory(data) {
         }
     }
     
+    // 2. Tampilkan wrapper tabel utama (Sipil/ME) berdasarkan data
+    const selectedScope = lingkupPekerjaanSelect.value;
+    sipilTablesWrapper.classList.toggle("hidden", selectedScope !== 'Sipil');
+    meTablesWrapper.classList.toggle("hidden", selectedScope !== 'ME');
+
+    // 3. Ambil data harga dan bangun struktur tabel yang tersembunyi
     await fetchAndPopulatePrices();
 
+    // 4. Uraikan detail item dari JSON jika ada
     const itemDetails = data['Item_Details_JSON'] ? JSON.parse(data['Item_Details_JSON']) : data;
 
-    for (let i = 1; i <= 200; i++) {
+    // 5. Loop melalui item historis dan isi tabel
+    for (let i = 1; i <= 200; i++) { // Asumsi maksimal 200 item
         if (itemDetails[`Jenis_Pekerjaan_${i}`]) {
             const category = itemDetails[`Kategori_Pekerjaan_${i}`];
             const scope = lingkupPekerjaanSelect.value;
             const targetTbody = document.querySelector(`.boq-table-body[data-category="${category}"][data-scope="${scope}"]`);
             
             if (targetTbody) {
-                // Tampilkan tabelnya sebelum menambahkan baris
+                // Tampilkan kontainer tabel kategori ini
                 const tableContainer = targetTbody.closest('.table-container');
                 if(tableContainer) tableContainer.style.display = 'block';
 
@@ -382,10 +392,10 @@ async function populateFormWithHistory(data) {
                 const materialInput = newRow.querySelector('.harga-material');
                 const upahInput = newRow.querySelector('.harga-upah');
                 
-                if (materialInput.readOnly === false) {
+                if (!materialInput.readOnly) {
                     materialInput.value = formatNumberWithSeparators(itemDetails[`Harga_Material_Item_${i}`]);
                 }
-                if (upahInput.readOnly === false) {
+                if (!upahInput.readOnly) {
                     upahInput.value = formatNumberWithSeparators(itemDetails[`Harga_Upah_Item_${i}`]);
                 }
                 calculateTotalPrice(newRow.querySelector('.volume'));
@@ -396,6 +406,7 @@ async function populateFormWithHistory(data) {
     updateAllRowNumbersAndTotals();
     originalFormData = getCurrentFormData();
 }
+
 
 async function handleFormSubmit() {
     if (!form.checkValidity()) {
@@ -651,7 +662,7 @@ async function initializePage() {
     document.getElementById('lokasi_manual').addEventListener('input', updateNomorUlok);
 
     document.getElementById('lokasi_manual')?.addEventListener('input', function(e) {
-       const fullUlok = document.getElementById('lokasi').value;
+       const fullUlok = document.getElementById('lokasi').value.replace(/-/g, '');
        if (fullUlok.length === 12) {
            const rejectedData = rejectedSubmissionsList.find(item => item['Nomor Ulok'].replace(/-/g, '') === fullUlok);
            if (rejectedData) {
