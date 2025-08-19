@@ -27,8 +27,9 @@ class COLUMN_NAMES:
     MANAGER_APPROVER = "Pemberi Persetujuan Manager"
     MANAGER_APPROVAL_TIME = "Waktu Persetujuan Manager"
     LINK_PDF = "Link PDF"
-    GRAND_TOTAL = "Grand Total" # BARU
-    ALAMAT = "Alamat" # BARU
+    LINK_PDF_NONSBO = "Link PDF Non-SBO"  # <-- TAMBAHKAN BARIS INI
+    GRAND_TOTAL = "Grand Total"
+    ALAMAT = "Alamat"
 
 
 # --- Jabatan & Status ---
