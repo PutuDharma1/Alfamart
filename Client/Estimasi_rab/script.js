@@ -34,7 +34,6 @@ const sipilCategoryOrder = [
     "PEKERJAAN SBO"
 ];
 
-// Perubahan: Memperbarui urutan kategori untuk ME
 const meCategoryOrder = [
     "INSTALASI",
     "FIXTURE",
@@ -61,44 +60,16 @@ const branchGroups = {
 };
 
 const branchToUlokMap = {
-    "WHC IMAM BONJOL": "7AZ1",
-    "LUWU": "2VZ1",
-    "KARAWANG": "1JZ1",
-    "REMBANG": "2AZ1",
-    "BANJARMASIN": "1GZ1",
-    "PARUNG": "1MZ1",
-    "TEGAL": "2PZ1",
-    "GORONTALO": "2SZ1",
-    "PONTIANAK": "1PZ1",
-    "LOMBOK": "1SZ1",
-    "KOTABUMI": "1VZ1",
-    "SERANG": "2GZ1",
-    "CIANJUR": "2JZ1",
-    "BALARAJA": "TZ01",
-    "SIDOARJO": "UZ01",
-    "MEDAN": "WZ01",
-    "BOGOR": "XZ01",
-    "JEMBER": "YZ01",
-    "BALI": "QZ01",
-    "PALEMBANG": "PZ01",
-    "KLATEN": "OZ01",
-    "MAKASSAR": "RZ01",
-    "PLUMBON": "VZ01",
-    "PEKANBARU": "1AZ1",
-    "JAMBI": "1DZ1",
-    "HEAD OFFICE": "Z001",
-    "BANDUNG 1": "BZ01",
-    "BANDUNG 2": "NZ01",
-    "BEKASI": "CZ01",
-    "CILACAP": "IZ01",
-    "CILEUNGSI2": "JZ01",
-    "SEMARANG": "HZ01",
-    "CIKOKOL": "KZ01",
-    "LAMPUNG": "LZ01",
-    "MALANG": "MZ01",
-    "MANADO": "1YZ1",
-    "BATAM": "2DZ1",
-    "MADIUN": "2MZ1"
+    "WHC IMAM BONJOL": "7AZ1", "LUWU": "2VZ1", "KARAWANG": "1JZ1", "REMBANG": "2AZ1",
+    "BANJARMASIN": "1GZ1", "PARUNG": "1MZ1", "TEGAL": "2PZ1", "GORONTALO": "2SZ1",
+    "PONTIANAK": "1PZ1", "LOMBOK": "1SZ1", "KOTABUMI": "1VZ1", "SERANG": "2GZ1",
+    "CIANJUR": "2JZ1", "BALARAJA": "TZ01", "SIDOARJO": "UZ01", "MEDAN": "WZ01",
+    "BOGOR": "XZ01", "JEMBER": "YZ01", "BALI": "QZ01", "PALEMBANG": "PZ01",
+    "KLATEN": "OZ01", "MAKASSAR": "RZ01", "PLUMBON": "VZ01", "PEKANBARU": "1AZ1",
+    "JAMBI": "1DZ1", "HEAD OFFICE": "Z001", "BANDUNG 1": "BZ01", "BANDUNG 2": "NZ01",
+    "BEKASI": "CZ01", "CILACAP": "IZ01", "CILEUNGSI2": "JZ01", "SEMARANG": "HZ01",
+    "CIKOKOL": "KZ01", "LAMPUNG": "LZ01", "MALANG": "MZ01", "MANADO": "1YZ1",
+    "BATAM": "2DZ1", "MADIUN": "2MZ1"
 };
 
 // --- Helper Functions ---
@@ -359,13 +330,14 @@ async function populateFormWithHistory(data) {
     document.querySelectorAll(".boq-table-body").forEach(tbody => tbody.innerHTML = "");
 
     const nomorUlok = data["Nomor Ulok"];
-    if (nomorUlok && nomorUlok.length === 12) {
-        document.getElementById('lokasi_cabang').value = nomorUlok.substring(0, 4);
-        const year = "20" + nomorUlok.substring(4, 6);
-        const month = nomorUlok.substring(6, 8);
-        document.getElementById('lokasi_tanggal').value = `${year}-${month}`;
-        document.getElementById('lokasi_manual').value = nomorUlok.substring(8, 12);
-        updateNomorUlok();
+    if (nomorUlok && (nomorUlok.length === 12 || nomorUlok.length === 14)) {
+        const ulokParts = nomorUlok.replace(/-/g, '').match(/^(.{4})(.{4})(.{4})$/);
+        if (ulokParts) {
+            document.getElementById('lokasi_cabang').value = ulokParts[1];
+            document.getElementById('lokasi_tanggal').value = ulokParts[2];
+            document.getElementById('lokasi_manual').value = ulokParts[3];
+            updateNomorUlok();
+        }
     }
 
     for (const key in data) {
@@ -375,11 +347,13 @@ async function populateFormWithHistory(data) {
         }
     }
     
-    await fetchAndPopulatePrices();
+    await lingkupPekerjaanSelect.dispatchEvent(new Event('change'));
+
+    const itemDetails = data['Item_Details_JSON'] ? JSON.parse(data['Item_Details_JSON']) : data;
 
     for (let i = 1; i <= 200; i++) {
-        if (data[`Jenis_Pekerjaan_${i}`]) {
-            const category = data[`Kategori_Pekerjaan_${i}`];
+        if (itemDetails[`Jenis_Pekerjaan_${i}`]) {
+            const category = itemDetails[`Kategori_Pekerjaan_${i}`];
             const scope = lingkupPekerjaanSelect.value;
             const targetTbody = document.querySelector(`.boq-table-body[data-category="${category}"][data-scope="${scope}"]`);
             
@@ -388,32 +362,43 @@ async function populateFormWithHistory(data) {
                 targetTbody.appendChild(newRow);
                 populateJenisPekerjaanOptionsForNewRow(newRow);
                 
-                newRow.querySelector('.jenis-pekerjaan').value = data[`Jenis_Pekerjaan_${i}`];
+                newRow.querySelector('.jenis-pekerjaan').value = itemDetails[`Jenis_Pekerjaan_${i}`];
                 
                 autoFillPrices(newRow.querySelector('.jenis-pekerjaan'));
 
-                newRow.querySelector('.volume').value = data[`Volume_Item_${i}`] || '0.00';
+                newRow.querySelector('.volume').value = itemDetails[`Volume_Item_${i}`] || '0.00';
                 
                 const materialInput = newRow.querySelector('.harga-material');
                 const upahInput = newRow.querySelector('.harga-upah');
                 
                 if (materialInput.readOnly === false) {
-                    materialInput.value = formatNumberWithSeparators(data[`Harga_Material_Item_${i}`]);
+                    materialInput.value = formatNumberWithSeparators(itemDetails[`Harga_Material_Item_${i}`]);
                 }
                 if (upahInput.readOnly === false) {
-                    upahInput.value = formatNumberWithSeparators(data[`Harga_Upah_Item_${i}`]);
+                    upahInput.value = formatNumberWithSeparators(itemDetails[`Harga_Upah_Item_${i}`]);
                 }
             }
         }
     }
     updateAllRowNumbersAndTotals();
-
     originalFormData = getCurrentFormData();
 }
 
 async function handleFormSubmit() {
     if (!form.checkValidity()) {
         form.reportValidity();
+        return;
+    }
+
+    const nomorUlokToCheck = document.getElementById('lokasi').value.replace(/-/g, '');
+    const isPending = pendingStoreCodes.some(code => code.replace(/-/g, '') === nomorUlokToCheck);
+    const isApproved = approvedStoreCodes.some(code => code.replace(/-/g, '') === nomorUlokToCheck);
+    const isRevising = rejectedSubmissionsList.some(item => item['Nomor Ulok'].replace(/-/g, '') === nomorUlokToCheck);
+
+    if ((isPending || isApproved) && !isRevising) {
+        messageDiv.textContent = `Error: Nomor Ulok ${nomorUlokToCheck} sudah ada yang berstatus 'pending' atau 'approved'. Tidak dapat mengirim duplikat.`;
+        messageDiv.style.backgroundColor = '#dc3545';
+        messageDiv.style.display = 'block';
         return;
     }
 
@@ -534,9 +519,7 @@ function updateNomorUlok() {
     const manualValue = document.getElementById('lokasi_manual').value;
 
     if (kodeCabang && tanggalInput.length === 4 && manualValue.length === 4) {
-        const YY = tanggalInput.substring(0,2);
-        const MM = tanggalInput.substring(2,4);
-        const nomorUlok = `${kodeCabang}${YY}${MM}${manualValue}`;
+        const nomorUlok = `${kodeCabang}${tanggalInput}${manualValue}`;
         document.getElementById('lokasi').value = nomorUlok;
     } else {
         document.getElementById('lokasi').value = '';
@@ -624,6 +607,12 @@ async function initializePage() {
         if (userEmail && userCabang) {
             const statusResponse = await fetch(`${PYTHON_API_BASE_URL}/api/check_status?email=${encodeURIComponent(userEmail)}&cabang=${encodeURIComponent(userCabang)}`);
             const statusResult = await statusResponse.json();
+            
+            if (statusResult.active_codes) {
+                pendingStoreCodes = statusResult.active_codes.pending || [];
+                approvedStoreCodes = statusResult.active_codes.approved || [];
+            }
+            
             if (statusResult.rejected_submissions && statusResult.rejected_submissions.length > 0) {
                 rejectedSubmissionsList = statusResult.rejected_submissions;
                 const rejectedCodes = rejectedSubmissionsList.map(item => item['Nomor Ulok']).join(', ');
@@ -650,7 +639,7 @@ async function initializePage() {
     document.getElementById('lokasi_manual')?.addEventListener('input', function(e) {
        const fullUlok = document.getElementById('lokasi').value;
        if (fullUlok.length === 12) {
-           const rejectedData = rejectedSubmissionsList.find(item => item['Nomor Ulok'] === fullUlok);
+           const rejectedData = rejectedSubmissionsList.find(item => item['Nomor Ulok'].replace(/-/g, '') === fullUlok);
            if (rejectedData) {
                populateFormWithHistory(rejectedData);
            }

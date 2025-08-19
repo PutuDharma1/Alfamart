@@ -1,6 +1,7 @@
 import os.path
 import io
 import gspread
+import json  # <-- BARIS INI DITAMBAHKAN UNTUK MEMPERBAIKI ERROR
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -96,7 +97,16 @@ class GoogleServiceProvider:
                 elif status == config.STATUS.APPROVED:
                     approved_codes.append(lokasi)
                 elif status in [config.STATUS.REJECTED_BY_COORDINATOR, config.STATUS.REJECTED_BY_MANAGER] and record_cabang == user_cabang:
+                    # Ambil juga detail item agar bisa mengisi ulang form
+                    item_details_json = record.get('Item_Details_JSON', '{}')
+                    if item_details_json:
+                        try:
+                            item_details = json.loads(item_details_json)
+                            record.update(item_details)
+                        except json.JSONDecodeError:
+                            print(f"Warning: Could not decode Item_Details_JSON for rejected submission {lokasi}")
                     rejected_submissions.append(record)
+
 
                 processed_locations.add(lokasi)
 
@@ -224,9 +234,46 @@ class GoogleServiceProvider:
             raise Exception(f"Spreadsheet with ID {spreadsheet_id} not found or permission denied.")
         except Exception as e:
             raise e
+    
+    def check_ulok_exists(self, nomor_ulok_to_check):
+        try:
+            normalized_ulok_to_check = str(nomor_ulok_to_check).replace("-", "")
+            all_records = self.data_entry_sheet.get_all_records()
+            for record in all_records:
+                status = record.get(config.COLUMN_NAMES.STATUS, "").strip()
+                active_statuses = [
+                    config.STATUS.WAITING_FOR_COORDINATOR, 
+                    config.STATUS.WAITING_FOR_MANAGER, 
+                    config.STATUS.APPROVED
+                ]
+                if status in active_statuses:
+                    existing_ulok = record.get(config.COLUMN_NAMES.LOKASI, "")
+                    normalized_existing_ulok = str(existing_ulok).replace("-", "")
+                    if normalized_existing_ulok == normalized_ulok_to_check:
+                        return True
+            return False
+        except Exception as e:
+            print(f"Error checking for existing ulok: {e}")
+            return False
+
+    def is_revision(self, nomor_ulok, email_pembuat):
+        try:
+            normalized_ulok = str(nomor_ulok).replace("-", "")
+            all_records = self.data_entry_sheet.get_all_records()
+            for record in reversed(all_records):
+                existing_ulok = str(record.get(config.COLUMN_NAMES.LOKASI, "")).replace("-", "")
+                status = record.get(config.COLUMN_NAMES.STATUS, "")
+                pembuat = record.get(config.COLUMN_NAMES.EMAIL_PEMBUAT, "")
+                if existing_ulok == normalized_ulok and pembuat == email_pembuat:
+                    if status in [config.STATUS.REJECTED_BY_COORDINATOR, config.STATUS.REJECTED_BY_MANAGER]:
+                        return True
+                    else:
+                        return False
+            return False
+        except Exception:
+            return False
 
     # --- FUNGSI BARU UNTUK SPK ---
-
     def get_approved_rab_by_cabang(self, user_cabang):
         """Mengambil semua data RAB dari sheet Form3 yang statusnya 'Disetujui'."""
         try:
@@ -259,7 +306,6 @@ class GoogleServiceProvider:
     def get_row_data_by_sheet(self, worksheet, row_index):
         """Mengambil data baris dari worksheet tertentu berdasarkan nomor barisnya."""
         try:
-            # get_all_records mengabaikan header, jadi row_index 1 di UI adalah index 0 di list
             records = worksheet.get_all_records()
             if row_index > 0 and row_index <= len(records):
                 return records[row_index - 1] 
@@ -271,7 +317,6 @@ class GoogleServiceProvider:
     def update_cell_by_sheet(self, worksheet, row_index, column_name, value):
         """Memperbarui sel di worksheet tertentu."""
         try:
-            # Menambahkan 1 ke row_index karena baris data di sheet dimulai dari 2 (setelah header)
             actual_row = row_index + 1
             headers = worksheet.row_values(1)
             col_index = headers.index(column_name) + 1

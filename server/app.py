@@ -18,7 +18,6 @@ from spk_generator import create_spk_pdf
 load_dotenv()
 app = Flask(__name__)
 
-# Konfigurasi CORS yang sudah diperbaiki
 CORS(app,
      origins=[
          "http://127.0.0.1:5500",
@@ -80,20 +79,29 @@ def submit_rab():
         return jsonify({"status": "error", "message": "Invalid JSON data"}), 400
     new_row_index = None
     try:
+        nomor_ulok_raw = data.get(config.COLUMN_NAMES.LOKASI, '')
+        if not nomor_ulok_raw:
+             return jsonify({"status": "error", "message": "Nomor Ulok tidak boleh kosong."}), 400
+        
+        is_revising = google_provider.is_revision(nomor_ulok_raw, data.get('Email_Pembuat'))
+
+        if not is_revising and google_provider.check_ulok_exists(nomor_ulok_raw):
+            return jsonify({
+                "status": "error", 
+                "message": f"Nomor Ulok {nomor_ulok_raw} sudah pernah diajukan dan sedang diproses atau sudah disetujui."
+            }), 409
+
         WIB = timezone(timedelta(hours=7))
         data[config.COLUMN_NAMES.STATUS] = config.STATUS.WAITING_FOR_COORDINATOR
         data[config.COLUMN_NAMES.TIMESTAMP] = datetime.datetime.now(WIB).isoformat()
 
-        # Mengarsipkan rincian item ke dalam format JSON
-        item_keys_to_archive = ('Jenis_Pekerjaan_', 'Kategori_Pekerjaan_', 'Satuan_Item_', 'Volume_Item_', 'Harga_Material_Item_', 'Harga_Upah_Item_')
+        item_keys_to_archive = ('Kategori_Pekerjaan_', 'Jenis_Pekerjaan_', 'Satuan_Item_', 'Volume_Item_', 'Harga_Material_Item_', 'Harga_Upah_Item_')
         item_details = {k: v for k, v in data.items() if k.startswith(item_keys_to_archive)}
         data['Item_Details_JSON'] = json.dumps(item_details)
 
-        # Membuat PDF awal
         pdf_bytes = create_pdf_from_data(google_provider, data, exclude_sbo=False)
         
         jenis_toko = data.get('Proyek', 'N/A')
-        nomor_ulok_raw = data.get(config.COLUMN_NAMES.LOKASI, 'N/A')
         
         nomor_ulok_formatted = nomor_ulok_raw
         if isinstance(nomor_ulok_raw, str) and len(nomor_ulok_raw) == 12:
@@ -104,7 +112,6 @@ def submit_rab():
         pdf_link = google_provider.upload_pdf_to_drive(pdf_bytes, pdf_filename)
         data[config.COLUMN_NAMES.LINK_PDF] = pdf_link
         
-        # BARIS PENTING YANG DIKEMBALIKAN
         data[config.COLUMN_NAMES.LOKASI] = nomor_ulok_formatted
         
         new_row_index = google_provider.append_to_sheet(data, config.DATA_ENTRY_SHEET_NAME)
