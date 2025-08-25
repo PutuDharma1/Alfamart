@@ -256,6 +256,9 @@ class GoogleServiceProvider:
         except Exception:
             return False
 
+    # =============================================================
+    # ▼▼▼ FUNGSI YANG DIPERBARUI DENGAN LOGIKA FALLBACK ▼▼▼
+    # =============================================================
     def get_approved_rab_by_cabang(self, user_cabang):
         try:
             approved_sheet = self.sheet.worksheet(config.APPROVED_DATA_SHEET_NAME)
@@ -278,26 +281,42 @@ class GoogleServiceProvider:
             filtered_rabs = [rec for rec in all_records if str(rec.get('Cabang', '')).strip().lower() in allowed_branches_lower]
 
             for rab in filtered_rabs:
+                # 1. Pastikan Grand Total dari sheet adalah angka (float)
+                try:
+                    grand_total_from_sheet = float(str(rab.get(config.COLUMN_NAMES.GRAND_TOTAL, 0)).replace(",", ""))
+                except (ValueError, TypeError):
+                    grand_total_from_sheet = 0
+                rab[config.COLUMN_NAMES.GRAND_TOTAL] = grand_total_from_sheet
+
+                # 2. Hitung total non-SBO dari rincian item JSON
                 total_non_sbo = 0
                 item_details_json = rab.get('Item_Details_JSON', '{}')
                 if item_details_json:
                     try:
                         item_details = json.loads(item_details_json)
-                        for i in range(1, 201): 
-                            kategori_key = f'Kategori_Pekerjaan_{i}'
-                            total_harga_key = f'Total_Harga_Item_{i}'
-                            if kategori_key in item_details and item_details[kategori_key] != 'PEKERJAAN SBO':
-                                total_non_sbo += float(item_details.get(total_harga_key, 0))
+                        has_item_data = any(key.startswith('Total_Harga_Item_') for key in item_details.keys())
+                        if has_item_data:
+                            for i in range(1, 201):
+                                if item_details.get(f'Kategori_Pekerjaan_{i}') != 'PEKERJAAN SBO':
+                                    total_non_sbo += float(item_details.get(f'Total_Harga_Item_{i}', 0))
                     except (json.JSONDecodeError, ValueError) as e:
-                        print(f"Could not process items for RAB {rab.get('Nomor Ulok')}: {e}")
-                
+                        print(f"Could not process item details for RAB {rab.get('Nomor Ulok')}: {e}")
+                        total_non_sbo = 0
+
                 final_total_non_sbo = total_non_sbo * 1.11
-                rab['Grand Total Non-SBO'] = final_total_non_sbo
+
+                # 3. Logika Fallback: Jika perhitungan non-SBO gagal (hasilnya 0),
+                #    gunakan Grand Total dari sheet sebagai gantinya.
+                if final_total_non_sbo == 0 and grand_total_from_sheet > 0:
+                    rab['Grand Total Non-SBO'] = grand_total_from_sheet
+                else:
+                    rab['Grand Total Non-SBO'] = final_total_non_sbo
 
             return filtered_rabs
         except Exception as e:
             print(f"Error getting approved RABs: {e}")
             raise e
+
 
     def get_row_data_by_sheet(self, worksheet, row_index):
         try:
