@@ -95,7 +95,15 @@ def submit_rab():
         data[config.COLUMN_NAMES.STATUS] = config.STATUS.WAITING_FOR_COORDINATOR
         data[config.COLUMN_NAMES.TIMESTAMP] = datetime.datetime.now(WIB).isoformat()
 
-        item_keys_to_archive = ('Kategori_Pekerjaan_', 'Jenis_Pekerjaan_', 'Satuan_Item_', 'Volume_Item_', 'Harga_Material_Item_', 'Harga_Upah_Item_')
+        # =============================================================
+        # ▼▼▼ PERBAIKAN UTAMA ADA DI SINI ▼▼▼
+        # =============================================================
+        # Menambahkan kunci total per item ke dalam JSON yang diarsipkan
+        item_keys_to_archive = (
+            'Kategori_Pekerjaan_', 'Jenis_Pekerjaan_', 'Satuan_Item_', 
+            'Volume_Item_', 'Harga_Material_Item_', 'Harga_Upah_Item_',
+            'Total_Material_Item_', 'Total_Upah_Item_', 'Total_Harga_Item_'
+        )
         item_details = {k: v for k, v in data.items() if k.startswith(item_keys_to_archive)}
         data['Item_Details_JSON'] = json.dumps(item_details)
 
@@ -228,26 +236,20 @@ def handle_rab_approval():
             row_data[config.COLUMN_NAMES.MANAGER_APPROVER] = approver
             row_data[config.COLUMN_NAMES.MANAGER_APPROVAL_TIME] = current_time
             
-            # --- BLOK KODE YANG DIUBAH ---
-            # 1. Buat PDF Lengkap
             pdf_lengkap_bytes = create_pdf_from_data(google_provider, row_data, exclude_sbo=False)
             pdf_lengkap_filename = f"DISETUJUI_RAB_LENGKAP_{jenis_toko}_{row_data.get('Nomor Ulok')}.pdf"
             
-            # 2. Buat PDF Non-SBO
             pdf_nonsbo_bytes = create_pdf_from_data(google_provider, row_data, exclude_sbo=True)
             pdf_nonsbo_filename = f"DISETUJUI_RAB_NON-SBO_{jenis_toko}_{row_data.get('Nomor Ulok')}.pdf"
 
-            # 3. Upload KEDUA PDF ke Drive dan dapatkan linknya
             link_pdf_lengkap = google_provider.upload_pdf_to_drive(pdf_lengkap_bytes, pdf_lengkap_filename)
-            link_pdf_nonsbo = google_provider.upload_pdf_to_drive(pdf_nonsbo_bytes, pdf_nonsbo_filename) # BARIS BARU
+            link_pdf_nonsbo = google_provider.upload_pdf_to_drive(pdf_nonsbo_bytes, pdf_nonsbo_filename)
 
-            # 4. Update KEDUA kolom link di sheet Form2
             google_provider.update_cell(row, config.COLUMN_NAMES.LINK_PDF, link_pdf_lengkap)
-            google_provider.update_cell(row, config.COLUMN_NAMES.LINK_PDF_NONSBO, link_pdf_nonsbo) # BARIS BARU
+            google_provider.update_cell(row, config.COLUMN_NAMES.LINK_PDF_NONSBO, link_pdf_nonsbo)
             
-            # 5. Tambahkan KEDUA link ke row_data agar disalin ke sheet Form3
             row_data[config.COLUMN_NAMES.LINK_PDF] = link_pdf_lengkap
-            row_data[config.COLUMN_NAMES.LINK_PDF_NONSBO] = link_pdf_nonsbo # BARIS BARU
+            row_data[config.COLUMN_NAMES.LINK_PDF_NONSBO] = link_pdf_nonsbo
             
             google_provider.copy_to_approved_sheet(row_data)
 
@@ -266,7 +268,7 @@ def handle_rab_approval():
                                    f"<li><b>{pdf_lengkap_filename}</b>: Berisi semua item pekerjaan.</li>"
                                    f"<li><b>{pdf_nonsbo_filename}</b>: Hanya berisi item pekerjaan di luar SBO.</li>"
                                    f"</ul>"
-                                   f"<p>Link Google Drive:</p>" # Info tambahan di email
+                                   f"<p>Link Google Drive:</p>"
                                    f"<ul>"
                                    f"<li><a href='{link_pdf_lengkap}'>Link PDF Lengkap</a></li>"
                                    f"<li><a href='{link_pdf_nonsbo}'>Link PDF Non-SBO</a></li>"
