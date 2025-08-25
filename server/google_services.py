@@ -1,7 +1,7 @@
 import os.path
 import io
 import gspread
-import json # Pastikan json diimpor
+import json
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -256,9 +256,6 @@ class GoogleServiceProvider:
         except Exception:
             return False
 
-    # =============================================================
-    # ▼▼▼ FUNGSI YANG DIPERBARUI DENGAN LOGIKA FALLBACK ▼▼▼
-    # =============================================================
     def get_approved_rab_by_cabang(self, user_cabang):
         try:
             approved_sheet = self.sheet.worksheet(config.APPROVED_DATA_SHEET_NAME)
@@ -281,14 +278,12 @@ class GoogleServiceProvider:
             filtered_rabs = [rec for rec in all_records if str(rec.get('Cabang', '')).strip().lower() in allowed_branches_lower]
 
             for rab in filtered_rabs:
-                # 1. Pastikan Grand Total dari sheet adalah angka (float)
                 try:
                     grand_total_from_sheet = float(str(rab.get(config.COLUMN_NAMES.GRAND_TOTAL, 0)).replace(",", ""))
                 except (ValueError, TypeError):
                     grand_total_from_sheet = 0
                 rab[config.COLUMN_NAMES.GRAND_TOTAL] = grand_total_from_sheet
 
-                # 2. Hitung total non-SBO dari rincian item JSON
                 total_non_sbo = 0
                 item_details_json = rab.get('Item_Details_JSON', '{}')
                 if item_details_json:
@@ -305,8 +300,6 @@ class GoogleServiceProvider:
 
                 final_total_non_sbo = total_non_sbo * 1.11
 
-                # 3. Logika Fallback: Jika perhitungan non-SBO gagal (hasilnya 0),
-                #    gunakan Grand Total dari sheet sebagai gantinya.
                 if final_total_non_sbo == 0 and grand_total_from_sheet > 0:
                     rab['Grand Total Non-SBO'] = grand_total_from_sheet
                 else:
@@ -317,11 +310,13 @@ class GoogleServiceProvider:
             print(f"Error getting approved RABs: {e}")
             raise e
 
-
     def get_row_data_by_sheet(self, worksheet, row_index):
         try:
             records = worksheet.get_all_records()
-            if row_index > 0 and row_index <= len(records): return records[row_index - 1] 
+            # Perbaikan krusial: ganti row_index - 1 menjadi row_index - 2
+            # karena get_all_records() memulai dari baris 2, sedangkan row_index adalah nomor baris absolut
+            if row_index > 1 and row_index <= len(records) + 1:
+                return records[row_index - 2] 
             return {}
         except Exception as e:
             print(f"Error getting row data from {worksheet.title}: {e}")
@@ -329,11 +324,10 @@ class GoogleServiceProvider:
 
     def update_cell_by_sheet(self, worksheet, row_index, column_name, value):
         try:
-            actual_row = row_index + 1
             headers = worksheet.row_values(1)
             col_index = headers.index(column_name) + 1
-            worksheet.update_cell(actual_row, col_index, value)
+            worksheet.update_cell(row_index, col_index, value)
             return True
         except Exception as e:
-            print(f"Error updating cell [{actual_row}, {column_name}] in {worksheet.title}: {e}")
+            print(f"Error updating cell [{row_index}, {column_name}] in {worksheet.title}: {e}")
             return False

@@ -20,6 +20,8 @@
         .signatures td { width: 50%; vertical-align: top; padding-top: 10px; }
         .signature-space { height: 70px; }
         .footer-line { border-top: 1px solid #000; padding-top: 5px; }
+        .approval-details { font-size: 11px; line-height: 1.4; color: #333; }
+        .approval-details .timestamp { font-size: 9px; color: #555; font-style: italic; }
     </style>
 </head>
 <body>
@@ -86,18 +88,25 @@
             </tr>
             <tr>
                 <td>( {{ initiator_name }} )</td>
-                <td>( {{ approver_name }} )</td>
+                <td>
+                    {% if approver_details_html %}
+                        {{ approver_details_html | safe }}
+                    {% else %}
+                        ( _________________ )
+                    {% endif %}
+                </td>
             </tr>
         </table>
     </div>
 
-    <div class="footer">
+        <div class="footer">
         <div class="footer-line">
             <strong>SUMBER ALFARIA TRIJAYA, Tbk.</strong><br>
             Alfa Tower<br>
             Jl. Jalur Sutera Barat Kav. 7-9 Alam Sutera Panunggan Timur, Pinang<br>
             Kota Tangerang 15143, Indonesia
         </div>
+    </div>
     </div>
 </body>
 </html>
