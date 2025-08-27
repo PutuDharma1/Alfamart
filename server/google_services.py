@@ -314,13 +314,19 @@ class GoogleServiceProvider:
         try:
             kontraktor_sheet_object = self.gspread_client.open_by_key(config.KONTRAKTOR_SHEET_ID)
             worksheet = kontraktor_sheet_object.worksheet(config.KONTRAKTOR_SHEET_NAME)
-            # Header is on the 2nd row
-            all_records = worksheet.get_all_records(head_row=2)
+            
+            # Get all values from sheet, skipping the first row (starts at index 0)
+            all_values = worksheet.get_all_values()
+            if len(all_values) < 2:
+                return [] # Return empty list if no data or only header
+
+            headers = all_values[1]  # Header is on the second row (index 1)
+            records = [dict(zip(headers, row)) for row in all_values[2:]] # Data starts from the third row
             
             allowed_branches_lower = user_cabang.strip().lower()
             
             kontraktor_list = []
-            for record in all_records:
+            for record in records:
                 record_cabang = str(record.get('NAMA CABANG', '')).strip().lower()
                 status = str(record.get('STATUS KONTRAKTOR', '')).strip().upper()
                 nama_kontraktor = str(record.get('NAMA KONTRAKTOR', '')).strip()
