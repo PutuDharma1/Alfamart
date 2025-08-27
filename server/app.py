@@ -416,6 +416,7 @@ def handle_spk_approval():
             
             row_data['Status'] = new_status
             row_data['Disetujui Oleh'] = approver
+            row_data['Waktu Persetujuan'] = current_time # Tambahkan ini agar ada di PDF
             final_pdf_bytes = create_spk_pdf(google_provider, row_data)
             final_pdf_filename = f"SPK_DISETUJUI_{row_data.get('Proyek')}_{row_data.get('Nomor Ulok')}.pdf"
             final_pdf_link = google_provider.upload_file_to_drive(final_pdf_bytes, final_pdf_filename, 'application/pdf', config.PDF_STORAGE_FOLDER_ID)
@@ -443,7 +444,40 @@ def handle_spk_approval():
         traceback.print_exc()
         return render_template('response_page.html', title='Error Internal', message=f'Terjadi kesalahan: {str(e)}', logo_url=logo_url), 500
 
-# --- ENDPOINT BARU UNTUK FORM PENGAWASAN ---
+# --- ENDPOINTS UNTUK FORM PENGAWASAN ---
+@app.route('/api/pengawasan/init_data', methods=['GET'])
+def get_pengawasan_init_data():
+    cabang = request.args.get('cabang')
+    if not cabang:
+        return jsonify({"status": "error", "message": "Parameter cabang dibutuhkan."}), 400
+    try:
+        pic_list, _, _ = google_provider.get_user_info_by_cabang(cabang)
+        kode_ulok_list = google_provider.get_kode_ulok_by_cabang(cabang)
+        
+        return jsonify({
+            "status": "success",
+            "picList": pic_list,
+            "kodeUlokList": kode_ulok_list
+        }), 200
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/pengawasan/get_rab_url', methods=['GET'])
+def get_rab_url():
+    kode_ulok = request.args.get('kode_ulok')
+    if not kode_ulok:
+        return jsonify({"status": "error", "message": "Parameter kode_ulok dibutuhkan."}), 400
+    try:
+        rab_url = google_provider.get_rab_url_by_ulok(kode_ulok)
+        if rab_url:
+            return jsonify({"status": "success", "rabUrl": rab_url}), 200
+        else:
+            return jsonify({"status": "error", "message": "URL RAB tidak ditemukan."}), 404
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 @app.route('/api/pengawasan/submit', methods=['POST'])
 def submit_pengawasan():
     data = request.get_json()
@@ -465,7 +499,7 @@ def submit_pengawasan():
         }
 
         if form_type == 'input_pic':
-            spk_base64 = data.get('spk_base64', '').split(',')[-1]
+            spk_base64 = data.get('spk_base64', '')
             spk_bytes = base64.b64decode(spk_base64)
             date_string = timestamp.strftime('%Y%m%d_%H%M%S')
             spk_filename = f"SPK_{data.get('kode_ulok')}_{date_string}.pdf"
