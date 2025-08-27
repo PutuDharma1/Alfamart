@@ -568,8 +568,8 @@ def submit_pengawasan():
         if form_type == 'input_pic' and 'tanggal_mengawas' in data:
             event_date_obj = datetime.datetime.strptime(data['tanggal_mengawas'], '%d %B %Y')
             google_provider.create_calendar_event({
-                'title': f"Pengawasan Proyek - {data.get('kode_ulok')} ({data.get('cabang')})",
-                'description': f"Pengawasan H+2 untuk toko {data.get('kode_ulok')}",
+                'title': f"[REMINDER] Pengawasan H+2: {data.get('kode_ulok')}",
+                'description': f"Ini adalah pengingat untuk melakukan pengawasan H+2 untuk toko {data.get('kode_ulok')}. Link untuk mengisi laporan akan dikirimkan melalui email terpisah.",
                 'date': event_date_obj.strftime('%Y-%m-%d'),
                 'guests': email_details['recipients']
             })
