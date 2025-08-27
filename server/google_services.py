@@ -21,7 +21,8 @@ class GoogleServiceProvider:
         self.scopes = [
             'https://www.googleapis.com/auth/spreadsheets',
             'https://www.googleapis.com/auth/gmail.send',
-            'https://www.googleapis.com/auth/drive.file'
+            'https://www.googleapis.com/auth/drive.file',
+            'https://www.googleapis.com/auth/calendar' # Menambahkan scope untuk Kalender
         ]
         self.creds = None
         
@@ -47,6 +48,134 @@ class GoogleServiceProvider:
         self.data_entry_sheet = self.sheet.worksheet(config.DATA_ENTRY_SHEET_NAME)
         self.gmail_service = build('gmail', 'v1', credentials=self.creds)
         self.drive_service = build('drive', 'v3', credentials=self.creds)
+        self.calendar_service = build('calendar', 'v3', credentials=self.creds)
+
+    def append_to_dynamic_sheet(self, spreadsheet_id, sheet_name, data_dict):
+        """Menyimpan data ke sheet manapun secara dinamis."""
+        try:
+            spreadsheet = self.gspread_client.open_by_key(spreadsheet_id)
+            worksheet = spreadsheet.worksheet(sheet_name)
+            
+            headers = worksheet.row_values(1)
+            if not headers: 
+                headers = list(data_dict.keys())
+                worksheet.append_row(headers)
+
+            row_data = [data_dict.get(header, "") for header in headers]
+            worksheet.append_row(row_data)
+            return True
+        except Exception as e:
+            print(f"Error saat menyimpan ke sheet '{sheet_name}': {e}")
+            raise
+
+    def get_rab_url_by_ulok(self, kode_ulok):
+        """Mencari URL PDF RAB di sheet Form3 berdasarkan Nomor Ulok."""
+        try:
+            worksheet = self.sheet.worksheet(config.APPROVED_DATA_SHEET_NAME)
+            all_records = worksheet.get_all_records()
+            for record in reversed(all_records):
+                if str(record.get('Nomor Ulok', '')).strip().upper() == kode_ulok.strip().upper():
+                    # Prioritaskan Link PDF Non-SBO jika ada, jika tidak, gunakan Link PDF biasa
+                    return record.get('Link PDF Non-SBO') or record.get('Link PDF')
+            return None
+        except Exception as e:
+            print(f"Error saat mencari RAB URL: {e}")
+            return None
+
+    def get_user_info_by_cabang(self, cabang):
+        """Mendapatkan daftar PIC, Koordinator, dan Manager untuk cabang tertentu."""
+        pic_list = []
+        koordinator_info = {}
+        manager_info = {}
+        try:
+            cabang_sheet = self.sheet.worksheet(config.CABANG_SHEET_NAME)
+            records = cabang_sheet.get_all_records()
+            for record in records:
+                if str(record.get('CABANG', '')).strip().lower() == cabang.strip().lower():
+                    jabatan = str(record.get('JABATAN', '')).strip().upper()
+                    email = str(record.get('EMAIL_SAT', '')).strip()
+                    nama = str(record.get('NAMA LENGKAP', '')).strip()
+                    
+                    if "SUPPORT" in jabatan:
+                        pic_list.append({'email': email, 'nama': nama})
+                    elif "COORDINATOR" in jabatan:
+                        koordinator_info = {'email': email, 'nama': nama}
+                    elif "MANAGER" in jabatan and "BRANCH MANAGER" not in jabatan:
+                         manager_info = {'email': email, 'nama': nama}
+        except Exception as e:
+            print(f"Error saat mengambil info user by cabang: {e}")
+        return pic_list, koordinator_info, manager_info
+
+    def get_kode_ulok_by_cabang(self, cabang):
+        """Mengambil daftar Kode Ulok yang sudah disetujui untuk dropdown."""
+        ulok_list = []
+        try:
+            worksheet = self.sheet.worksheet(config.APPROVED_DATA_SHEET_NAME)
+            records = worksheet.get_all_records()
+            for record in records:
+                if str(record.get('Cabang', '')).strip().lower() == cabang.strip().lower():
+                    ulok = str(record.get('Nomor Ulok', '')).strip()
+                    if ulok:
+                        ulok_list.append(ulok)
+            return sorted(list(set(ulok_list)))
+        except Exception as e:
+            print(f"Error saat mengambil kode ulok by cabang: {e}")
+            return []
+
+    def upload_file_to_drive(self, file_bytes, filename, mimetype, folder_id):
+        """Mengunggah file ke folder Drive yang spesifik."""
+        file_metadata = {'name': filename, 'parents': [folder_id]}
+        media = MediaIoBaseUpload(io.BytesIO(file_bytes), mimetype=mimetype)
+        file = self.drive_service.files().create(
+            body=file_metadata, media_body=media, fields='id, webViewLink'
+        ).execute()
+        return file.get('webViewLink')
+
+    def create_calendar_event(self, event_data):
+        """Membuat event di Google Calendar."""
+        try:
+            event = {
+                'summary': event_data['title'],
+                'description': event_data['description'],
+                'start': {'date': event_data['date']},
+                'end': {'date': event_data['date']},
+                'attendees': [{'email': email} for email in event_data['guests']],
+            }
+            self.calendar_service.events().insert(
+                calendarId='primary', body=event, sendUpdates='all'
+            ).execute()
+            print(f"✅ Event kalender berhasil dibuat untuk: {event_data['title']}")
+        except Exception as e:
+            print(f"❌ Gagal membuat event di Google Calendar: {e}")
+
+    def send_email(self, to, subject, html_body, attachments=None, cc=None):
+        try:
+            message = MIMEMultipart()
+            to_list = to if isinstance(to, list) else [to]
+            cc_list = cc if isinstance(cc, list) else ([cc] if cc else [])
+            message['to'] = ', '.join(filter(None, to_list))
+            message['subject'] = subject
+            if cc_list: message['cc'] = ', '.join(filter(None, cc_list))
+            message.attach(MIMEText(html_body, 'html'))
+
+            if attachments:
+                for attachment_tuple in attachments:
+                    filename, file_bytes, mimetype = attachment_tuple
+                    main_type, sub_type = mimetype.split('/')
+                    part = MIMEBase(main_type, sub_type)
+                    part.set_payload(file_bytes)
+                    encoders.encode_base64(part)
+                    part.add_header('Content-Disposition', f'attachment; filename="{filename}"')
+                    message.attach(part)
+
+            raw_message = base64.urlsafe_b64encode(message.as_bytes()).decode()
+            self.gmail_service.users().messages().send(
+                userId='me', body={'raw': raw_message}
+            ).execute()
+            print(f"Email sent successfully to {message['to']}")
+        except Exception as e:
+            print(f"An error occurred while sending email: {e}")
+            raise
 
     def validate_user(self, email, cabang):
         try:
@@ -58,15 +187,7 @@ class GoogleServiceProvider:
                     return True
         except gspread.exceptions.WorksheetNotFound:
             print(f"Error: Worksheet '{config.CABANG_SHEET_NAME}' not found.")
-        except Exception as e:
-            print(f"An error occurred during user validation: {e}")
         return False
-
-    def upload_pdf_to_drive(self, pdf_bytes, filename):
-        file_metadata = {'name': filename, 'parents': [config.PDF_STORAGE_FOLDER_ID]}
-        media = MediaIoBaseUpload(io.BytesIO(pdf_bytes), mimetype='application/pdf')
-        file = self.drive_service.files().create(body=file_metadata, media_body=media, fields='id, webViewLink').execute()
-        return file.get('webViewLink')
 
     def check_user_submissions(self, email, cabang):
         try:
@@ -77,17 +198,13 @@ class GoogleServiceProvider:
             headers = all_values[0]
             records = [dict(zip(headers, row)) for row in all_values[1:]]
             
-            pending_codes = []
-            approved_codes = []
-            rejected_submissions = []
-            
+            pending_codes, approved_codes, rejected_submissions = [], [], []
             processed_locations = set()
             user_cabang = str(cabang).strip().lower()
 
             for record in reversed(records):
                 lokasi = str(record.get(config.COLUMN_NAMES.LOKASI, "")).strip().upper()
-                if not lokasi or lokasi in processed_locations:
-                    continue
+                if not lokasi or lokasi in processed_locations: continue
                 
                 status = str(record.get(config.COLUMN_NAMES.STATUS, "")).strip()
                 record_cabang = str(record.get(config.COLUMN_NAMES.CABANG, "")).strip().lower()
@@ -103,15 +220,11 @@ class GoogleServiceProvider:
                             item_details = json.loads(item_details_json)
                             record.update(item_details)
                         except json.JSONDecodeError:
-                            print(f"Warning: Could not decode Item_Details_JSON for rejected submission {lokasi}")
+                            print(f"Warning: Could not decode Item_Details_JSON for {lokasi}")
                     rejected_submissions.append(record)
-
                 processed_locations.add(lokasi)
 
-            return {
-                "active_codes": { "pending": pending_codes, "approved": approved_codes },
-                "rejected_submissions": rejected_submissions
-            }
+            return {"active_codes": {"pending": pending_codes, "approved": approved_codes}, "rejected_submissions": rejected_submissions}
         except Exception as e:
             raise e
 
@@ -127,7 +240,7 @@ class GoogleServiceProvider:
 
     def get_row_data(self, row_index):
         records = self.data_entry_sheet.get_all_records()
-        if row_index > 1 and row_index <= len(records) + 1:
+        if 1 < row_index <= len(records) + 1:
             return records[row_index - 2]
         return {}
 
@@ -144,11 +257,8 @@ class GoogleServiceProvider:
         try:
             cabang_sheet = self.sheet.worksheet(config.CABANG_SHEET_NAME)
             for record in cabang_sheet.get_all_records():
-                sheet_branch = str(record.get('CABANG', '')).strip().lower()
-                input_branch = str(branch_name).strip().lower()
-                sheet_jabatan = str(record.get('JABATAN', '')).strip().upper()
-                input_jabatan = str(jabatan).strip().upper()
-                if sheet_branch == input_branch and sheet_jabatan == input_jabatan:
+                if str(record.get('CABANG', '')).strip().lower() == branch_name.strip().lower() and \
+                   str(record.get('JABATAN', '')).strip().upper() == jabatan.strip().upper():
                     return record.get('EMAIL_SAT')
         except gspread.exceptions.WorksheetNotFound:
             print(f"Error: Worksheet '{config.CABANG_SHEET_NAME}' not found.")
@@ -159,12 +269,8 @@ class GoogleServiceProvider:
         try:
             cabang_sheet = self.sheet.worksheet(config.CABANG_SHEET_NAME)
             for record in cabang_sheet.get_all_records():
-                sheet_branch = str(record.get('CABANG', '')).strip().lower()
-                input_branch = str(branch_name).strip().lower()
-                sheet_jabatan = str(record.get('JABATAN', '')).strip().upper()
-                input_jabatan = str(jabatan).strip().upper()
-
-                if sheet_branch == input_branch and sheet_jabatan == input_jabatan:
+                if str(record.get('CABANG', '')).strip().lower() == branch_name.strip().lower() and \
+                   str(record.get('JABATAN', '')).strip().upper() == jabatan.strip().upper():
                     email = record.get('EMAIL_SAT')
                     if email:
                         emails.append(email)
@@ -172,29 +278,6 @@ class GoogleServiceProvider:
             print(f"Error: Worksheet '{config.CABANG_SHEET_NAME}' not found.")
         return emails
 
-    def send_email(self, to, subject, html_body, attachments=None, cc=None):
-        try:
-            message = MIMEMultipart()
-            message['to'] = to
-            message['subject'] = subject
-            if cc: message['cc'] = ', '.join(cc)
-            message.attach(MIMEText(html_body, 'html'))
-            if attachments:
-                for filename, file_bytes in attachments:
-                    part = MIMEBase('application', 'octet-stream')
-                    part.set_payload(file_bytes)
-                    encoders.encode_base64(part)
-                    part.add_header('Content-Disposition', f'attachment; filename="{filename}"')
-                    message.attach(part)
-            raw_message = base64.urlsafe_b64encode(message.as_bytes()).decode()
-            create_message = {'raw': raw_message}
-            send_message = self.gmail_service.users().messages().send(userId='me', body=create_message).execute()
-            print(f"Email sent successfully to {to}. Message ID: {send_message['id']}")
-            return send_message
-        except Exception as e:
-            print(f"An error occurred while sending email: {e}")
-            raise e
-    
     def copy_to_approved_sheet(self, row_data):
         try:
             approved_sheet = self.sheet.worksheet(config.APPROVED_DATA_SHEET_NAME)
@@ -220,22 +303,18 @@ class GoogleServiceProvider:
             spreadsheet = self.gspread_client.open_by_key(spreadsheet_id)
             worksheet = spreadsheet.get_worksheet(0)
             return worksheet.get_all_values()
-        except gspread.exceptions.SpreadsheetNotFound:
-            raise Exception(f"Spreadsheet with ID {spreadsheet_id} not found or permission denied.")
         except Exception as e:
             raise e
     
     def check_ulok_exists(self, nomor_ulok_to_check):
         try:
-            normalized_ulok_to_check = str(nomor_ulok_to_check).replace("-", "")
+            normalized_ulok = str(nomor_ulok_to_check).replace("-", "")
             all_records = self.data_entry_sheet.get_all_records()
             for record in all_records:
                 status = record.get(config.COLUMN_NAMES.STATUS, "").strip()
-                active_statuses = [config.STATUS.WAITING_FOR_COORDINATOR, config.STATUS.WAITING_FOR_MANAGER, config.STATUS.APPROVED]
-                if status in active_statuses:
-                    existing_ulok = record.get(config.COLUMN_NAMES.LOKASI, "")
-                    normalized_existing_ulok = str(existing_ulok).replace("-", "")
-                    if normalized_existing_ulok == normalized_ulok_to_check: return True
+                if status in [config.STATUS.WAITING_FOR_COORDINATOR, config.STATUS.WAITING_FOR_MANAGER, config.STATUS.APPROVED]:
+                    existing_ulok = str(record.get(config.COLUMN_NAMES.LOKASI, "")).replace("-", "")
+                    if existing_ulok == normalized_ulok: return True
             return False
         except Exception as e:
             print(f"Error checking for existing ulok: {e}")
@@ -246,12 +325,9 @@ class GoogleServiceProvider:
             normalized_ulok = str(nomor_ulok).replace("-", "")
             all_records = self.data_entry_sheet.get_all_records()
             for record in reversed(all_records):
-                existing_ulok = str(record.get(config.COLUMN_NAMES.LOKASI, "")).replace("-", "")
-                status = record.get(config.COLUMN_NAMES.STATUS, "")
-                pembuat = record.get(config.COLUMN_NAMES.EMAIL_PEMBUAT, "")
-                if existing_ulok == normalized_ulok and pembuat == email_pembuat:
-                    if status in [config.STATUS.REJECTED_BY_COORDINATOR, config.STATUS.REJECTED_BY_MANAGER]: return True
-                    else: return False
+                if str(record.get(config.COLUMN_NAMES.LOKASI, "")).replace("-", "") == normalized_ulok and \
+                   record.get(config.COLUMN_NAMES.EMAIL_PEMBUAT, "") == email_pembuat:
+                    return record.get(config.COLUMN_NAMES.STATUS, "") in [config.STATUS.REJECTED_BY_COORDINATOR, config.STATUS.REJECTED_BY_MANAGER]
             return False
         except Exception:
             return False
@@ -272,10 +348,8 @@ class GoogleServiceProvider:
                 "SORONG": ["SIDOARJO", "SIDOARJO BPN_SMD", "MANOKWARI", "NTT", "SORONG"]
             }
             
-            allowed_branches = branch_groups.get(user_cabang.upper(), [user_cabang.upper()])
-            allowed_branches_lower = [b.lower() for b in allowed_branches]
-
-            filtered_rabs = [rec for rec in all_records if str(rec.get('Cabang', '')).strip().lower() in allowed_branches_lower]
+            allowed_branches = [b.lower() for b in branch_groups.get(user_cabang.upper(), [user_cabang.upper()])]
+            filtered_rabs = [rec for rec in all_records if str(rec.get('Cabang', '')).strip().lower() in allowed_branches]
 
             for rab in filtered_rabs:
                 try:
@@ -289,8 +363,7 @@ class GoogleServiceProvider:
                 if item_details_json:
                     try:
                         item_details = json.loads(item_details_json)
-                        has_item_data = any(key.startswith('Total_Harga_Item_') for key in item_details.keys())
-                        if has_item_data:
+                        if any(key.startswith('Total_Harga_Item_') for key in item_details.keys()):
                             for i in range(1, 201):
                                 if item_details.get(f'Kategori_Pekerjaan_{i}') != 'PEKERJAAN SBO':
                                     total_non_sbo += float(item_details.get(f'Total_Harga_Item_{i}', 0))
@@ -299,12 +372,7 @@ class GoogleServiceProvider:
                         total_non_sbo = 0
 
                 final_total_non_sbo = total_non_sbo * 1.11
-
-                if final_total_non_sbo == 0 and grand_total_from_sheet > 0:
-                    rab['Grand Total Non-SBO'] = grand_total_from_sheet
-                else:
-                    rab['Grand Total Non-SBO'] = final_total_non_sbo
-
+                rab['Grand Total Non-SBO'] = final_total_non_sbo if final_total_non_sbo > 0 else grand_total_from_sheet
             return filtered_rabs
         except Exception as e:
             print(f"Error getting approved RABs: {e}")
@@ -315,38 +383,29 @@ class GoogleServiceProvider:
             kontraktor_sheet_object = self.gspread_client.open_by_key(config.KONTRAKTOR_SHEET_ID)
             worksheet = kontraktor_sheet_object.worksheet(config.KONTRAKTOR_SHEET_NAME)
             
-            # Get all values from sheet, skipping the first row (starts at index 0)
             all_values = worksheet.get_all_values()
-            if len(all_values) < 2:
-                return [] # Return empty list if no data or only header
+            if len(all_values) < 2: return []
 
-            headers = all_values[1]  # Header is on the second row (index 1)
-            records = [dict(zip(headers, row)) for row in all_values[2:]] # Data starts from the third row
+            headers = all_values[1]
+            records = [dict(zip(headers, row)) for row in all_values[2:]]
             
             allowed_branches_lower = user_cabang.strip().lower()
-            
             kontraktor_list = []
             for record in records:
-                record_cabang = str(record.get('NAMA CABANG', '')).strip().lower()
-                status = str(record.get('STATUS KONTRAKTOR', '')).strip().upper()
-                nama_kontraktor = str(record.get('NAMA KONTRAKTOR', '')).strip()
-
-                if record_cabang == allowed_branches_lower and status == 'AKTIF' and nama_kontraktor:
-                    if nama_kontraktor not in kontraktor_list:
+                if str(record.get('NAMA CABANG', '')).strip().lower() == allowed_branches_lower and \
+                   str(record.get('STATUS KONTRAKTOR', '')).strip().upper() == 'AKTIF':
+                    nama_kontraktor = str(record.get('NAMA KONTRAKTOR', '')).strip()
+                    if nama_kontraktor and nama_kontraktor not in kontraktor_list:
                         kontraktor_list.append(nama_kontraktor)
-            
-            return sorted(kontraktor_list) # sort alphabetically
+            return sorted(kontraktor_list)
         except Exception as e:
             print(f"Error getting contractors: {e}")
             raise e
 
     def get_row_data_by_sheet(self, worksheet, row_index):
         try:
-            # Perbaikan krusial: gspread get_all_records() mengembalikan list yang
-            # dimulai dari indeks 0 untuk baris ke-2 di sheet.
-            # Jadi, kita perlu mengurangi 2 dari nomor baris absolut.
             records = worksheet.get_all_records()
-            if row_index > 1 and row_index <= len(records) + 1:
+            if 1 < row_index <= len(records) + 1:
                 return records[row_index - 2] 
             return {}
         except Exception as e:
@@ -355,7 +414,6 @@ class GoogleServiceProvider:
 
     def update_cell_by_sheet(self, worksheet, row_index, column_name, value):
         try:
-            # Fungsi update_cell menggunakan nomor baris absolut
             headers = worksheet.row_values(1)
             col_index = headers.index(column_name) + 1
             worksheet.update_cell(row_index, col_index, value)

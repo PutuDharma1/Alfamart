@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: sans-serif; }
+        .container { padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
+        .header { font-size: 1.2em; font-weight: bold; margin-bottom: 15px; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <p class="header">Laporan Pengawasan Proyek Telah Disubmit</p>
+        <p>
+            Sebuah laporan pengawasan baru telah disubmit oleh <strong>{{ form_data.nama_pic }}</strong> 
+            untuk toko dengan kode <strong>{{ form_data.kode_toko }}</strong>.
+        </p>
+        <p>Detail laporan terlampir di bawah ini:</p>
+        
+        <table>
+            {% for key, value in form_data.items() %}
+            <tr>
+                <th>{{ key | replace('_', ' ') | title }}</th>
+                <td>{{ value }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+        
+        <br>
+        <p>Terima kasih.</p>
+        <p><em>--- Email ini dibuat secara otomatis.---</em></p>
+    </div>
+</body>
+</html>

@@ -5,15 +5,24 @@ load_dotenv()
 
 # --- Google & Spreadsheet Configuration ---
 SPREADSHEET_ID = os.getenv("SPREADSHEET_ID", "1LA1TlhgltT2bqSN3H-LYasq9PtInVlqq98VPru8txoo")
-PDF_STORAGE_FOLDER_ID = "1lvPxOwNILXHmagVfPGkVlNEtfv3U4Emj" # Ganti dengan ID Folder Google Drive Anda
-KONTRAKTOR_SHEET_ID = "1s95mAc0yXEyDwUDyyOzsDdIqIPEETZkA62_jQQBWXyw" 
+PDF_STORAGE_FOLDER_ID = "1lvPxOwNILXHmagVfPGkVlNEtfv3U4Emj"
+KONTRAKTOR_SHEET_ID = "1s95mAc0yXEyDwUDyyOzsDdIqIPEETZkA62_jQQBWXyw"
+# ID Spreadsheet untuk semua data Pengawasan
+PENGAWASAN_SPREADSHEET_ID = "1zy6BBKJwwmSSvFrMZSZG39pf0YgmjXockZNf10_OFLo"
+# ID Folder Google Drive untuk upload file SPK dari form pengawasan
+INPUT_PIC_DRIVE_FOLDER_ID = "1gkGZhOJYVo7zv7sZnUIOYAafL-NbNHf8"
 
 # Nama-nama sheet
 DATA_ENTRY_SHEET_NAME = "Form2"
 APPROVED_DATA_SHEET_NAME = "Form3"
 CABANG_SHEET_NAME = "Cabang"
 SPK_DATA_SHEET_NAME = "SPK_Data"
-KONTRAKTOR_SHEET_NAME = "Monitoring Kontraktor" 
+KONTRAKTOR_SHEET_NAME = "Monitoring Kontraktor"
+
+# Nama sheet untuk Pengawasan
+INPUT_PIC_SHEET_NAME = "InputPIC"
+PENUGASAN_SHEET_NAME = "Penugasan"
+# Nama sheet dinamis akan ditangani di kode, contoh: "DataH2", "SerahTerima"
 
 # --- Nama Kolom ---
 class COLUMN_NAMES:
@@ -32,7 +41,6 @@ class COLUMN_NAMES:
     LINK_PDF_NONSBO = "Link PDF Non-SBO"
     GRAND_TOTAL = "Grand Total"
     ALAMAT = "Alamat"
-
 
 # --- Jabatan & Status ---
 class JABATAN:
