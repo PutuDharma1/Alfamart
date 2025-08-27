@@ -181,6 +181,11 @@
       .success-message.show {
         display: block;
       }
+      
+      .input-readonly {
+          background-color: #f4f4f4;
+          cursor: not-allowed;
+      }
 
       /* Responsive design */
       @media (max-width: 600px) {
@@ -209,9 +214,11 @@
       <div class="success-message" id="success-message"></div>
 
       <form id="pic-form" class="form-container">
+        <input type="hidden" name="form_type" value="input_pic">
+
         <label for="cabang">Cabang:</label>
-        <select id="cabang" name="cabang" required>
-          <option value="">-- Pilih Cabang --</option>
+        <select id="cabang" name="cabang" required disabled>
+          <option value="">-- Cabang terisi otomatis --</option>
         </select>
 
         <label for="kode_ulok">Kode Ulok:</label>
@@ -250,7 +257,7 @@
         <input
           type="file"
           id="upload_spk"
-          name="upload_spk"
+          name="spk_file" 
           accept=".pdf"
           required
         />
@@ -267,8 +274,7 @@
           readonly
           class="input-readonly"
         />
-        <div class="rab-status" id="rab-status" style="display: none"></div>
-
+        
         <label for="pic_building_support">PIC Building Support:</label>
         <select name="pic_building_support" id="pic_building_support" required>
           <option value="">-- Pilih PIC Building Support --</option>
@@ -291,6 +297,6 @@
       </div>
     </div>
 
-    <script src="pengawasan_script.js"></script>
+    <script src="script.js"></script>
   </body>
 </html>
