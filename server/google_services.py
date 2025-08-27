@@ -310,11 +310,36 @@ class GoogleServiceProvider:
             print(f"Error getting approved RABs: {e}")
             raise e
 
+    def get_kontraktor_by_cabang(self, user_cabang):
+        try:
+            kontraktor_sheet_object = self.gspread_client.open_by_key(config.KONTRAKTOR_SHEET_ID)
+            worksheet = kontraktor_sheet_object.worksheet(config.KONTRAKTOR_SHEET_NAME)
+            # Header is on the 2nd row
+            all_records = worksheet.get_all_records(head_row=2)
+            
+            allowed_branches_lower = user_cabang.strip().lower()
+            
+            kontraktor_list = []
+            for record in all_records:
+                record_cabang = str(record.get('NAMA CABANG', '')).strip().lower()
+                status = str(record.get('STATUS KONTRAKTOR', '')).strip().upper()
+                nama_kontraktor = str(record.get('NAMA KONTRAKTOR', '')).strip()
+
+                if record_cabang == allowed_branches_lower and status == 'AKTIF' and nama_kontraktor:
+                    if nama_kontraktor not in kontraktor_list:
+                        kontraktor_list.append(nama_kontraktor)
+            
+            return sorted(kontraktor_list) # sort alphabetically
+        except Exception as e:
+            print(f"Error getting contractors: {e}")
+            raise e
+
     def get_row_data_by_sheet(self, worksheet, row_index):
         try:
+            # Perbaikan krusial: gspread get_all_records() mengembalikan list yang
+            # dimulai dari indeks 0 untuk baris ke-2 di sheet.
+            # Jadi, kita perlu mengurangi 2 dari nomor baris absolut.
             records = worksheet.get_all_records()
-            # Perbaikan krusial: ganti row_index - 1 menjadi row_index - 2
-            # karena get_all_records() memulai dari baris 2, sedangkan row_index adalah nomor baris absolut
             if row_index > 1 and row_index <= len(records) + 1:
                 return records[row_index - 2] 
             return {}
@@ -324,6 +349,7 @@ class GoogleServiceProvider:
 
     def update_cell_by_sheet(self, worksheet, row_index, column_name, value):
         try:
+            # Fungsi update_cell menggunakan nomor baris absolut
             headers = worksheet.row_values(1)
             col_index = headers.index(column_name) + 1
             worksheet.update_cell(row_index, col_index, value)

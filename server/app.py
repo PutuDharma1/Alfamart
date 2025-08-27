@@ -306,6 +306,18 @@ def get_approved_rab():
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
+@app.route('/api/get_kontraktor', methods=['GET'])
+def get_kontraktor():
+    user_cabang = request.args.get('cabang')
+    if not user_cabang:
+        return jsonify({"error": "Cabang parameter is missing"}), 400
+    try:
+        kontraktor_list = google_provider.get_kontraktor_by_cabang(user_cabang)
+        return jsonify(kontraktor_list), 200
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/api/submit_spk', methods=['POST'])
 def submit_spk():
     data = request.get_json()

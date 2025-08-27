@@ -6,12 +6,14 @@ load_dotenv()
 # --- Google & Spreadsheet Configuration ---
 SPREADSHEET_ID = os.getenv("SPREADSHEET_ID", "1LA1TlhgltT2bqSN3H-LYasq9PtInVlqq98VPru8txoo")
 PDF_STORAGE_FOLDER_ID = "1lvPxOwNILXHmagVfPGkVlNEtfv3U4Emj" # Ganti dengan ID Folder Google Drive Anda
+KONTRAKTOR_SHEET_ID = "1s95mAc0yXEyDwUDyyOzsDdIqIPEETZkA62_jQQBWXyw" 
 
 # Nama-nama sheet
 DATA_ENTRY_SHEET_NAME = "Form2"
 APPROVED_DATA_SHEET_NAME = "Form3"
 CABANG_SHEET_NAME = "Cabang"
-SPK_DATA_SHEET_NAME = "SPK_Data" # BARU
+SPK_DATA_SHEET_NAME = "SPK_Data"
+KONTRAKTOR_SHEET_NAME = "Monitoring Kontraktor" 
 
 # --- Nama Kolom ---
 class COLUMN_NAMES:
@@ -27,7 +29,7 @@ class COLUMN_NAMES:
     MANAGER_APPROVER = "Pemberi Persetujuan Manager"
     MANAGER_APPROVAL_TIME = "Waktu Persetujuan Manager"
     LINK_PDF = "Link PDF"
-    LINK_PDF_NONSBO = "Link PDF Non-SBO"  # <-- TAMBAHKAN BARIS INI
+    LINK_PDF_NONSBO = "Link PDF Non-SBO"
     GRAND_TOTAL = "Grand Total"
     ALAMAT = "Alamat"
 
@@ -37,7 +39,7 @@ class JABATAN:
     SUPPORT = "BRANCH BUILDING SUPPORT"
     KOORDINATOR = "BRANCH BUILDING COORDINATOR"
     MANAGER = "BRANCH BUILDING & MAINTENANCE MANAGER"
-    BRANCH_MANAGER = "BRANCH MANAGER" # BARU
+    BRANCH_MANAGER = "BRANCH MANAGER"
 
 class STATUS:
     # Status RAB
@@ -46,7 +48,7 @@ class STATUS:
     WAITING_FOR_MANAGER = "Menunggu Persetujuan Manajer"
     REJECTED_BY_MANAGER = "Ditolak oleh Manajer"
     APPROVED = "Disetujui"
-    # Status SPK (BARU)
+    # Status SPK
     WAITING_FOR_BM_APPROVAL = "Menunggu Persetujuan Branch Manager"
     SPK_APPROVED = "SPK Disetujui"
     SPK_REJECTED = "SPK Ditolak"

@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const ulokSelect = document.getElementById('nomor_ulok');
     const cabangSelect = document.getElementById('cabang');
     const rabDetailsDiv = document.getElementById('rab-details');
+    const kontraktorSelect = document.getElementById('nama_kontraktor');
     
     const PYTHON_API_BASE_URL = "https://alfamart.onrender.com";
     let approvedRabData = []; // To store full data for selected RAB
@@ -89,6 +90,40 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    async function fetchKontraktor(cabang) {
+        if (!cabang) {
+            kontraktorSelect.innerHTML = '<option value="">-- Pilih RAB terlebih dahulu --</option>';
+            return;
+        }
+        
+        kontraktorSelect.innerHTML = '<option value="">-- Memuat kontraktor... --</option>';
+        kontraktorSelect.disabled = true;
+        
+        try {
+            const response = await fetch(`${PYTHON_API_BASE_URL}/api/get_kontraktor?cabang=${encodeURIComponent(cabang)}`);
+            if (!response.ok) throw new Error('Gagal mengambil data kontraktor dari server.');
+
+            const kontraktorList = await response.json();
+            
+            kontraktorSelect.innerHTML = '<option value="">-- Pilih Kontraktor --</option>';
+            if (kontraktorList.length > 0) {
+                kontraktorList.forEach(nama => {
+                    const option = document.createElement('option');
+                    option.value = nama;
+                    option.textContent = nama;
+                    kontraktorSelect.appendChild(option);
+                });
+            } else {
+                kontraktorSelect.innerHTML = '<option value="">-- Tidak ada kontraktor aktif untuk cabang ini --</option>';
+            }
+        } catch (error) {
+            showMessage(`Error memuat kontraktor: ${error.message}`, 'error');
+            kontraktorSelect.innerHTML = '<option value="">-- Gagal memuat data --</option>';
+        } finally {
+            kontraktorSelect.disabled = false;
+        }
+    }
+
     async function handleFormSubmit(e) {
         e.preventDefault();
         if (!form.checkValidity()) {
@@ -147,8 +182,13 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('detail_lingkup').textContent = selectedRab.Lingkup_Pekerjaan || 'N/A';
             document.getElementById('detail_total').textContent = formatRupiah(selectedRab['Grand Total Non-SBO'] || 0);
             rabDetailsDiv.style.display = 'block';
+            
+            // Panggil fungsi untuk mengambil data kontraktor
+            fetchKontraktor(selectedRab.Cabang); 
         } else {
             rabDetailsDiv.style.display = 'none';
+            // Reset dropdown kontraktor jika tidak ada RAB yang dipilih
+            kontraktorSelect.innerHTML = '<option value="">-- Pilih RAB terlebih dahulu --</option>';
         }
     });
 
