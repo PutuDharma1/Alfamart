@@ -12,7 +12,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 import config
 
@@ -22,17 +22,15 @@ class GoogleServiceProvider:
             'https://www.googleapis.com/auth/spreadsheets',
             'https://www.googleapis.com/auth/gmail.send',
             'https://www.googleapis.com/auth/drive.file',
-            'https://www.googleapis.com/auth/calendar' # Menambahkan scope untuk Kalender
+            'https://www.googleapis.com/auth/calendar' # Scope untuk Kalender
         ]
         self.creds = None
         
         secret_dir = '/etc/secrets/'
         token_path = os.path.join(secret_dir, 'token.json')
-        client_secret_path = os.path.join(secret_dir, 'client_secret.json')
 
         if not os.path.exists(secret_dir):
             token_path = 'token.json'
-            client_secret_path = 'client_secret.json'
 
         if os.path.exists(token_path):
             self.creds = Credentials.from_authorized_user_file(token_path, self.scopes)
@@ -41,7 +39,7 @@ class GoogleServiceProvider:
             if self.creds and self.creds.expired and self.creds.refresh_token:
                 self.creds.refresh(Request())
             else:
-                raise Exception("CRITICAL: token.json not found or invalid. Please re-authenticate locally and upload the token file.")
+                raise Exception("CRITICAL: token.json not found or invalid. Please re-authenticate locally using generate_token.py.")
 
         self.gspread_client = gspread.authorize(self.creds)
         self.sheet = self.gspread_client.open_by_key(config.SPREADSHEET_ID)
@@ -51,7 +49,6 @@ class GoogleServiceProvider:
         self.calendar_service = build('calendar', 'v3', credentials=self.creds)
 
     def append_to_dynamic_sheet(self, spreadsheet_id, sheet_name, data_dict):
-        """Menyimpan data ke sheet manapun secara dinamis."""
         try:
             spreadsheet = self.gspread_client.open_by_key(spreadsheet_id)
             worksheet = spreadsheet.worksheet(sheet_name)
@@ -69,13 +66,11 @@ class GoogleServiceProvider:
             raise
 
     def get_rab_url_by_ulok(self, kode_ulok):
-        """Mencari URL PDF RAB di sheet Form3 berdasarkan Nomor Ulok."""
         try:
             worksheet = self.sheet.worksheet(config.APPROVED_DATA_SHEET_NAME)
             all_records = worksheet.get_all_records()
             for record in reversed(all_records):
                 if str(record.get('Nomor Ulok', '')).strip().upper() == kode_ulok.strip().upper():
-                    # Prioritaskan Link PDF Non-SBO jika ada, jika tidak, gunakan Link PDF biasa
                     return record.get('Link PDF Non-SBO') or record.get('Link PDF')
             return None
         except Exception as e:
@@ -83,10 +78,7 @@ class GoogleServiceProvider:
             return None
 
     def get_user_info_by_cabang(self, cabang):
-        """Mendapatkan daftar PIC, Koordinator, dan Manager untuk cabang tertentu."""
-        pic_list = []
-        koordinator_info = {}
-        manager_info = {}
+        pic_list, koordinator_info, manager_info = [], {}, {}
         try:
             cabang_sheet = self.sheet.worksheet(config.CABANG_SHEET_NAME)
             records = cabang_sheet.get_all_records()
@@ -107,7 +99,6 @@ class GoogleServiceProvider:
         return pic_list, koordinator_info, manager_info
 
     def get_kode_ulok_by_cabang(self, cabang):
-        """Mengambil daftar Kode Ulok yang sudah disetujui untuk dropdown."""
         ulok_list = []
         try:
             worksheet = self.sheet.worksheet(config.APPROVED_DATA_SHEET_NAME)
@@ -123,7 +114,6 @@ class GoogleServiceProvider:
             return []
 
     def upload_file_to_drive(self, file_bytes, filename, mimetype, folder_id):
-        """Mengunggah file ke folder Drive yang spesifik."""
         file_metadata = {'name': filename, 'parents': [folder_id]}
         media = MediaIoBaseUpload(io.BytesIO(file_bytes), mimetype=mimetype)
         file = self.drive_service.files().create(
@@ -132,7 +122,6 @@ class GoogleServiceProvider:
         return file.get('webViewLink')
 
     def create_calendar_event(self, event_data):
-        """Membuat event di Google Calendar."""
         try:
             event = {
                 'summary': event_data['title'],
@@ -181,9 +170,8 @@ class GoogleServiceProvider:
         try:
             cabang_sheet = self.sheet.worksheet(config.CABANG_SHEET_NAME)
             for record in cabang_sheet.get_all_records():
-                sheet_email = str(record.get('EMAIL_SAT', '')).strip()
-                sheet_cabang = str(record.get('CABANG', '')).strip()
-                if sheet_email.lower() == email.lower() and sheet_cabang.lower() == cabang.lower():
+                if str(record.get('EMAIL_SAT', '')).strip().lower() == email.lower() and \
+                   str(record.get('CABANG', '')).strip().lower() == cabang.lower():
                     return True
         except gspread.exceptions.WorksheetNotFound:
             print(f"Error: Worksheet '{config.CABANG_SHEET_NAME}' not found.")
@@ -194,7 +182,6 @@ class GoogleServiceProvider:
             all_values = self.data_entry_sheet.get_all_values()
             if len(all_values) <= 1:
                 return {"active_codes": {"pending": [], "approved": []}, "rejected_submissions": []}
-
             headers = all_values[0]
             records = [dict(zip(headers, row)) for row in all_values[1:]]
             
