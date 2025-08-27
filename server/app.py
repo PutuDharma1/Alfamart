@@ -10,6 +10,7 @@ from flask import Flask, request, jsonify, render_template, url_for
 from dotenv import load_dotenv
 from flask_cors import CORS
 from datetime import timezone, timedelta
+from num2words import num2words # <-- Tambahkan impor ini
 
 import config
 from google_services import GoogleServiceProvider
@@ -340,6 +341,18 @@ def submit_spk():
         duration = int(data['Durasi'])
         end_date = start_date + timedelta(days=duration)
         data['Waktu Selesai'] = end_date.isoformat()
+        
+        # ▼▼▼ PERUBAHAN UTAMA DIMULAI DI SINI ▼▼▼
+        # 1. Ambil nilai Grand Total dari data yang dikirim
+        total_cost = float(data.get('Grand Total', 0))
+
+        # 2. Buat nilai "Terbilang"
+        terbilang_text = num2words(total_cost, lang='id').title()
+
+        # 3. Tambahkan "Biaya" dan "Terbilang" ke dictionary data
+        data['Biaya'] = total_cost
+        data['Terbilang'] = f"( {terbilang_text} Rupiah )"
+        # ▲▲▲ PERUBAHAN UTAMA SELESAI ▲▲▲
 
         pdf_bytes = create_spk_pdf(google_provider, data)
         pdf_filename = f"SPK_{data.get('Proyek')}_{data.get('Nomor Ulok')}.pdf"
@@ -416,7 +429,7 @@ def handle_spk_approval():
             
             row_data['Status'] = new_status
             row_data['Disetujui Oleh'] = approver
-            row_data['Waktu Persetujuan'] = current_time # Tambahkan ini agar ada di PDF
+            row_data['Waktu Persetujuan'] = current_time
             final_pdf_bytes = create_spk_pdf(google_provider, row_data)
             final_pdf_filename = f"SPK_DISETUJUI_{row_data.get('Proyek')}_{row_data.get('Nomor Ulok')}.pdf"
             final_pdf_link = google_provider.upload_file_to_drive(final_pdf_bytes, final_pdf_filename, 'application/pdf', config.PDF_STORAGE_FOLDER_ID)
@@ -499,7 +512,7 @@ def submit_pengawasan():
         }
 
         if form_type == 'input_pic':
-            spk_base64 = data.get('spk_base64', '')
+            spk_base64 = data.get('spk_base64', '').split(',')[-1]
             spk_bytes = base64.b64decode(spk_base64)
             date_string = timestamp.strftime('%Y%m%d_%H%M%S')
             spk_filename = f"SPK_{data.get('kode_ulok')}_{date_string}.pdf"
