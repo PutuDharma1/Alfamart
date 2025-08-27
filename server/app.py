@@ -10,7 +10,7 @@ from flask import Flask, request, jsonify, render_template, url_for
 from dotenv import load_dotenv
 from flask_cors import CORS
 from datetime import timezone, timedelta
-from num2words import num2words # <-- Tambahkan impor ini
+from num2words import num2words
 
 import config
 from google_services import GoogleServiceProvider
@@ -38,13 +38,12 @@ from data_api import data_bp
 app.register_blueprint(data_bp)
 
 def get_tanggal_h(start_date, jumlah_hari_kerja):
-    """Menghitung tanggal H+ sekian hari kerja (lewati Sabtu & Minggu)."""
     tanggal = start_date
     count = 0
     if not jumlah_hari_kerja: return tanggal
     while count < jumlah_hari_kerja:
         tanggal += timedelta(days=1)
-        if tanggal.weekday() < 5: # Senin=0, ..., Jumat=4
+        if tanggal.weekday() < 5:
             count += 1
     return tanggal
 
@@ -84,6 +83,7 @@ def check_status():
         return jsonify({"error": str(e)}), 500
 
 # --- ENDPOINTS UNTUK ALUR KERJA RAB ---
+# ... (kode untuk RAB tetap sama, tidak perlu diubah) ...
 @app.route('/api/submit_rab', methods=['POST'])
 def submit_rab():
     data = request.get_json()
@@ -342,17 +342,10 @@ def submit_spk():
         end_date = start_date + timedelta(days=duration)
         data['Waktu Selesai'] = end_date.isoformat()
         
-        # ▼▼▼ PERUBAHAN UTAMA DIMULAI DI SINI ▼▼▼
-        # 1. Ambil nilai Grand Total dari data yang dikirim
         total_cost = float(data.get('Grand Total', 0))
-
-        # 2. Buat nilai "Terbilang"
         terbilang_text = num2words(total_cost, lang='id').title()
-
-        # 3. Tambahkan "Biaya" dan "Terbilang" ke dictionary data
         data['Biaya'] = total_cost
         data['Terbilang'] = f"( {terbilang_text} Rupiah )"
-        # ▲▲▲ PERUBAHAN UTAMA SELESAI ▲▲▲
 
         pdf_bytes = create_spk_pdf(google_provider, data)
         pdf_filename = f"SPK_{data.get('Proyek')}_{data.get('Nomor Ulok')}.pdf"
@@ -465,12 +458,12 @@ def get_pengawasan_init_data():
         return jsonify({"status": "error", "message": "Parameter cabang dibutuhkan."}), 400
     try:
         pic_list, _, _ = google_provider.get_user_info_by_cabang(cabang)
-        kode_ulok_list = google_provider.get_kode_ulok_by_cabang(cabang)
+        spk_list = google_provider.get_spk_data_by_cabang(cabang)
         
         return jsonify({
             "status": "success",
             "picList": pic_list,
-            "kodeUlokList": kode_ulok_list
+            "spkList": spk_list
         }), 200
     except Exception as e:
         traceback.print_exc()
@@ -487,6 +480,21 @@ def get_rab_url():
             return jsonify({"status": "success", "rabUrl": rab_url}), 200
         else:
             return jsonify({"status": "error", "message": "URL RAB tidak ditemukan."}), 404
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/pengawasan/get_spk_url', methods=['GET'])
+def get_spk_url():
+    kode_ulok = request.args.get('kode_ulok')
+    if not kode_ulok:
+        return jsonify({"status": "error", "message": "Parameter kode_ulok dibutuhkan."}), 400
+    try:
+        spk_url = google_provider.get_spk_url_by_ulok(kode_ulok)
+        if spk_url:
+            return jsonify({"status": "success", "spkUrl": spk_url}), 200
+        else:
+            return jsonify({"status": "error", "message": "URL SPK tidak ditemukan."}), 404
     except Exception as e:
         traceback.print_exc()
         return jsonify({"status": "error", "message": str(e)}), 500
@@ -512,21 +520,10 @@ def submit_pengawasan():
         }
 
         if form_type == 'input_pic':
-            spk_base64 = data.get('spk_base64', '').split(',')[-1]
-            spk_bytes = base64.b64decode(spk_base64)
-            date_string = timestamp.strftime('%Y%m%d_%H%M%S')
-            spk_filename = f"SPK_{data.get('kode_ulok')}_{date_string}.pdf"
-            spk_url = google_provider.upload_file_to_drive(spk_bytes, spk_filename, 'application/pdf', config.INPUT_PIC_DRIVE_FOLDER_ID)
-            data['spkUrl'] = spk_url
-
-            rab_url = google_provider.get_rab_url_by_ulok(data.get('kode_ulok'))
-            if not rab_url:
-                return jsonify({"status": "error", "message": f"RAB untuk kode ulok {data.get('kode_ulok')} tidak ditemukan."}), 404
-            data['rabUrl'] = rab_url
-
+            # Sekarang kita hanya menyimpan URL yang sudah ada, bukan mengunggah file baru
             google_provider.append_to_dynamic_sheet(
                 config.PENGAWASAN_SPREADSHEET_ID, config.INPUT_PIC_SHEET_NAME, 
-                {'timestamp': data['timestamp'], 'cabang': data.get('cabang'), 'kode_ulok': data.get('kode_ulok'), 'kategori_lokasi': data.get('kategori_lokasi'), 'tanggal_spk': data.get('tanggal_spk'), 'pic_building_support': data.get('pic_building_support'), 'spkUrl': spk_url, 'rabUrl': rab_url}
+                {'timestamp': data['timestamp'], 'cabang': data.get('cabang'), 'kode_ulok': data.get('kode_ulok'), 'kategori_lokasi': data.get('kategori_lokasi'), 'tanggal_spk': data.get('tanggal_spk'), 'pic_building_support': data.get('pic_building_support'), 'spkUrl': data.get('spkUrl'), 'rabUrl': data.get('rabUrl')}
             )
             google_provider.append_to_dynamic_sheet(
                 config.PENGAWASAN_SPREADSHEET_ID, config.PENUGASAN_SHEET_NAME,

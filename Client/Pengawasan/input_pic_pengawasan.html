@@ -252,24 +252,23 @@
           min=""
           required
         />
-
-        <label for="upload_spk">Upload SPK:</label>
+        
+        <label for="spk_url">Link PDF SPK:</label>
         <input
-          type="file"
-          id="upload_spk"
-          name="spk_file" 
-          accept=".pdf"
-          required
+          type="text"
+          id="spk_url"
+          name="spkUrl"
+          placeholder="Link SPK akan terisi otomatis berdasarkan kode ulok..."
+          readonly
+          class="input-readonly"
         />
-        <small class="file-info">Maksimal ukuran file: 1.5 MB</small>
-
         <label for="rab_url"
           >Link File (RAB, Penawaran & Gambar Sipil & Me):</label
         >
         <input
           type="text"
           id="rab_url"
-          name="rab_url"
+          name="rabUrl"
           placeholder="Link RAB akan terisi otomatis berdasarkan kode ulok..."
           readonly
           class="input-readonly"

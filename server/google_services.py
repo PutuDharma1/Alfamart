@@ -22,7 +22,7 @@ class GoogleServiceProvider:
             'https://www.googleapis.com/auth/spreadsheets',
             'https://www.googleapis.com/auth/gmail.send',
             'https://www.googleapis.com/auth/drive.file',
-            'https://www.googleapis.com/auth/calendar' # Scope untuk Kalender
+            'https://www.googleapis.com/auth/calendar'
         ]
         self.creds = None
         
@@ -51,7 +51,10 @@ class GoogleServiceProvider:
     def append_to_dynamic_sheet(self, spreadsheet_id, sheet_name, data_dict):
         try:
             spreadsheet = self.gspread_client.open_by_key(spreadsheet_id)
-            worksheet = spreadsheet.worksheet(sheet_name)
+            try:
+                worksheet = spreadsheet.worksheet(sheet_name)
+            except gspread.WorksheetNotFound:
+                worksheet = spreadsheet.add_worksheet(title=sheet_name, rows="100", cols="20")
             
             headers = worksheet.row_values(1)
             if not headers: 
@@ -76,6 +79,40 @@ class GoogleServiceProvider:
         except Exception as e:
             print(f"Error saat mencari RAB URL: {e}")
             return None
+    
+    # ▼▼▼ FUNGSI BARU UNTUK MENGAMBIL URL SPK ▼▼▼
+    def get_spk_url_by_ulok(self, kode_ulok):
+        try:
+            spk_sheet = self.sheet.worksheet(config.SPK_DATA_SHEET_NAME)
+            all_records = spk_sheet.get_all_records()
+            for record in reversed(all_records):
+                if str(record.get('Nomor Ulok', '')).strip().upper() == kode_ulok.strip().upper() and \
+                   str(record.get('Status', '')).strip() == config.STATUS.SPK_APPROVED:
+                    return record.get('Link PDF')
+            return None
+        except Exception as e:
+            print(f"Error saat mencari SPK URL: {e}")
+            return None
+
+    # ▼▼▼ FUNGSI BARU UNTUK MENGAMBIL DATA SPK BERDASARKAN CABANG ▼▼▼
+    def get_spk_data_by_cabang(self, cabang):
+        spk_list = []
+        try:
+            worksheet = self.sheet.worksheet(config.SPK_DATA_SHEET_NAME)
+            records = worksheet.get_all_records()
+            for record in records:
+                if str(record.get('Cabang', '')).strip().lower() == cabang.strip().lower() and \
+                   str(record.get('Status', '')).strip() == config.STATUS.SPK_APPROVED:
+                    spk_list.append({
+                        "Nomor Ulok": record.get("Nomor Ulok"),
+                        "Link PDF": record.get("Link PDF")
+                    })
+            # Mengambil data unik berdasarkan Nomor Ulok, mempertahankan yang terbaru
+            unique_spk = {item['Nomor Ulok']: item for item in reversed(spk_list)}
+            return list(reversed(list(unique_spk.values())))
+        except Exception as e:
+            print(f"Error saat mengambil data SPK by cabang: {e}")
+            return []
 
     def get_user_info_by_cabang(self, cabang):
         pic_list, koordinator_info, manager_info = [], {}, {}

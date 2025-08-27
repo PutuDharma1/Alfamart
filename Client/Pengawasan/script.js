@@ -2,12 +2,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const form = document.querySelector('form');
     const PYTHON_API_BASE_URL = "https://alfamart.onrender.com"; 
 
+    // --- Fungsi Bantuan ---
     const toBase64 = file => new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
         reader.onload = () => resolve(reader.result);
         reader.onerror = error => reject(error);
     });
+
+    function showPopup(message, isSuccess = true) {
+        const popup = document.getElementById('popup');
+        const popupMessage = document.getElementById('popup-message') || popup.querySelector('p');
+        if (popup && popupMessage) {
+            popupMessage.textContent = message;
+            popup.classList.add('show');
+        } else {
+            alert(message);
+        }
+    }
 
     async function populateDropdown(elementId, dataList, valueKey, textKey) {
         const select = document.getElementById(elementId);
@@ -25,15 +37,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // --- Fungsi Inisialisasi Form ---
     async function initInputPICForm() {
         const cabangSelect = document.getElementById('cabang');
         const kodeUlokSelect = document.getElementById('kode_ulok');
         const picSelect = document.getElementById('pic_building_support');
-        const rabUrlInput = document.getElementById('rab_url'); 
+        const rabUrlInput = document.getElementById('rab_url');
+        const spkUrlInput = document.getElementById('spk_url'); // <-- Tambahkan ini
         const userCabang = sessionStorage.getItem('loggedInUserCabang');
 
-        if (!cabangSelect || !kodeUlokSelect || !picSelect || !rabUrlInput) {
-            console.error("Elemen form penting tidak ditemukan!");
+        if (!cabangSelect || !kodeUlokSelect || !picSelect || !rabUrlInput || !spkUrlInput) {
+            console.error("Satu atau lebih elemen form penting tidak ditemukan!");
             return;
         }
 
@@ -48,11 +62,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await response.json();
 
                 if(data.picList) populateDropdown('pic_building_support', data.picList, 'email', 'nama');
-                if(data.kodeUlokList && data.kodeUlokList.length > 0) {
-                    const ulokData = data.kodeUlokList.map(ulok => ({ ulok: ulok }));
+                
+                // Menggunakan data SPK untuk mengisi kode ulok
+                if(data.spkList && data.spkList.length > 0) {
+                    const ulokData = data.spkList.map(item => ({ ulok: item['Nomor Ulok'] }));
                     populateDropdown('kode_ulok', ulokData, 'ulok', 'ulok');
                 } else {
-                     kodeUlokSelect.innerHTML = '<option value="">-- Tidak ada RAB disetujui di cabang ini --</option>';
+                     kodeUlokSelect.innerHTML = '<option value="">-- Tidak ada SPK yang dibuat di cabang ini --</option>';
                 }
 
             } catch (error) {
@@ -61,17 +77,20 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } else {
             alert("Informasi cabang tidak ditemukan. Silakan login kembali.");
-            cabangSelect.disabled = true;
-            kodeUlokSelect.disabled = true;
-            picSelect.disabled = true;
+            [cabangSelect, kodeUlokSelect, picSelect].forEach(el => el.disabled = true);
         }
         
         kodeUlokSelect.addEventListener('change', async (e) => {
             const selectedUlok = e.target.value;
             rabUrlInput.value = '';
+            spkUrlInput.value = '';
+
             if(!selectedUlok) return;
 
             rabUrlInput.placeholder = 'Mencari link RAB...';
+            spkUrlInput.placeholder = 'Mencari link SPK...';
+
+            // Fetch RAB URL
             try {
                  const response = await fetch(`${PYTHON_API_BASE_URL}/api/pengawasan/get_rab_url?kode_ulok=${encodeURIComponent(selectedUlok)}`);
                  const data = await response.json();
@@ -83,40 +102,42 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch(error) {
                 rabUrlInput.placeholder = `Error: ${error.message}`;
             }
+
+            // Fetch SPK URL
+            try {
+                 const response = await fetch(`${PYTHON_API_BASE_URL}/api/pengawasan/get_spk_url?kode_ulok=${encodeURIComponent(selectedUlok)}`);
+                 const data = await response.json();
+                 if(response.ok && data.spkUrl) {
+                     spkUrlInput.value = data.spkUrl;
+                 } else {
+                     throw new Error(data.message || 'SPK tidak ditemukan');
+                 }
+            } catch(error) {
+                spkUrlInput.placeholder = `Error: ${error.message}`;
+            }
         });
     }
 
     if (form) {
-        const formTypeInput = form.querySelector('input[name="form_type"]');
-        if (formTypeInput && formTypeInput.value === 'input_pic') {
+        const isInputPicPage = window.location.pathname.includes('input_pic_pengawasan.html');
+        
+        if (isInputPicPage) {
             initInputPICForm();
         }
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            let messageDiv = document.getElementById('popup-message');
-            const popup = document.getElementById('popup');
-            
             const submitButton = form.querySelector('button[type="submit"]');
             submitButton.disabled = true;
-            messageDiv.textContent = 'Mengirim data...';
-            popup.classList.add('show');
+            showPopup('Mengirim data...');
 
             const formData = new FormData(form);
             const data = Object.fromEntries(formData.entries());
 
-            const spkFileInput = form.querySelector('input[name="spk_file"]');
-            if (spkFileInput && spkFileInput.files[0]) {
-                try {
-                    data.spk_base64 = (await toBase64(spkFileInput.files[0])).split(',')[1];
-                } catch (error) {
-                    messageDiv.textContent = 'Error: Gagal membaca file SPK.';
-                    submitButton.disabled = false;
-                    return;
-                }
-            }
-
+            // Hapus penanganan file upload SPK dari sini karena sudah otomatis
+            // Cukup pastikan 'spkUrl' dan 'rabUrl' sudah ada di 'data' dari form
+            
             try {
                 const response = await fetch(`${PYTHON_API_BASE_URL}/api/pengawasan/submit`, {
                     method: 'POST',
@@ -126,14 +147,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 const result = await response.json();
 
                 if (response.ok && result.status === 'success') {
-                    messageDiv.textContent = 'Data berhasil dikirim!';
+                    showPopup('Data berhasil dikirim!');
                     form.reset();
-                    initInputPICForm(); // Re-initialize the form
+                    if(isInputPicPage) {
+                       initInputPICForm(); // Inisialisasi ulang form setelah berhasil
+                    }
                 } else {
                     throw new Error(result.message || 'Terjadi kesalahan di server.');
                 }
             } catch (error) {
-                messageDiv.textContent = `Error: ${error.message}`;
+                showPopup(`Error: ${error.message}`, false);
             } finally {
                 submitButton.disabled = false;
             }
@@ -141,6 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+// Fungsi global untuk menutup popup
 function closePopup() {
     const popup = document.getElementById('popup');
     if (popup) {
