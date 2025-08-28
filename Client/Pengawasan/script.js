@@ -64,8 +64,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 if(data.picList) populateDropdown('pic_building_support', data.picList, 'email', 'nama');
                 
                 if(data.spkList && data.spkList.length > 0) {
-                    const ulokData = data.spkList.map(item => ({ ulok: item['Nomor Ulok'] }));
-                    populateDropdown('kode_ulok', ulokData, 'ulok', 'ulok');
+                    const ulokData = data.spkList.map(item => ({ 
+                        ulok: item['Nomor Ulok'] + ' (' + item['Lingkup Pekerjaan'] + ')',
+                        displayText: `${item['Nomor Ulok']} (${item['Lingkup Pekerjaan']})`
+                    }));
+                    populateDropdown('kode_ulok', ulokData, 'ulok', 'displayText');
                 } else {
                      kodeUlokSelect.innerHTML = '<option value="">-- Tidak ada SPK yang dibuat di cabang ini --</option>';
                 }
@@ -80,7 +83,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         kodeUlokSelect.addEventListener('change', async (e) => {
-            const selectedUlok = e.target.value;
+            const selectedUlokWithLingkup = e.target.value;
+            const selectedUlok = selectedUlokWithLingkup.split(' (')[0]; // Extract the ulok
             rabUrlInput.value = '';
             spkUrlInput.value = '';
 

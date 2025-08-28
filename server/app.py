@@ -91,15 +91,17 @@ def submit_rab():
     new_row_index = None
     try:
         nomor_ulok_raw = data.get(config.COLUMN_NAMES.LOKASI, '')
+        lingkup_pekerjaan = data.get(config.COLUMN_NAMES.LINGKUP_PEKERJAAN, '') # Get lingkup
         if not nomor_ulok_raw:
              return jsonify({"status": "error", "message": "Nomor Ulok tidak boleh kosong."}), 400
         
         is_revising = google_provider.is_revision(nomor_ulok_raw, data.get('Email_Pembuat'))
 
-        if not is_revising and google_provider.check_ulok_exists(nomor_ulok_raw):
+        # Pass lingkup_pekerjaan to the check
+        if not is_revising and google_provider.check_ulok_exists(nomor_ulok_raw, lingkup_pekerjaan):
             return jsonify({
                 "status": "error", 
-                "message": f"Nomor Ulok {nomor_ulok_raw} sudah pernah diajukan dan sedang diproses atau sudah disetujui."
+                "message": f"Nomor Ulok {nomor_ulok_raw} dengan lingkup {lingkup_pekerjaan} sudah pernah diajukan dan sedang diproses atau sudah disetujui."
             }), 409
 
         WIB = timezone(timedelta(hours=7))

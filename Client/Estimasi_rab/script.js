@@ -415,18 +415,6 @@ async function handleFormSubmit() {
         return;
     }
 
-    const nomorUlokToCheck = document.getElementById('lokasi').value.replace(/-/g, '');
-    const isPending = pendingStoreCodes.some(code => code.replace(/-/g, '') === nomorUlokToCheck);
-    const isApproved = approvedStoreCodes.some(code => code.replace(/-/g, '') === nomorUlokToCheck);
-    const isRevising = rejectedSubmissionsList.some(item => item['Nomor Ulok'].replace(/-/g, '') === nomorUlokToCheck);
-
-    if ((isPending || isApproved) && !isRevising) {
-        messageDiv.textContent = `Error: Nomor Ulok ${nomorUlokToCheck} sudah ada yang berstatus 'pending' atau 'approved'. Tidak dapat mengirim duplikat.`;
-        messageDiv.style.backgroundColor = '#dc3545';
-        messageDiv.style.display = 'block';
-        return;
-    }
-
     const currentData = getCurrentFormData();
     if (originalFormData && currentData === originalFormData) {
         messageDiv.textContent = 'Tidak ada perubahan yang terdeteksi. Silakan ubah data sebelum mengirim.';

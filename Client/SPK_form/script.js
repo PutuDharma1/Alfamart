@@ -52,8 +52,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.length > 0) {
                 data.forEach(rab => {
                     const option = document.createElement('option');
-                    option.value = rab['Nomor Ulok'];
-                    option.textContent = `${rab['Nomor Ulok']} - ${rab['Proyek']}`;
+                    const lingkup = rab['Lingkup_Pekerjaan'] || 'N/A';
+                    option.value = rab['Nomor Ulok'] + ' (' + lingkup + ')';
+                    option.textContent = `${rab['Nomor Ulok']} (${lingkup}) - ${rab['Proyek']}`;
                     ulokSelect.appendChild(option);
                 });
             } else {
@@ -174,7 +175,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // --- Event Listeners ---
     ulokSelect.addEventListener('change', () => {
-        const selectedUlok = ulokSelect.value;
+        const selectedUlok = ulokSelect.value.split(' (')[0];
         const selectedRab = approvedRabData.find(rab => rab['Nomor Ulok'] === selectedUlok);
         
         if (selectedRab) {

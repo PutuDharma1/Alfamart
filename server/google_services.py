@@ -103,9 +103,10 @@ class GoogleServiceProvider:
                    str(record.get('Status', '')).strip() == config.STATUS.SPK_APPROVED:
                     spk_list.append({
                         "Nomor Ulok": record.get("Nomor Ulok"),
+                        "Lingkup Pekerjaan": record.get("Lingkup Pekerjaan"),
                         "Link PDF": record.get("Link PDF")
                     })
-            unique_spk = {item['Nomor Ulok']: item for item in reversed(spk_list)}
+            unique_spk = {item['Nomor Ulok'] + item['Lingkup Pekerjaan']: item for item in reversed(spk_list)}
             return list(reversed(list(unique_spk.values())))
         except Exception as e:
             print(f"Error saat mengambil data SPK by cabang: {e}")
@@ -347,7 +348,7 @@ class GoogleServiceProvider:
         except Exception as e:
             raise e
     
-    def check_ulok_exists(self, nomor_ulok_to_check):
+    def check_ulok_exists(self, nomor_ulok_to_check, lingkup_pekerjaan_to_check):
         try:
             normalized_ulok = str(nomor_ulok_to_check).replace("-", "")
             all_records = self.data_entry_sheet.get_all_records()
@@ -355,7 +356,9 @@ class GoogleServiceProvider:
                 status = record.get(config.COLUMN_NAMES.STATUS, "").strip()
                 if status in [config.STATUS.WAITING_FOR_COORDINATOR, config.STATUS.WAITING_FOR_MANAGER, config.STATUS.APPROVED]:
                     existing_ulok = str(record.get(config.COLUMN_NAMES.LOKASI, "")).replace("-", "")
-                    if existing_ulok == normalized_ulok: return True
+                    existing_lingkup = str(record.get(config.COLUMN_NAMES.LINGKUP_PEKERJAAN, "")).strip()
+                    if existing_ulok == normalized_ulok and existing_lingkup == lingkup_pekerjaan_to_check:
+                        return True
             return False
         except Exception as e:
             print(f"Error checking for existing ulok: {e}")
