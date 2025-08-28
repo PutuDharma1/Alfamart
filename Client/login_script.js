@@ -37,6 +37,13 @@ async function logLoginAttempt(username, cabang, status) {
 document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById('login-form');
     const loginMessage = document.getElementById('login-message');
+    
+    // Periksa apakah ada parameter redirectTo di URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const redirectTo = urlParams.get('redirectTo');
+    if (redirectTo) {
+        sessionStorage.setItem('redirectTo', redirectTo);
+    }
 
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -67,11 +74,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 sessionStorage.setItem('authenticated', 'true');
                 sessionStorage.setItem('loggedInUserEmail', username);
-                // --- BARIS INI DITAMBAHKAN ---
                 sessionStorage.setItem('loggedInUserCabang', password);
 
                 setTimeout(() => {
-                    window.location.href = "/Homepage";
+                    const redirectUrl = sessionStorage.getItem('redirectTo');
+                    if (redirectUrl) {
+                        sessionStorage.removeItem('redirectTo'); // Hapus setelah digunakan
+                        window.location.href = redirectUrl;
+                    } else {
+                        window.location.href = "/Homepage";
+                    }
                 }, 1500);
             } else {
                 logLoginAttempt(username, password, 'Failed');

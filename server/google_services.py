@@ -80,7 +80,6 @@ class GoogleServiceProvider:
             print(f"Error saat mencari RAB URL: {e}")
             return None
     
-    # ▼▼▼ FUNGSI BARU UNTUK MENGAMBIL URL SPK ▼▼▼
     def get_spk_url_by_ulok(self, kode_ulok):
         try:
             spk_sheet = self.sheet.worksheet(config.SPK_DATA_SHEET_NAME)
@@ -94,7 +93,6 @@ class GoogleServiceProvider:
             print(f"Error saat mencari SPK URL: {e}")
             return None
 
-    # ▼▼▼ FUNGSI BARU UNTUK MENGAMBIL DATA SPK BERDASARKAN CABANG ▼▼▼
     def get_spk_data_by_cabang(self, cabang):
         spk_list = []
         try:
@@ -148,6 +146,23 @@ class GoogleServiceProvider:
             return sorted(list(set(ulok_list)))
         except Exception as e:
             print(f"Error saat mengambil kode ulok by cabang: {e}")
+            return []
+            
+    def get_active_pengawasan_by_pic(self, pic_email):
+        try:
+            penugasan_sheet = self.gspread_client.open_by_key(config.PENGAWASAN_SPREADSHEET_ID).worksheet(config.PENUGASAN_SHEET_NAME)
+            all_records = penugasan_sheet.get_all_records()
+            
+            projects = []
+            for record in all_records:
+                if str(record.get('pic_building_support', '')).strip().lower() == pic_email.strip().lower():
+                    projects.append({
+                        "kode_ulok": record.get("kode_ulok"),
+                        "cabang": record.get("cabang")
+                    })
+            return projects
+        except Exception as e:
+            print(f"Error getting active pengawasan projects: {e}")
             return []
 
     def upload_file_to_drive(self, file_bytes, filename, mimetype, folder_id):

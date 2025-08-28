@@ -83,7 +83,6 @@ def check_status():
         return jsonify({"error": str(e)}), 500
 
 # --- ENDPOINTS UNTUK ALUR KERJA RAB ---
-# ... (kode untuk RAB tetap sama, tidak perlu diubah) ...
 @app.route('/api/submit_rab', methods=['POST'])
 def submit_rab():
     data = request.get_json()
@@ -520,7 +519,6 @@ def submit_pengawasan():
         }
 
         if form_type == 'input_pic':
-            # Sekarang kita hanya menyimpan URL yang sudah ada, bukan mengunggah file baru
             google_provider.append_to_dynamic_sheet(
                 config.PENGAWASAN_SPREADSHEET_ID, config.INPUT_PIC_SHEET_NAME, 
                 {'timestamp': data['timestamp'], 'cabang': data.get('cabang'), 'kode_ulok': data.get('kode_ulok'), 'kategori_lokasi': data.get('kategori_lokasi'), 'tanggal_spk': data.get('tanggal_spk'), 'pic_building_support': data.get('pic_building_support'), 'spkUrl': data.get('spkUrl'), 'rabUrl': data.get('rabUrl')}
@@ -549,13 +547,16 @@ def submit_pengawasan():
                 )
 
         email_details = get_email_details(form_type, data, user_info)
-        base_url = "https://alfamart-one.vercel.app"
+        base_url = "https://alfamart-one.vercel.app" # URL Frontend Anda
         next_form_path = FORM_LINKS.get(form_type, {}).get(data.get('kategori_lokasi'), '#')
         
+        # Diperbarui: URL email sekarang mengarah ke login dengan redirect
+        next_url_with_redirect = f"{base_url.strip('/')}/?redirectTo={next_form_path}" if next_form_path != '#' else None
+
         email_html = render_template('pengawasan_email_template.html', 
                                      form_data=data,
                                      user_info=user_info,
-                                     next_form_url=f"{base_url.strip('/')}{next_form_path}" if next_form_path != '#' else None,
+                                     next_form_url=next_url_with_redirect,
                                      form_type=form_type
                                     )
         
@@ -576,6 +577,18 @@ def submit_pengawasan():
 
         return jsonify({"status": "success", "message": "Laporan berhasil dikirim."}), 200
 
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/pengawasan/active_projects', methods=['GET'])
+def get_active_projects():
+    email = request.args.get('email')
+    if not email:
+        return jsonify({"status": "error", "message": "Parameter email dibutuhkan."}), 400
+    try:
+        active_projects = google_provider.get_active_pengawasan_by_pic(email)
+        return jsonify({"status": "success", "projects": active_projects}), 200
     except Exception as e:
         traceback.print_exc()
         return jsonify({"status": "error", "message": str(e)}), 500

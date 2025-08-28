@@ -4,6 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Laporan Progress Pengawasan H14</title>
+    <script>
+      // Security Check: Redirect to login if not authenticated
+      const isAuthenticated = sessionStorage.getItem('authenticated');
+      if (!isAuthenticated) {
+        // Jika belum login, paksa kembali ke halaman login utama
+        window.location.href = '/index.html';
+      }
+    </script>
     <style>
       body {
         font-family: Cambria;

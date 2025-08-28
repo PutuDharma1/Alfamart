@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const kodeUlokSelect = document.getElementById('kode_ulok');
         const picSelect = document.getElementById('pic_building_support');
         const rabUrlInput = document.getElementById('rab_url');
-        const spkUrlInput = document.getElementById('spk_url'); // <-- Tambahkan ini
+        const spkUrlInput = document.getElementById('spk_url');
         const userCabang = sessionStorage.getItem('loggedInUserCabang');
 
         if (!cabangSelect || !kodeUlokSelect || !picSelect || !rabUrlInput || !spkUrlInput) {
@@ -63,7 +63,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if(data.picList) populateDropdown('pic_building_support', data.picList, 'email', 'nama');
                 
-                // Menggunakan data SPK untuk mengisi kode ulok
                 if(data.spkList && data.spkList.length > 0) {
                     const ulokData = data.spkList.map(item => ({ ulok: item['Nomor Ulok'] }));
                     populateDropdown('kode_ulok', ulokData, 'ulok', 'ulok');
@@ -117,12 +116,42 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+    
+    // --- Inisialisasi untuk form pengawasan (H2, H5, dll) ---
+    async function initPengawasanForm() {
+        const kodeUlokSelect = document.getElementById('kode_ulok');
+        const userEmail = sessionStorage.getItem('loggedInUserEmail');
+
+        if (!kodeUlokSelect || !userEmail) {
+            console.error("Elemen kode ulok atau email pengguna tidak ditemukan!");
+            return;
+        }
+        
+        try {
+            const response = await fetch(`${PYTHON_API_BASE_URL}/api/pengawasan/active_projects?email=${encodeURIComponent(userEmail)}`);
+            if (!response.ok) throw new Error('Gagal memuat daftar proyek aktif.');
+            const data = await response.json();
+
+            if(data.projects && data.projects.length > 0) {
+                populateDropdown('kode_ulok', data.projects, 'kode_ulok', 'kode_ulok');
+            } else {
+                kodeUlokSelect.innerHTML = '<option value="">-- Tidak ada proyek pengawasan aktif untuk Anda --</option>';
+            }
+        } catch (error) {
+            console.error("Error saat inisialisasi form pengawasan:", error);
+            alert("Gagal memuat data untuk form. Silakan coba muat ulang halaman.");
+        }
+    }
+
 
     if (form) {
         const isInputPicPage = window.location.pathname.includes('input_pic_pengawasan.html');
         
         if (isInputPicPage) {
             initInputPICForm();
+        } else {
+            // Ini akan berjalan untuk semua form h*.html dan serah_terima.html
+            initPengawasanForm();
         }
 
         form.addEventListener('submit', async (e) => {
@@ -134,9 +163,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const formData = new FormData(form);
             const data = Object.fromEntries(formData.entries());
-
-            // Hapus penanganan file upload SPK dari sini karena sudah otomatis
-            // Cukup pastikan 'spkUrl' dan 'rabUrl' sudah ada di 'data' dari form
             
             try {
                 const response = await fetch(`${PYTHON_API_BASE_URL}/api/pengawasan/submit`, {
@@ -150,7 +176,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     showPopup('Data berhasil dikirim!');
                     form.reset();
                     if(isInputPicPage) {
-                       initInputPICForm(); // Inisialisasi ulang form setelah berhasil
+                       initInputPICForm();
+                    } else {
+                       initPengawasanForm();
                     }
                 } else {
                     throw new Error(result.message || 'Terjadi kesalahan di server.');
@@ -164,7 +192,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Fungsi global untuk menutup popup
 function closePopup() {
     const popup = document.getElementById('popup');
     if (popup) {
