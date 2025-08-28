@@ -105,7 +105,6 @@ class GoogleServiceProvider:
                         "Nomor Ulok": record.get("Nomor Ulok"),
                         "Link PDF": record.get("Link PDF")
                     })
-            # Mengambil data unik berdasarkan Nomor Ulok, mempertahankan yang terbaru
             unique_spk = {item['Nomor Ulok']: item for item in reversed(spk_list)}
             return list(reversed(list(unique_spk.values())))
         except Exception as e:
@@ -155,10 +154,12 @@ class GoogleServiceProvider:
             
             projects = []
             for record in all_records:
-                if str(record.get('pic_building_support', '')).strip().lower() == pic_email.strip().lower():
+                # ▼▼▼ BARIS INI TELAH DIPERBAIKI ▼▼▼
+                if str(record.get('Email_BBS', '')).strip().lower() == pic_email.strip().lower():
+                # ▲▲▲ AKHIR DARI PERBAIKAN ▲▲▲
                     projects.append({
-                        "kode_ulok": record.get("kode_ulok"),
-                        "cabang": record.get("cabang")
+                        "kode_ulok": record.get("Kode_Ulok"),
+                        "cabang": record.get("Cabang")
                     })
             return projects
         except Exception as e:
@@ -218,6 +219,7 @@ class GoogleServiceProvider:
             print(f"An error occurred while sending email: {e}")
             raise
 
+    # ... (Sisa fungsi lainnya tetap sama) ...
     def validate_user(self, email, cabang):
         try:
             cabang_sheet = self.sheet.worksheet(config.CABANG_SHEET_NAME)
