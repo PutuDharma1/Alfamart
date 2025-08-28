@@ -518,7 +518,6 @@ def submit_pengawasan():
         }
 
         if form_type == 'input_pic':
-            # Data untuk sheet "InputPIC" dengan header yang disesuaikan
             input_pic_data = {
                 'Timestamp': timestamp.isoformat(),
                 'Cabang': data.get('cabang'),
@@ -535,7 +534,6 @@ def submit_pengawasan():
                 input_pic_data
             )
 
-            # Data untuk sheet "Penugasan" dengan header yang disesuaikan
             penugasan_data = {
                 'Email_BBS': data.get('pic_building_support'),
                 'Kode_Ulok': data.get('kode_ulok'),
@@ -552,51 +550,45 @@ def submit_pengawasan():
             data['tanggal_mengawas'] = tanggal_mengawas.strftime('%d %B %Y')
 
         else:
-            # ▼▼▼ BLOK PERUBAHAN UNTUK DataH* dan SerahTerima ▼▼▼
-            # Buat dictionary baru untuk menampung data yang akan dikirim ke sheet
             data_to_sheet = {}
-            # Pemetaan dari nama form (huruf kecil) ke nama header (PascalCase)
             header_mapping = {
-                "timestamp": "Timestamp",
-                "kode_ulok": "Kode_Ulok",
-                "status_lokasi": "Status_Lokasi",
-                "status_progress1": "Status_Progress1",
-                "catatan1": "Catatan1",
-                "status_progress2": "Status_Progress2",
-                "catatan2": "Catatan2",
-                "status_progress3": "Status_Progress3",
-                "catatan3": "Catatan3",
-                # Tambahkan pemetaan lain jika ada
+                "timestamp": "Timestamp", "kode_ulok": "Kode_Ulok", "status_lokasi": "Status_Lokasi",
+                "status_progress1": "Status_Progress1", "catatan1": "Catatan1",
+                "status_progress2": "Status_Progress2", "catatan2": "Catatan2",
+                "status_progress3": "Status_Progress3", "catatan3": "Catatan3",
             }
-
-            # Isi data_to_sheet sesuai dengan header yang ada di sheet
-            # Ini akan secara otomatis menangani form H* yang berbeda-beda
-            for key, value in data.items():
-                # Ubah nama kunci dari form ke nama header jika ada di mapping
-                sheet_header = header_mapping.get(key.lower(), key)
-                data_to_sheet[sheet_header] = value
             
-            # Tambahkan timestamp secara eksplisit ke data yang akan dikirim
-            data_to_sheet['Timestamp'] = timestamp.isoformat()
+            if form_type == 'serah_terima':
+                data_to_sheet = data
+                data_to_sheet['Timestamp'] = timestamp.isoformat()
+            else:
+                 for key, value in data.items():
+                    sheet_header = header_mapping.get(key, key.replace('_', ' ').title().replace(' ', '_'))
+                    data_to_sheet[sheet_header] = value
+                 data_to_sheet['Timestamp'] = timestamp.isoformat()
 
             sheet_map = {
                 'h2': 'DataH2', 'h5': 'DataH5', 'h7': 'DataH7', 'h8': 'DataH8', 'h10': 'DataH10',
                 'h12': 'DataH12', 'h14': 'DataH14', 'h16': 'DataH16', 'h17': 'DataH17',
                 'h18': 'DataH18', 'h22': 'DataH22', 'h23': 'DataH23', 'h25': 'DataH25',
-                'h28': 'DataH28', 'h32': 'DataH32', 'h33': 'Data.H33', 'h41': 'DataH41',
+                'h28': 'DataH28', 'h32': 'DataH32', 'h33': 'DataH33', 'h41': 'DataH41',
                 'serah_terima': 'SerahTerima'
             }
             target_sheet = sheet_map.get(form_type)
             if target_sheet:
-                 # Kirim data yang sudah di-mapping, bukan data asli
                  google_provider.append_to_dynamic_sheet(
                     config.PENGAWASAN_SPREADSHEET_ID, target_sheet, data_to_sheet
                 )
-            # ▲▲▲ AKHIR BLOK PERUBAHAN ▲▲▲
 
-        # Bagian pengiriman email dan kalender tetap sama
         email_details = get_email_details(form_type, data, user_info)
-        base_url = "https://alfamart-one.vercel.app" # URL Frontend Anda
+        
+        if not email_details['recipients']:
+            return jsonify({
+                "status": "error", 
+                "message": "Tidak ada penerima email yang valid. Pastikan PIC Building Support dipilih dan/atau Koordinator/Manajer terdaftar untuk cabang ini."
+            }), 400
+
+        base_url = "https://alfamart-one.vercel.app" 
         next_form_path = FORM_LINKS.get(form_type, {}).get(data.get('kategori_lokasi'), '#')
         
         next_url_with_redirect = f"{base_url.strip('/')}/?redirectTo={next_form_path}" if next_form_path != '#' else None

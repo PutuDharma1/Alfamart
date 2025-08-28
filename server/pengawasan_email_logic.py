@@ -66,7 +66,9 @@ FORM_SCHEDULE = {
 def get_email_details(form_type, data, user_info):
     pic_email = data.get('pic_building_support')
     
-    recipients = [pic_email] if pic_email else []
+    recipients = []
+    if pic_email:
+        recipients.append(pic_email)
     
     # Menambahkan koordinator dan manajer ke penerima notifikasi awal
     if form_type == 'input_pic':
@@ -80,7 +82,8 @@ def get_email_details(form_type, data, user_info):
         hari_ke = data.get('hari_ke_pengawasan', 'N/A')
         subject = f"Tugas Pengawasan H+{hari_ke} untuk Toko: {data.get('kode_ulok')}"
 
-    unique_recipients = list(filter(None, set(recipients)))
+    # Menyaring nilai kosong atau None dan membuat daftar unik
+    unique_recipients = list(set(filter(None, recipients)))
 
     return {
         "recipients": unique_recipients,
