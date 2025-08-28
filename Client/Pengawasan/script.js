@@ -150,7 +150,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isInputPicPage) {
             initInputPICForm();
         } else {
-            // Ini akan berjalan untuk semua form h*.html dan serah_terima.html
             initPengawasanForm();
         }
 
@@ -163,6 +162,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const formData = new FormData(form);
             const data = Object.fromEntries(formData.entries());
+            
+            // ▼▼▼ BARIS PERBAIKAN DITAMBAHKAN DI SINI ▼▼▼
+            // Secara manual menambahkan nilai 'cabang' dari session storage
+            // karena kolom yang 'disabled' tidak akan ikut terkirim.
+            if (!data.cabang && sessionStorage.getItem('loggedInUserCabang')) {
+                data.cabang = sessionStorage.getItem('loggedInUserCabang');
+            }
+            // ▲▲▲ AKHIR DARI PERBAIKAN ▲▲▲
             
             try {
                 const response = await fetch(`${PYTHON_API_BASE_URL}/api/pengawasan/submit`, {
