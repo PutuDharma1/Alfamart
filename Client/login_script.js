@@ -37,13 +37,6 @@ async function logLoginAttempt(username, cabang, status) {
 document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById('login-form');
     const loginMessage = document.getElementById('login-message');
-    
-    // Periksa apakah ada parameter redirectTo di URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const redirectTo = urlParams.get('redirectTo');
-    if (redirectTo) {
-        sessionStorage.setItem('redirectTo', redirectTo);
-    }
 
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -83,7 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         sessionStorage.removeItem('redirectTo'); // Hapus setelah digunakan
                         window.location.href = redirectUrl;
                     } else {
-                        window.location.href = "/Homepage";
+                        window.location.href = "/"; // Arahkan ke homepage (index.html)
                     }
                 }, 1500);
             } else {

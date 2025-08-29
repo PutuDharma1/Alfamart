@@ -11,13 +11,9 @@
     <script>
       // Security Check: Redirect to login if not authenticated
       const isAuthenticated = sessionStorage.getItem('authenticated');
-      const userRole = sessionStorage.getItem('userRole');
       if (!isAuthenticated) {
-          window.location.href = '/index.html'; 
-      }
-      if (userRole !== 'BRANCH BUILDING SUPPORT') {
-          alert('Anda tidak memiliki izin untuk mengakses halaman ini.');
-          window.location.href = '/Homepage/index.html';
+          sessionStorage.setItem('redirectTo', window.location.pathname);
+          window.location.href = '/login.html'; 
       }
     </script>
     

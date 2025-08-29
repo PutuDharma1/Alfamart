@@ -3,32 +3,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Aplikasi RAB Alfamart</title>
-    <link rel="stylesheet" href="login_style.css">
+    <title>Homepage - Aplikasi RAB</title>
+    <link rel="stylesheet" href="/Homepage/style.css">
     <link rel="icon" href="/Assets/favicon.ico" type="image/x-icon">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="login-container">
-        <div class="login-header">
-            <img src="/Assets/Alfamart-Emblem.png" alt="Logo Alfamart" class="login-logo">
-            <h1>Building & Maintenance</h1>
+    <header class="main-header">
+        <img src="/Assets/Alfamart-Emblem.png" alt="Alfamart Logo" class="header-logo">
+        <h1>Building & Maintenance</h1>
+    </header>
+
+    <main class="container">
+        <div class="welcome-message">
+            <h2>Selamat Datang, <span id="user-name">Pengguna</span>!</h2>
+            <p>Pilih menu di bawah untuk melanjutkan.</p>
         </div>
-        <form id="login-form">
-            <div class="form-group">
-                <label for="username">Email</label>
-                <input type="text" id="username" name="username" required>
-            </div>
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" required>
-            </div>
-            <button type="submit">Login</button>
-            <p id="login-message" class="login-message" style="display:none;"></p>
-        </form>
-    </div>
 
-    <script src="login_script.js"></script>
+        <nav class="menu-container">
+            <a href="/Estimasi_rab/" class="menu-item" id="menu-rab">
+                <h3>Estimasi RAB</h3>
+                <p>Buat atau revisi Rencana Anggaran Biaya.</p>
+            </a>
+            <a href="/SPK_form/" class="menu-item" id="menu-spk">
+                <h3>Buat SPK</h3>
+                <p>Buat Surat Perintah Kerja untuk kontraktor.</p>
+            </a>
+            <a href="https://frontend-form-virid.vercel.app/login.html" class="menu-item">
+                <h3>Pengawasan</h3>
+                <p>Input informasi pengawasan.</p>
+            </a>
+            <a href="#" class="menu-item disabled">
+                <h3>Pengaturan</h3>
+                <p>Atur profil Anda (segera hadir).</p>
+            </a>
+        </nav>
+        
+        <div class="logout-container">
+            <button id="logout-button" class="btn-logout" style="display: none;">Logout</button>
+            <a href="/login.html" id="login-button" class="btn-login">Login</a>
+        </div>
+    </main>
 
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const isAuthenticated = sessionStorage.getItem('authenticated');
+            const userNameSpan = document.getElementById('user-name');
+            const loginButton = document.getElementById('login-button');
+            const logoutButton = document.getElementById('logout-button');
+            const menuRab = document.getElementById('menu-rab');
+            const menuSpk = document.getElementById('menu-spk');
+
+            if (isAuthenticated) {
+                const userEmail = sessionStorage.getItem('loggedInUserEmail');
+                const userRole = sessionStorage.getItem('userRole');
+
+                if (userEmail) {
+                    userNameSpan.textContent = userEmail.split('@')[0];
+                }
+                loginButton.style.display = 'none';
+                logoutButton.style.display = 'block';
+                
+                if (userRole !== 'BRANCH BUILDING SUPPORT') {
+                    if (menuRab) menuRab.style.display = 'none';
+                    if (menuSpk) menuSpk.style.display = 'none';
+                }
+
+            } else {
+                userNameSpan.textContent = 'Tamu';
+                loginButton.style.display = 'block';
+                logoutButton.style.display = 'none';
+                if (menuRab) menuRab.style.display = 'none';
+                if (menuSpk) menuSpk.style.display = 'none';
+            }
+
+            logoutButton.addEventListener('click', () => {
+                sessionStorage.clear();
+                window.location.href = '/';
+            });
+        });
+    </script>
 </body>
 </html>
