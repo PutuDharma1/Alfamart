@@ -569,6 +569,9 @@ def submit_pengawasan():
                 "status_progress1": "Status_Progress1", "catatan1": "Catatan1",
                 "status_progress2": "Status_Progress2", "catatan2": "Catatan2",
                 "status_progress3": "Status_Progress3", "catatan3": "Catatan3",
+                "pengukuran_bowplank": "Pengukuran_Dan_Pemasangan_Bowplank",
+                "pekerjaan_tanah": "Pekerjaan_Tanah",
+                "berkas_pengawasan": "Berkas_Pengawasan"
             }
             
             if form_type == 'serah_terima':
