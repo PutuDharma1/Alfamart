@@ -72,6 +72,7 @@
             const menuRab = document.getElementById('menu-rab');
             const menuSpk = document.getElementById('menu-spk');
 
+            // Hanya tampilkan menu RAB dan SPK jika rolenya BRANCH BUILDING SUPPORT
             if (userRole !== 'BRANCH BUILDING SUPPORT') {
                 if (menuRab) menuRab.style.display = 'none';
                 if (menuSpk) menuSpk.style.display = 'none';
