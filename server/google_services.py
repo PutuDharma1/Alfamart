@@ -155,9 +155,7 @@ class GoogleServiceProvider:
             
             projects = []
             for record in all_records:
-                # ▼▼▼ BARIS INI TELAH DIPERBAIKI ▼▼▼
                 if str(record.get('Email_BBS', '')).strip().lower() == pic_email.strip().lower():
-                # ▲▲▲ AKHIR DARI PERBAIKAN ▲▲▲
                     projects.append({
                         "kode_ulok": record.get("Kode_Ulok"),
                         "cabang": record.get("Cabang")
@@ -166,6 +164,18 @@ class GoogleServiceProvider:
         except Exception as e:
             print(f"Error getting active pengawasan projects: {e}")
             return []
+
+    def get_pic_email_by_ulok(self, kode_ulok):
+        try:
+            penugasan_sheet = self.gspread_client.open_by_key(config.PENGAWASAN_SPREADSHEET_ID).worksheet(config.PENUGASAN_SHEET_NAME)
+            all_records = penugasan_sheet.get_all_records()
+            for record in reversed(all_records):
+                if str(record.get('Kode_Ulok', '')).strip() == str(kode_ulok).strip():
+                    return record.get('Email_BBS')
+            return None
+        except Exception as e:
+            print(f"Error getting PIC email by Ulok: {e}")
+            return None
 
     def upload_file_to_drive(self, file_bytes, filename, mimetype, folder_id):
         file_metadata = {'name': filename, 'parents': [folder_id]}
@@ -220,7 +230,6 @@ class GoogleServiceProvider:
             print(f"An error occurred while sending email: {e}")
             raise
 
-    # ... (Sisa fungsi lainnya tetap sama) ...
     def validate_user(self, email, cabang):
         try:
             cabang_sheet = self.sheet.worksheet(config.CABANG_SHEET_NAME)

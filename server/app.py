@@ -512,6 +512,17 @@ def submit_pengawasan():
         timestamp = datetime.datetime.now(WIB)
         
         cabang = data.get('cabang', 'N/A')
+        
+        # For non-input_pic forms, we need to find the PIC
+        if form_type != 'input_pic':
+            kode_ulok = data.get('kode_ulok')
+            if kode_ulok:
+                pic_email = google_provider.get_pic_email_by_ulok(kode_ulok)
+                if pic_email:
+                    data['pic_building_support'] = pic_email
+                else:
+                    return jsonify({"status": "error", "message": f"PIC tidak ditemukan untuk Kode Ulok {kode_ulok}. Pastikan proyek ini sudah diinisiasi."}), 404
+
         pic_list, koordinator_info, manager_info = google_provider.get_user_info_by_cabang(cabang)
         user_info = {
             'pic_list': pic_list,
