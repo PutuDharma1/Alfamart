@@ -385,3 +385,22 @@ table tbody td select.jenis-pekerjaan {
     -moz-text-align-last: left; /* Khusus untuk Firefox */
     text-align-last: left;
 }
+.btn-logout-form {
+    position: absolute;
+    right: 25px;
+    top: 50%;
+    transform: translateY(-50%);
+    padding: 0.5rem 1rem;
+    background-color: #e53e3e;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-logout-form:hover {
+    background-color: #c53030;
+}

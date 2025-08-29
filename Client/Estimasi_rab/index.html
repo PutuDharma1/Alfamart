@@ -37,6 +37,7 @@
         <img src="../Assets/Alfamart-Emblem.png" alt="Alfamart Logo" class="header-logo" />
       </a>
       <h1>Form Estimasi Rencana Anggaran Biaya</h1>
+      <button id="logout-button-form" class="btn-logout-form">Logout</button>
     </header>
 
     <div class="container">
@@ -1202,5 +1203,11 @@
     <div id="message" role="status" aria-live="polite"></div>
 
     <script src="script.js"></script>
+    <script>
+        document.getElementById('logout-button-form').addEventListener('click', () => {
+            sessionStorage.clear();
+            window.location.href = '/'; // Arahkan ke homepage
+        });
+    </script>
   </body>
 </html>

@@ -16,8 +16,8 @@
 
     <main class="container">
         <div class="welcome-message">
-            <h2>Selamat Datang, <span id="user-name">Tamu</span>!</h2>
-            <p>Pilih menu di bawah untuk melanjutkan.</p>
+            <h2>Sistem Rencana Anggaran Biaya</h2>
+            <p>Silakan pilih menu di bawah untuk memulai.</p>
         </div>
 
         <nav class="menu-container">
@@ -38,40 +38,6 @@
                 <p>Atur profil Anda (segera hadir).</p>
             </a>
         </nav>
-        
-        <div class="logout-container">
-            <button id="logout-button" class="btn-logout" style="display: none;">Logout</button>
-            <a href="/login.html" id="login-button" class="btn-login">Login</a>
-        </div>
     </main>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const isAuthenticated = sessionStorage.getItem('authenticated');
-            const userNameSpan = document.getElementById('user-name');
-            const loginButton = document.getElementById('login-button');
-            const logoutButton = document.getElementById('logout-button');
-
-            if (isAuthenticated) {
-                // Jika pengguna sudah login
-                const userEmail = sessionStorage.getItem('loggedInUserEmail');
-                if (userEmail) {
-                    userNameSpan.textContent = userEmail.split('@')[0];
-                }
-                loginButton.style.display = 'none';
-                logoutButton.style.display = 'block';
-            } else {
-                // Jika pengguna belum login (tamu)
-                userNameSpan.textContent = 'Tamu';
-                loginButton.style.display = 'block';
-                logoutButton.style.display = 'none';
-            }
-
-            logoutButton.addEventListener('click', () => {
-                sessionStorage.clear();
-                window.location.reload();
-            });
-        });
-    </script>
 </body>
 </html>
