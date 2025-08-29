@@ -16,7 +16,7 @@
 
     <main class="container">
         <div class="welcome-message">
-            <h2>Selamat Datang, <span id="user-name">Pengguna</span>!</h2>
+            <h2>Selamat Datang, <span id="user-name">Tamu</span>!</h2>
             <p>Pilih menu di bawah untuk melanjutkan.</p>
         </div>
 
@@ -51,35 +51,25 @@
             const userNameSpan = document.getElementById('user-name');
             const loginButton = document.getElementById('login-button');
             const logoutButton = document.getElementById('logout-button');
-            const menuRab = document.getElementById('menu-rab');
-            const menuSpk = document.getElementById('menu-spk');
 
             if (isAuthenticated) {
+                // Jika pengguna sudah login
                 const userEmail = sessionStorage.getItem('loggedInUserEmail');
-                const userRole = sessionStorage.getItem('userRole');
-
                 if (userEmail) {
                     userNameSpan.textContent = userEmail.split('@')[0];
                 }
                 loginButton.style.display = 'none';
                 logoutButton.style.display = 'block';
-                
-                if (userRole !== 'BRANCH BUILDING SUPPORT') {
-                    if (menuRab) menuRab.style.display = 'none';
-                    if (menuSpk) menuSpk.style.display = 'none';
-                }
-
             } else {
+                // Jika pengguna belum login (tamu)
                 userNameSpan.textContent = 'Tamu';
                 loginButton.style.display = 'block';
                 logoutButton.style.display = 'none';
-                if (menuRab) menuRab.style.display = 'none';
-                if (menuSpk) menuSpk.style.display = 'none';
             }
 
             logoutButton.addEventListener('click', () => {
                 sessionStorage.clear();
-                window.location.href = '/';
+                window.location.reload();
             });
         });
     </script>
