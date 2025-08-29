@@ -153,6 +153,7 @@ const autoFillPrices = (selectElement) => {
 
     if (!selectedJenisPekerjaan) {
         volumeInput.value = "0.00";
+        volumeInput.readOnly = false; // Pastikan bisa diedit lagi
         materialPriceInput.value = "0";
         upahPriceInput.value = "0";
         satuanInput.value = "";
@@ -174,8 +175,17 @@ const autoFillPrices = (selectElement) => {
     }
 
     if (selectedItem) {
-        volumeInput.value = selectedItem["Satuan"] === "Ls" ? "1.00" : "0.00";
         satuanInput.value = selectedItem["Satuan"];
+
+        // ▼▼▼ PERUBAHAN DI SINI ▼▼▼
+        if (selectedItem["Satuan"] === "Ls") {
+            volumeInput.value = "1.00";
+            volumeInput.readOnly = true; // Kunci kolom volume
+        } else {
+            volumeInput.value = "0.00";
+            volumeInput.readOnly = false; // Buka kunci kolom volume
+        }
+        // ▲▲▲ AKHIR PERUBAHAN ▲▲▲
 
         const setupPriceInput = (input, price) => {
             const isEditable = price === "Kondisional";
@@ -193,6 +203,7 @@ const autoFillPrices = (selectElement) => {
         setupPriceInput(upahPriceInput, selectedItem["Harga Upah"]);
     } else {
         volumeInput.value = "0.00";
+        volumeInput.readOnly = false;
         materialPriceInput.value = "0";
         upahPriceInput.value = "0";
         satuanInput.value = "";
@@ -330,15 +341,11 @@ const calculateGrandTotal = () => {
     if (grandTotalAmount) grandTotalAmount.textContent = formatRupiah(total);
 };
 
-// =============================================================
-// ▼▼▼ FUNGSI YANG DIPERBARUI SECARA SIGNIFIKAN ▼▼▼
-// =============================================================
 async function populateFormWithHistory(data) {
     form.reset();
     sipilTablesWrapper.innerHTML = "";
     meTablesWrapper.innerHTML = "";
 
-    // 1. Isi semua field input standar
     const nomorUlok = data["Nomor Ulok"];
     if (nomorUlok && (nomorUlok.length === 12 || nomorUlok.length === 14)) {
         const ulokParts = nomorUlok.replace(/-/g, '').match(/^(.{4})(.{4})(.{4})$/);
@@ -357,26 +364,21 @@ async function populateFormWithHistory(data) {
         }
     }
     
-    // 2. Tampilkan wrapper tabel utama (Sipil/ME) berdasarkan data
     const selectedScope = lingkupPekerjaanSelect.value;
     sipilTablesWrapper.classList.toggle("hidden", selectedScope !== 'Sipil');
     meTablesWrapper.classList.toggle("hidden", selectedScope !== 'ME');
 
-    // 3. Ambil data harga dan bangun struktur tabel yang tersembunyi
     await fetchAndPopulatePrices();
 
-    // 4. Uraikan detail item dari JSON jika ada
     const itemDetails = data['Item_Details_JSON'] ? JSON.parse(data['Item_Details_JSON']) : data;
 
-    // 5. Loop melalui item historis dan isi tabel
-    for (let i = 1; i <= 200; i++) { // Asumsi maksimal 200 item
+    for (let i = 1; i <= 200; i++) {
         if (itemDetails[`Jenis_Pekerjaan_${i}`]) {
             const category = itemDetails[`Kategori_Pekerjaan_${i}`];
             const scope = lingkupPekerjaanSelect.value;
             const targetTbody = document.querySelector(`.boq-table-body[data-category="${category}"][data-scope="${scope}"]`);
             
             if (targetTbody) {
-                // Tampilkan kontainer tabel kategori ini
                 const tableContainer = targetTbody.closest('.table-container');
                 if(tableContainer) tableContainer.style.display = 'block';
 
@@ -486,8 +488,7 @@ async function handleFormSubmit() {
 function createTableStructure(categoryName, scope) {
     const tableContainer = document.createElement('div');
     tableContainer.className = 'table-container';
-    tableContainer.style.display = 'none'; // Sembunyikan tabel secara default
-
+    tableContainer.style.display = 'none';
     const sectionTitle = document.createElement('h2');
     sectionTitle.className = 'text-lg font-semibold mt-6 mb-2 section-title';
     sectionTitle.textContent = categoryName;
