@@ -11,9 +11,13 @@
     <script>
       // Security Check: Redirect to login if not authenticated
       const isAuthenticated = sessionStorage.getItem('authenticated');
+      const userRole = sessionStorage.getItem('userRole');
       if (!isAuthenticated) {
-          // Path disesuaikan karena file ini ada di dalam folder Estimasi_rab
           window.location.href = '/index.html'; 
+      }
+      if (userRole !== 'BRANCH BUILDING SUPPORT') {
+          alert('Anda tidak memiliki izin untuk mengakses halaman ini.');
+          window.location.href = '/Homepage/index.html';
       }
     </script>
     

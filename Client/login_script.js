@@ -75,6 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 sessionStorage.setItem('authenticated', 'true');
                 sessionStorage.setItem('loggedInUserEmail', username);
                 sessionStorage.setItem('loggedInUserCabang', password);
+                sessionStorage.setItem('userRole', result.role); // Simpan jabatan pengguna
 
                 setTimeout(() => {
                     const redirectUrl = sessionStorage.getItem('redirectTo');

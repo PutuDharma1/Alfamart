@@ -60,9 +60,9 @@ def login():
     if not email or not cabang:
         return jsonify({"status": "error", "message": "Email and cabang are required"}), 400
     try:
-        is_valid = google_provider.validate_user(email, cabang)
+        is_valid, role = google_provider.validate_user(email, cabang)
         if is_valid:
-            return jsonify({"status": "success", "message": "Login successful"}), 200
+            return jsonify({"status": "success", "message": "Login successful", "role": role}), 200
         else:
             return jsonify({"status": "error", "message": "Invalid credentials"}), 401
     except Exception as e:
@@ -513,7 +513,6 @@ def submit_pengawasan():
         
         cabang = data.get('cabang', 'N/A')
         
-        # For non-input_pic forms, we need to find the PIC
         if form_type != 'input_pic':
             kode_ulok = data.get('kode_ulok')
             if kode_ulok:

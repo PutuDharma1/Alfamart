@@ -21,11 +21,11 @@
         </div>
 
         <nav class="menu-container">
-            <a href="/Estimasi_rab/" class="menu-item">
+            <a href="/Estimasi_rab/" class="menu-item" id="menu-rab">
                 <h3>Estimasi RAB</h3>
                 <p>Buat atau revisi Rencana Anggaran Biaya.</p>
             </a>
-            <a href="/SPK_form/" class="menu-item">
+            <a href="/SPK_form/" class="menu-item" id="menu-spk">
                 <h3>Buat SPK</h3>
                 <p>Buat Surat Perintah Kerja untuk kontraktor.</p>
             </a>
@@ -65,6 +65,16 @@
                     sessionStorage.clear();
                     window.location.href = '/';
                 });
+            }
+
+            // Role-based menu visibility
+            const userRole = sessionStorage.getItem('userRole');
+            const menuRab = document.getElementById('menu-rab');
+            const menuSpk = document.getElementById('menu-spk');
+
+            if (userRole !== 'BRANCH BUILDING SUPPORT') {
+                if (menuRab) menuRab.style.display = 'none';
+                if (menuSpk) menuSpk.style.display = 'none';
             }
         });
     </script>

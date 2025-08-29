@@ -236,10 +236,10 @@ class GoogleServiceProvider:
             for record in cabang_sheet.get_all_records():
                 if str(record.get('EMAIL_SAT', '')).strip().lower() == email.lower() and \
                    str(record.get('CABANG', '')).strip().lower() == cabang.lower():
-                    return True
+                    return True, record.get('JABATAN', '') # Return True and the role
         except gspread.exceptions.WorksheetNotFound:
             print(f"Error: Worksheet '{config.CABANG_SHEET_NAME}' not found.")
-        return False
+        return False, None # Return False and no role
 
     def check_user_submissions(self, email, cabang):
         try:
