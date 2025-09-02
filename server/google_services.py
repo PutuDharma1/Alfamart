@@ -236,10 +236,10 @@ class GoogleServiceProvider:
             for record in cabang_sheet.get_all_records():
                 if str(record.get('EMAIL_SAT', '')).strip().lower() == email.lower() and \
                    str(record.get('CABANG', '')).strip().lower() == cabang.lower():
-                    return True, record.get('JABATAN', '') # Return True and the role
+                    return True, record.get('JABATAN', '')
         except gspread.exceptions.WorksheetNotFound:
             print(f"Error: Worksheet '{config.CABANG_SHEET_NAME}' not found.")
-        return False, None # Return False and no role
+        return False, None
 
     def check_user_submissions(self, email, cabang):
         try:
@@ -308,9 +308,11 @@ class GoogleServiceProvider:
         try:
             cabang_sheet = self.sheet.worksheet(config.CABANG_SHEET_NAME)
             for record in cabang_sheet.get_all_records():
-                if str(record.get('CABANG', '')).strip().lower() == branch_name.strip().lower() and \
+                # ▼▼▼ PERUBAHAN DI SINI ▼▼▼
+                if branch_name and str(record.get('CABANG', '')).strip().lower() == branch_name.strip().lower() and \
                    str(record.get('JABATAN', '')).strip().upper() == jabatan.strip().upper():
                     return record.get('EMAIL_SAT')
+                # ▲▲▲ AKHIR PERUBAHAN ▲▲▲
         except gspread.exceptions.WorksheetNotFound:
             print(f"Error: Worksheet '{config.CABANG_SHEET_NAME}' not found.")
         return None
@@ -320,7 +322,7 @@ class GoogleServiceProvider:
         try:
             cabang_sheet = self.sheet.worksheet(config.CABANG_SHEET_NAME)
             for record in cabang_sheet.get_all_records():
-                if str(record.get('CABANG', '')).strip().lower() == branch_name.strip().lower() and \
+                if branch_name and str(record.get('CABANG', '')).strip().lower() == branch_name.strip().lower() and \
                    str(record.get('JABATAN', '')).strip().upper() == jabatan.strip().upper():
                     email = record.get('EMAIL_SAT')
                     if email:

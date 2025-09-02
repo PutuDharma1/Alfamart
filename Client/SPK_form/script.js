@@ -139,17 +139,25 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = Object.fromEntries(formData.entries());
         data['Dibuat Oleh'] = sessionStorage.getItem('loggedInUserEmail');
 
-        const selectedRab = approvedRabData.find(rab => rab['Nomor Ulok'] === data['Nomor Ulok']);
+        // ▼▼▼ PERUBAHAN DI SINI ▼▼▼
+        const ulokFromForm = data['Nomor Ulok'].split(' (')[0];
+        const lingkupFromForm = data['Nomor Ulok'].includes('(') ? data['Nomor Ulok'].split('(')[1].replace(')', '') : null;
+        
+        const selectedRab = approvedRabData.find(rab => rab['Nomor Ulok'] === ulokFromForm && rab['Lingkup_Pekerjaan'] === lingkupFromForm);
+        
         if (selectedRab) {
+            data['Nomor Ulok'] = ulokFromForm; // Pastikan hanya nomor ulok yang dikirim
             data['Proyek'] = selectedRab.Proyek;
             data['Alamat'] = selectedRab.Alamat;
             data['Lingkup Pekerjaan'] = selectedRab.Lingkup_Pekerjaan;
-            // =============================================================
-            // ▼▼▼ PERUBAHAN UTAMA: GUNAKAN GRAND TOTAL NON-SBO ▼▼▼
-            // =============================================================
-            data['Grand Total'] = selectedRab['Grand Total Non-SBO']; // Mengirim total Non-SBO ke backend
+            data['Grand Total'] = selectedRab['Grand Total Non-SBO'];
             data['Cabang'] = selectedRab.Cabang; 
+        } else {
+             showMessage('Data RAB yang dipilih tidak valid. Silakan pilih ulang.', 'error');
+             submitButton.disabled = false;
+             return;
         }
+        // ▲▲▲ AKHIR PERUBAHAN ▲▲▲
 
         try {
             const response = await fetch(`${PYTHON_API_BASE_URL}/api/submit_spk`, {
@@ -175,8 +183,11 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // --- Event Listeners ---
     ulokSelect.addEventListener('change', () => {
-        const selectedUlok = ulokSelect.value.split(' (')[0];
-        const selectedRab = approvedRabData.find(rab => rab['Nomor Ulok'] === selectedUlok);
+        const selectedValue = ulokSelect.value;
+        const selectedUlok = selectedValue.split(' (')[0];
+        const selectedLingkup = selectedValue.includes('(') ? selectedValue.split('(')[1].replace(')', '') : null;
+        
+        const selectedRab = approvedRabData.find(rab => rab['Nomor Ulok'] === selectedUlok && rab['Lingkup_Pekerjaan'] === selectedLingkup);
         
         if (selectedRab) {
             document.getElementById('detail_proyek').textContent = selectedRab.Proyek || 'N/A';
@@ -184,11 +195,9 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('detail_total').textContent = formatRupiah(selectedRab['Grand Total Non-SBO'] || 0);
             rabDetailsDiv.style.display = 'block';
             
-            // Panggil fungsi untuk mengambil data kontraktor
             fetchKontraktor(selectedRab.Cabang); 
         } else {
             rabDetailsDiv.style.display = 'none';
-            // Reset dropdown kontraktor jika tidak ada RAB yang dipilih
             kontraktorSelect.innerHTML = '<option value="">-- Pilih RAB terlebih dahulu --</option>';
         }
     });
