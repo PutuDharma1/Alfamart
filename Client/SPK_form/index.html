@@ -8,12 +8,13 @@
         // Security Check
         const isAuthenticated = sessionStorage.getItem('authenticated');
         const userRole = sessionStorage.getItem('userRole');
+        const allowedRoles = ['BRANCH BUILDING SUPPORT', 'BRANCH BUILDING & MAINTENANCE MANAGER'];
 
         if (!isAuthenticated) {
             // Jika belum login, simpan tujuan & alihkan ke halaman login
             sessionStorage.setItem('redirectTo', window.location.pathname);
             window.location.href = '/login.html';
-        } else if (userRole !== 'BRANCH BUILDING SUPPORT') {
+        } else if (!allowedRoles.includes(userRole)) {
             // Jika sudah login tapi jabatan salah, beri peringatan & alihkan ke homepage
             alert('Anda tidak memiliki izin untuk mengakses halaman ini.');
             window.location.href = '/';
