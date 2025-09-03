@@ -40,6 +40,7 @@ class COLUMN_NAMES:
     LINK_PDF = "Link PDF"
     LINK_PDF_NONSBO = "Link PDF Non-SBO"
     GRAND_TOTAL = "Grand Total"
+    GRAND_TOTAL_NONSBO = "Grand Total Non-SBO"
     ALAMAT = "Alamat"
 
 # --- Jabatan & Status ---

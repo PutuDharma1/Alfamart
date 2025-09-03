@@ -245,6 +245,22 @@ def handle_rab_approval():
             row_data[config.COLUMN_NAMES.MANAGER_APPROVER] = approver
             row_data[config.COLUMN_NAMES.MANAGER_APPROVAL_TIME] = current_time
             
+            total_non_sbo = 0
+            item_details_json = row_data.get('Item_Details_JSON', '{}')
+            if item_details_json:
+                try:
+                    item_details = json.loads(item_details_json)
+                    if any(key.startswith('Total_Harga_Item_') for key in item_details.keys()):
+                        for i in range(1, 201):
+                            if item_details.get(f'Kategori_Pekerjaan_{i}') != 'PEKERJAAN SBO':
+                                total_non_sbo += float(item_details.get(f'Total_Harga_Item_{i}', 0))
+                except (json.JSONDecodeError, ValueError) as e:
+                    print(f"Could not process item details for RAB {row_data.get('Nomor Ulok')}: {e}")
+                    total_non_sbo = 0
+
+            final_total_non_sbo_with_ppn = total_non_sbo * 1.11
+            row_data[config.COLUMN_NAMES.GRAND_TOTAL_NONSBO] = final_total_non_sbo_with_ppn
+
             pdf_lengkap_bytes = create_pdf_from_data(google_provider, row_data, exclude_sbo=False)
             pdf_lengkap_filename = f"DISETUJUI_RAB_LENGKAP_{jenis_toko}_{row_data.get('Nomor Ulok')}.pdf"
             

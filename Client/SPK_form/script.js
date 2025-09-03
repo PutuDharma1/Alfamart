@@ -150,9 +150,8 @@ document.addEventListener('DOMContentLoaded', () => {
             data['Alamat'] = selectedRab.Alamat;
             data['Lingkup Pekerjaan'] = selectedRab.Lingkup_Pekerjaan;
             // ▼▼▼ PERUBAHAN DI SINI ▼▼▼
-            const totalNonSBO = parseFloat(selectedRab['Grand Total Non-SBO']) || 0;
-            const finalTotalWithPPN = totalNonSBO * 1.11;
-            data['Grand Total'] = finalTotalWithPPN;
+            // Langsung gunakan nilai dari backend karena sudah termasuk PPN
+            data['Grand Total'] = selectedRab['Grand Total Non-SBO'];
             // ▲▲▲ AKHIR PERUBAHAN ▲▲▲
             data['Cabang'] = selectedRab.Cabang; 
         } else {
@@ -196,9 +195,8 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('detail_lingkup').textContent = selectedRab.Lingkup_Pekerjaan || 'N/A';
 
             // ▼▼▼ PERUBAHAN DI SINI ▼▼▼
-            const totalNonSBO = parseFloat(selectedRab['Grand Total Non-SBO']) || 0;
-            const finalTotalWithPPN = totalNonSBO * 1.11;
-            document.getElementById('detail_total').textContent = formatRupiah(finalTotalWithPPN);
+            // Langsung tampilkan nilai dari backend
+            document.getElementById('detail_total').textContent = formatRupiah(selectedRab['Grand Total Non-SBO'] || 0);
             // ▲▲▲ AKHIR PERUBAHAN ▲▲▲
             
             rabDetailsDiv.style.display = 'block';

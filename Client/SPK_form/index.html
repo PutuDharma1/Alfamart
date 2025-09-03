@@ -8,7 +8,7 @@
         // Security Check
         const isAuthenticated = sessionStorage.getItem('authenticated');
         const userRole = sessionStorage.getItem('userRole');
-        const allowedRoles = ['BRANCH BUILDING SUPPORT', 'BRANCH BUILDING & MAINTENANCE MANAGER'];
+        const allowedRoles = ['BRANCH BUILDING & MAINTENANCE MANAGER'];
 
         if (!isAuthenticated) {
             // Jika belum login, simpan tujuan & alihkan ke halaman login

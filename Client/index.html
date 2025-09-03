@@ -39,57 +39,26 @@
             </a>
         </nav>
         
-        <div class="logout-container">
-            <button id="logout-button" class="btn-logout" style="display: none;">Logout</button>
-            <a href="/login.html" id="login-button" class="btn-login">Login</a>
-        </div>
+        <div class="logout-container" id="auth-container">
+            </div>
     </main>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const isAuthenticated = sessionStorage.getItem('authenticated');
-            const userNameSpan = document.getElementById('user-name');
-            const loginButton = document.getElementById('login-button');
-            const logoutButton = document.getElementById('logout-button');
-            const menuRab = document.getElementById('menu-rab');
-            const menuSpk = document.getElementById('menu-spk');
+            const authContainer = document.getElementById('auth-container');
 
             if (isAuthenticated) {
-                const userEmail = sessionStorage.getItem('loggedInUserEmail');
-                const userRole = sessionStorage.getItem('userRole');
-
-                if (userEmail) {
-                    userNameSpan.textContent = userEmail.split('@')[0];
-                }
-                loginButton.style.display = 'none';
-                logoutButton.style.display = 'block';
-                
-                // Aturan untuk menampilkan/menyembunyikan menu
-                const supportRole = 'BRANCH BUILDING SUPPORT';
-                const managerRole = 'BRANCH BUILDING & MAINTENANCE MANAGER';
-
-                // Sembunyikan menu RAB jika bukan support
-                if (userRole !== supportRole) {
-                    if (menuRab) menuRab.style.display = 'none';
-                }
-
-                // Sembunyikan menu SPK jika bukan support ATAU manager
-                if (userRole !== supportRole && userRole !== managerRole) {
-                    if (menuSpk) menuSpk.style.display = 'none';
-                }
-
+                // Jika pengguna sudah login, tampilkan tombol Logout
+                authContainer.innerHTML = '<button id="logout-button" class="btn-logout">Logout</button>';
+                document.getElementById('logout-button').addEventListener('click', () => {
+                    sessionStorage.clear();
+                    window.location.reload();
+                });
             } else {
-                userNameSpan.textContent = 'Tamu';
-                loginButton.style.display = 'block';
-                logoutButton.style.display = 'none';
-                if (menuRab) menuRab.style.display = 'none';
-                if (menuSpk) menuSpk.style.display = 'none';
+                // Jika pengguna belum login, tampilkan tombol Login
+                authContainer.innerHTML = '<a href="/login.html" class="btn-login">Login</a>';
             }
-
-            logoutButton.addEventListener('click', () => {
-                sessionStorage.clear();
-                window.location.href = '/';
-            });
         });
     </script>
 </body>

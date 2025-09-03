@@ -224,9 +224,21 @@ const createBoQRow = (category, scope) => {
     row.dataset.scope = scope; 
     row.dataset.category = category;
     row.innerHTML = `<td class="col-no"><span class="row-number"></span></td><td class="col-jenis-pekerjaan"><select class="jenis-pekerjaan form-control" name="Jenis_Pekerjaan_Item" required><option value="">-- Pilih --</option></select></td><td class="col-satuan"><input type="text" class="satuan form-control" name="Satuan_Item" required readonly /></td><td class="col-volume"><input type="text" class="volume form-control" name="Volume_Item" value="0.00" inputmode="decimal" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\\..*?)\\..*/g, '$1').replace(/(\\.\\d{2})\\d+/, '$1')" /></td><td class="col-harga"><input type="text" class="harga-material form-control" name="Harga_Material_Item" inputmode="numeric" required readonly /></td><td class="col-harga"><input type="text" class="harga-upah form-control" name="Harga_Upah_Item" inputmode="numeric" required readonly /></td><td class="col-harga"><input type="text" class="total-material form-control" disabled /></td><td class="col-harga"><input type="text" class="total-upah form-control" disabled /></td><td class="col-harga"><input type="text" class="total-harga form-control" disabled /></td><td class="col-aksi"><button type="button" class="delete-row-btn">Hapus</button></td>`;
+    
     row.querySelector(".volume").addEventListener("input", (e) => calculateTotalPrice(e.target));
     row.querySelector(".delete-row-btn").addEventListener("click", () => { row.remove(); updateAllRowNumbersAndTotals(); });
-    row.querySelector('.jenis-pekerjaan').addEventListener('change', (e) => autoFillPrices(e.target));
+
+    // Ambil elemen select
+    const jenisPekerjaanSelect = row.querySelector('.jenis-pekerjaan');
+    
+    // Tambahkan event listener untuk auto-fill harga
+    jenisPekerjaanSelect.addEventListener('change', (e) => autoFillPrices(e.target));
+    
+    // ▼▼▼ BARIS INI YANG PALING PENTING ▼▼▼
+    // Aktifkan fitur pencarian (Select2) pada dropdown yang baru dibuat ini
+    initializeSelect2(jenisPekerjaanSelect); 
+    // ▲▲▲ AKHIR PERUBAHAN ▲▲▲
+    
     return row;
 };
 
