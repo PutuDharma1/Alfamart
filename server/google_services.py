@@ -404,31 +404,18 @@ class GoogleServiceProvider:
             allowed_branches = [b.lower() for b in branch_groups.get(user_cabang.upper(), [user_cabang.upper()])]
             filtered_rabs = [rec for rec in all_records if str(rec.get('Cabang', '')).strip().lower() in allowed_branches]
 
+            # ▼▼▼ PERUBAHAN DI SINI ▼▼▼
+            # Logika diubah untuk langsung membaca dari kolom yang benar
             for rab in filtered_rabs:
                 try:
-                    grand_total_from_sheet = float(str(rab.get(config.COLUMN_NAMES.GRAND_TOTAL, 0)).replace(",", ""))
+                    # Ambil nilai yang sudah dihitung dari sheet
+                    grand_total_non_sbo_val = float(str(rab.get(config.COLUMN_NAMES.GRAND_TOTAL_NONSBO, 0)).replace(",", ""))
                 except (ValueError, TypeError):
-                    grand_total_from_sheet = 0
-                rab[config.COLUMN_NAMES.GRAND_TOTAL] = grand_total_from_sheet
-
-                total_non_sbo = 0
-                item_details_json = rab.get('Item_Details_JSON', '{}')
-                if item_details_json:
-                    try:
-                        item_details = json.loads(item_details_json)
-                        if any(key.startswith('Total_Harga_Item_') for key in item_details.keys()):
-                            for i in range(1, 201):
-                                if item_details.get(f'Kategori_Pekerjaan_{i}') != 'PEKERJAAN SBO':
-                                    total_non_sbo += float(item_details.get(f'Total_Harga_Item_{i}', 0))
-                    except (json.JSONDecodeError, ValueError) as e:
-                        print(f"Could not process item details for RAB {rab.get('Nomor Ulok')}: {e}")
-                        total_non_sbo = 0
+                    grand_total_non_sbo_val = 0
                 
-                # ▼▼▼ PERUBAHAN DI SINI ▼▼▼
-                # Logika fallback yang salah dihapus.
-                final_total_non_sbo_with_ppn = total_non_sbo * 1.11
-                rab['Grand Total Non-SBO'] = final_total_non_sbo_with_ppn
-                # ▲▲▲ AKHIR PERUBAHAN ▲▲▲
+                # Tetapkan nilai ini ke kunci yang digunakan oleh frontend
+                rab['Grand Total Non-SBO'] = grand_total_non_sbo_val
+            # ▲▲▲ AKHIR PERUBAHAN ▲▲▲
                 
             return filtered_rabs
         except Exception as e:
@@ -478,3 +465,4 @@ class GoogleServiceProvider:
         except Exception as e:
             print(f"Error updating cell [{row_index}, {column_name}] in {worksheet.title}: {e}")
             return False
+
