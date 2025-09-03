@@ -308,11 +308,9 @@ class GoogleServiceProvider:
         try:
             cabang_sheet = self.sheet.worksheet(config.CABANG_SHEET_NAME)
             for record in cabang_sheet.get_all_records():
-                # ▼▼▼ PERUBAHAN DI SINI ▼▼▼
                 if branch_name and str(record.get('CABANG', '')).strip().lower() == branch_name.strip().lower() and \
                    str(record.get('JABATAN', '')).strip().upper() == jabatan.strip().upper():
                     return record.get('EMAIL_SAT')
-                # ▲▲▲ AKHIR PERUBAHAN ▲▲▲
         except gspread.exceptions.WorksheetNotFound:
             print(f"Error: Worksheet '{config.CABANG_SHEET_NAME}' not found.")
         return None
@@ -425,9 +423,13 @@ class GoogleServiceProvider:
                     except (json.JSONDecodeError, ValueError) as e:
                         print(f"Could not process item details for RAB {rab.get('Nomor Ulok')}: {e}")
                         total_non_sbo = 0
-
-                final_total_non_sbo = total_non_sbo * 1.11
-                rab['Grand Total Non-SBO'] = final_total_non_sbo if final_total_non_sbo > 0 else grand_total_from_sheet
+                
+                # ▼▼▼ PERUBAHAN DI SINI ▼▼▼
+                # Logika fallback yang salah dihapus.
+                final_total_non_sbo_with_ppn = total_non_sbo * 1.11
+                rab['Grand Total Non-SBO'] = final_total_non_sbo_with_ppn
+                # ▲▲▲ AKHIR PERUBAHAN ▲▲▲
+                
             return filtered_rabs
         except Exception as e:
             print(f"Error getting approved RABs: {e}")
