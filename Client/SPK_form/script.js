@@ -139,25 +139,27 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = Object.fromEntries(formData.entries());
         data['Dibuat Oleh'] = sessionStorage.getItem('loggedInUserEmail');
 
-        // ▼▼▼ PERUBAHAN DI SINI ▼▼▼
         const ulokFromForm = data['Nomor Ulok'].split(' (')[0];
         const lingkupFromForm = data['Nomor Ulok'].includes('(') ? data['Nomor Ulok'].split('(')[1].replace(')', '') : null;
         
         const selectedRab = approvedRabData.find(rab => rab['Nomor Ulok'] === ulokFromForm && rab['Lingkup_Pekerjaan'] === lingkupFromForm);
         
         if (selectedRab) {
-            data['Nomor Ulok'] = ulokFromForm; // Pastikan hanya nomor ulok yang dikirim
+            data['Nomor Ulok'] = ulokFromForm;
             data['Proyek'] = selectedRab.Proyek;
             data['Alamat'] = selectedRab.Alamat;
             data['Lingkup Pekerjaan'] = selectedRab.Lingkup_Pekerjaan;
-            data['Grand Total'] = selectedRab['Grand Total Non-SBO'];
+            // ▼▼▼ PERUBAHAN DI SINI ▼▼▼
+            const totalNonSBO = parseFloat(selectedRab['Grand Total Non-SBO']) || 0;
+            const finalTotalWithPPN = totalNonSBO * 1.11;
+            data['Grand Total'] = finalTotalWithPPN;
+            // ▲▲▲ AKHIR PERUBAHAN ▲▲▲
             data['Cabang'] = selectedRab.Cabang; 
         } else {
              showMessage('Data RAB yang dipilih tidak valid. Silakan pilih ulang.', 'error');
              submitButton.disabled = false;
              return;
         }
-        // ▲▲▲ AKHIR PERUBAHAN ▲▲▲
 
         try {
             const response = await fetch(`${PYTHON_API_BASE_URL}/api/submit_spk`, {
@@ -192,9 +194,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (selectedRab) {
             document.getElementById('detail_proyek').textContent = selectedRab.Proyek || 'N/A';
             document.getElementById('detail_lingkup').textContent = selectedRab.Lingkup_Pekerjaan || 'N/A';
-            document.getElementById('detail_total').textContent = formatRupiah(selectedRab['Grand Total Non-SBO'] || 0);
-            rabDetailsDiv.style.display = 'block';
+
+            // ▼▼▼ PERUBAHAN DI SINI ▼▼▼
+            const totalNonSBO = parseFloat(selectedRab['Grand Total Non-SBO']) || 0;
+            const finalTotalWithPPN = totalNonSBO * 1.11;
+            document.getElementById('detail_total').textContent = formatRupiah(finalTotalWithPPN);
+            // ▲▲▲ AKHIR PERUBAHAN ▲▲▲
             
+            rabDetailsDiv.style.display = 'block';
             fetchKontraktor(selectedRab.Cabang); 
         } else {
             rabDetailsDiv.style.display = 'none';
