@@ -131,6 +131,7 @@ const populateJenisPekerjaanOptionsForNewRow = (rowElement) => {
             const option = document.createElement("option");
             option.value = item["Jenis Pekerjaan"];
             option.textContent = item["Jenis Pekerjaan"];
+            option.title = item["Jenis Pekerjaan"]; // Tambahkan title untuk tooltip
             selectEl.appendChild(option);
         });
     } else {
@@ -143,6 +144,11 @@ const autoFillPrices = (selectElement) => {
     if (!row) return;
 
     const selectedJenisPekerjaan = selectElement.value;
+    if (selectElement.selectedIndex > 0) {
+        selectElement.title = selectElement.options[selectElement.selectedIndex].text;
+    } else {
+        selectElement.title = '';
+    }
     const currentCategory = row.dataset.category;
     const currentLingkupPekerjaan = lingkupPekerjaanSelect.value;
     
