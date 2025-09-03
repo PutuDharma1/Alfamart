@@ -404,18 +404,18 @@ class GoogleServiceProvider:
             allowed_branches = [b.lower() for b in branch_groups.get(user_cabang.upper(), [user_cabang.upper()])]
             filtered_rabs = [rec for rec in all_records if str(rec.get('Cabang', '')).strip().lower() in allowed_branches]
 
-            # ▼▼▼ PERUBAHAN DI SINI ▼▼▼
-            # Logika diubah untuk langsung membaca dari kolom yang benar
             for rab in filtered_rabs:
                 try:
-                    # Ambil nilai yang sudah dihitung dari sheet
-                    grand_total_non_sbo_val = float(str(rab.get(config.COLUMN_NAMES.GRAND_TOTAL_NONSBO, 0)).replace(",", ""))
+                    # Ambil nilai mentah dari sheet
+                    grand_total_non_sbo_from_sheet = float(str(rab.get(config.COLUMN_NAMES.GRAND_TOTAL_NONSBO, 0)).replace(",", ""))
                 except (ValueError, TypeError):
-                    grand_total_non_sbo_val = 0
+                    grand_total_non_sbo_from_sheet = 0
                 
-                # Tetapkan nilai ini ke kunci yang digunakan oleh frontend
-                rab['Grand Total Non-SBO'] = grand_total_non_sbo_val
-            # ▲▲▲ AKHIR PERUBAHAN ▲▲▲
+                # ▼▼▼ PERUBAHAN DI SINI ▼▼▼
+                # Tambahkan PPN 11% di sini, bukan di frontend
+                final_total_with_ppn = grand_total_non_sbo_from_sheet * 1.11
+                rab['Grand Total Non-SBO'] = final_total_with_ppn
+                # ▲▲▲ AKHIR PERUBAHAN ▲▲▲
                 
             return filtered_rabs
         except Exception as e:
@@ -465,4 +465,3 @@ class GoogleServiceProvider:
         except Exception as e:
             print(f"Error updating cell [{row_index}, {column_name}] in {worksheet.title}: {e}")
             return False
-
