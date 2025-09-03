@@ -4,7 +4,16 @@
     <meta charset="UTF-8">
     <title>Surat Perintah Kerja</title>
     <style>
-        @page { size: A4; margin: 2.5cm 2cm; }
+        @page {
+            size: A4;
+            margin: 2.5cm 2cm;
+            @bottom-right {
+                content: counter(page) "/" counter(pages);
+                font-family: Arial, sans-serif;
+                font-size: 10px;
+                color: #000;
+            }
+        }
         body { font-family: Arial, sans-serif; color: #000; font-size: 12px; line-height: 1.5; }
         .header, .footer { position: absolute; left: 0; right: 0; }
         .header { top: -2cm; }
